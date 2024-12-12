@@ -20,7 +20,6 @@ import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ServerWebExchange
-import users.User
 import users.UserController.UserRestApiRoutes.API_SIGNUP
 import users.UserController.UserRestApiRoutes.API_USERS
 import users.UserDao
