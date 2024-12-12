@@ -2,7 +2,6 @@
 
 package users
 
-import app.database.EntityModel
 import app.utils.Constants.ROLE_USER
 import arrow.core.Either
 import arrow.core.left
@@ -16,7 +15,6 @@ import org.springframework.r2dbc.core.*
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
-import users.User
 import users.UserDao.Attributes.EMAILORLOGIN
 import users.UserDao.Attributes.EMAIL_ATTR
 import users.UserDao.Attributes.ID_ATTR
@@ -47,9 +45,7 @@ import users.UserDao.Relations.INSERT
 import users.UserDao.Relations.LOGIN_AND_EMAIL_AVAILABLE_COLUMN
 import users.UserDao.Relations.LOGIN_AVAILABLE_COLUMN
 import users.UserDao.Relations.SELECT_SIGNUP_AVAILABILITY
-import users.security.Role
 import users.security.RoleDao
-import users.security.UserRole
 import users.security.UserRoleDao
 import users.security.UserRoleDao.Dao.signup
 import users.signup.Signup
