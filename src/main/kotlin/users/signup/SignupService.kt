@@ -31,7 +31,7 @@ import workspace.Log.i
 
 @Service
 class SignupService(private val context: ApplicationContext) {
-    suspend fun signup(signup: Signup): Either<Throwable, users.User> = try {
+    suspend fun signup(signup: Signup): Either<Throwable, User> = try {
         context.signupToUser(signup).run {
             (this to context).signup()
                 .mapLeft { return Exception("Unable to save user with id").left() }
@@ -59,12 +59,12 @@ class SignupService(private val context: ApplicationContext) {
         if (isNotEmpty()) return signupProblems.badResponse(this)
     }.run {
         signupAvailability(signup).map {
-            when (it) {
-                SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> return signupProblems.badResponseLoginAndEmailIsNotAvailable
-                SIGNUP_LOGIN_NOT_AVAILABLE -> return signupProblems.badResponseLoginIsNotAvailable
-                SIGNUP_EMAIL_NOT_AVAILABLE -> return signupProblems.badResponseEmailIsNotAvailable
+            return when (it) {
+                SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseLoginAndEmailIsNotAvailable
+                SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
+                SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
                 else -> {
-                    return signup(signup).run { CREATED.run(::ResponseEntity) }
+                    signup(signup).run { CREATED.run(::ResponseEntity) }
                 }
             }
         }
@@ -130,7 +130,7 @@ class SignupService(private val context: ApplicationContext) {
                 .flatMap { violatedField: Pair<String, MutableSet<ConstraintViolation<Signup>>> ->
                     violatedField.second.map {
                         mapOf<String, String?>(
-                            MODEL_FIELD_OBJECTNAME to users.User.objectName,
+                            MODEL_FIELD_OBJECTNAME to User.objectName,
                             MODEL_FIELD_FIELD to violatedField.first,
                             MODEL_FIELD_MESSAGE to it.message
                         )
@@ -159,7 +159,7 @@ class SignupService(private val context: ApplicationContext) {
             get() = badResponse(
                 setOf(
                     mapOf(
-                        MODEL_FIELD_OBJECTNAME to users.User.objectName,
+                        MODEL_FIELD_OBJECTNAME to User.objectName,
                         MODEL_FIELD_FIELD to User.Fields.LOGIN_FIELD,
                         MODEL_FIELD_MESSAGE to "Login name already used!"
                     )
@@ -171,7 +171,7 @@ class SignupService(private val context: ApplicationContext) {
             get() = badResponse(
                 setOf(
                     mapOf(
-                        MODEL_FIELD_OBJECTNAME to users.User.objectName,
+                        MODEL_FIELD_OBJECTNAME to User.objectName,
                         MODEL_FIELD_FIELD to User.Fields.EMAIL_FIELD,
                         MODEL_FIELD_MESSAGE to "Email is already in use!"
                     )

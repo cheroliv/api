@@ -128,16 +128,16 @@ class DaoTests {
         }
         """
             SELECT 
-               u.id,
+               u."id",
                u."email",
                u."login",
                u."password",
-               u.lang_key,
-               u.version,
+               u."lang_key",
+               u."version",
                STRING_AGG(DISTINCT a."role", ',') AS roles
             FROM "user" AS u
             LEFT JOIN 
-               user_authority ua ON u.id = ua.user_id
+               user_authority ua ON u."id" = ua."user_id"
             LEFT JOIN 
                authority AS a ON ua."role" = a."role"
             WHERE 
@@ -145,7 +145,7 @@ class DaoTests {
                OR 
                LOWER(u."login") = LOWER(:emailOrLogin)
             GROUP BY 
-               u.id, u."email", u."login";"""
+               u."id", u."email", u."login";"""
             .trimIndent()
             .apply(::i)
             .run(context.getBean<DatabaseClient>()::sql)
@@ -155,21 +155,21 @@ class DaoTests {
             ?.run {
                 toString().run(::i)
                 val expectedUserResult = User(
-                    id = fromString(get("id").toString()),
-                    email = get("email").toString(),
-                    login = get("login").toString(),
-                    roles = get("roles")
+                    id = fromString(get(User.Fields.ID_FIELD).toString()),
+                    email = get(User.Fields.EMAIL_FIELD).toString(),
+                    login = get(User.Fields.LOGIN_FIELD).toString(),
+                    roles = get(User.Members.ROLES_MEMBER)
                         .toString()
                         .split(",")
                         .map { Role(it) }
                         .toSet(),
-                    password = get("password").toString(),
-                    langKey = get("lang_key").toString(),
-                    version = get("version").toString().toLong(),
+                    password = get(User.Fields.PASSWORD_FIELD).toString(),
+                    langKey = get(User.Fields.LANG_KEY_FIELD).toString(),
+                    version = get(User.Fields.VERSION_FIELD).toString().toLong(),
                 )
                 val userResult = context
                     .findOneWithAuths<User>(user.login)
-                    .getOrNull()
+                    .getOrNull()!!
                 assertNotNull(expectedUserResult)
                 assertNotNull(expectedUserResult.id)
                 assertTrue(expectedUserResult.roles.isNotEmpty())
@@ -438,11 +438,11 @@ class DaoTests {
         where ua.user_id= :userId and ua."role" = :role"""
             .trimIndent()
             .run(context.getBean<DatabaseClient>()::sql)
-            .bind("userId", userId)
-            .bind("role", ROLE_USER)
+            .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+            .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
             .fetch()
             .one()
-            .awaitSingle()["id"]
+            .awaitSingle()[UserRole.Fields.ID_FIELD]
             .toString()
             .let { "user_role_id : $it" }
             .run(::i)
