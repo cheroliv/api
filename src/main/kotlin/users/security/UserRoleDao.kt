@@ -10,8 +10,8 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.await
 import org.springframework.r2dbc.core.awaitSingle
-import users.User
 import users.User.Attributes.LOGIN_ATTR
+import users.User.Relations.DELETE_USER_BY_ID
 import users.security.UserRole.Attributes.ROLE_ATTR
 import users.security.UserRole.Attributes.USER_ID_ATTR
 import users.security.UserRole.Fields.ID_FIELD
@@ -22,12 +22,10 @@ import users.security.UserRole.Relations.DELETE_USER_AUTHORITIES_BY_USER_ID
 import users.security.UserRole.Relations.INSERT
 import java.util.*
 
-@Suppress("unused")
 object UserRoleDao {
     suspend fun Pair<UserRole, ApplicationContext>.signup(): Either<Throwable, Long> = try {
-        second.getBean<R2dbcEntityTemplate>()
-            .databaseClient
-            .sql(INSERT)
+        INSERT.trimIndent()
+            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
             .bind(USER_ID_ATTR, first.userId)
             .bind(ROLE_ATTR, first.role)
             .fetch()
@@ -41,6 +39,7 @@ object UserRoleDao {
     }
 
     suspend fun ApplicationContext.countUserAuthority(): Int = COUNT
+        .trimIndent()
         .let(getBean<DatabaseClient>()::sql)
         .fetch()
         .awaitSingle()
@@ -66,7 +65,8 @@ object UserRoleDao {
                 .let(::sql)
                 .bind(USER_ID_ATTR, id)
                 .await()
-            """delete from "${User.Relations.TABLE_NAME}" as u where u.${User.Fields.ID_FIELD} = :$USER_ID_ATTR"""
+            DELETE_USER_BY_ID
+                .trimIndent()
                 .let(::sql)
                 .bind(USER_ID_ATTR, id)
                 .await()
