@@ -161,8 +161,8 @@ object TestUtils {
         e.left()
     }
 
-    suspend fun ApplicationContext.findAuthsByEmail(email: String): Either<Throwable, Set<Role>> = try {
-        mutableSetOf<Role>().apply {
+    suspend fun ApplicationContext.findAuthsByEmail(email: String): Either<Throwable, Set<users.security.Role>> = try {
+        mutableSetOf<users.security.Role>().apply {
             """
             SELECT ua."role" 
             FROM "user" u 
@@ -174,14 +174,14 @@ object TestUtils {
                 .bind(EMAIL_ATTR, email)
                 .fetch()
                 .all()
-                .collect { add(Role(it[RoleDao.Fields.ID_FIELD].toString())) }
+                .collect { add(users.security.Role(it[RoleDao.Fields.ID_FIELD].toString())) }
         }.toSet().right()
     } catch (e: Throwable) {
         e.left()
     }
 
-    suspend fun ApplicationContext.findAuthsByLogin(login: String): Either<Throwable, Set<Role>> = try {
-        mutableSetOf<Role>().apply {
+    suspend fun ApplicationContext.findAuthsByLogin(login: String): Either<Throwable, Set<users.security.Role>> = try {
+        mutableSetOf<users.security.Role>().apply {
             """
             SELECT ua."role" 
             FROM "user" u 
@@ -193,7 +193,7 @@ object TestUtils {
                 .bind(LOGIN_ATTR, login)
                 .fetch()
                 .all()
-                .collect { add(Role(it[RoleDao.Fields.ID_FIELD].toString())) }
+                .collect { add(users.security.Role(it[RoleDao.Fields.ID_FIELD].toString())) }
         }.toSet().right()
     } catch (e: Throwable) {
         e.left()
@@ -213,8 +213,8 @@ object TestUtils {
         e.left()
     }
 
-    suspend fun ApplicationContext.findAuthsById(userId: UUID): Either<Throwable, Set<Role>> = try {
-        mutableSetOf<Role>().apply {
+    suspend fun ApplicationContext.findAuthsById(userId: UUID): Either<Throwable, Set<users.security.Role>> = try {
+        mutableSetOf<users.security.Role>().apply {
             """
             SELECT ua."role" 
             FROM "user" as u 
@@ -226,7 +226,7 @@ object TestUtils {
                 .bind("userId", userId)
                 .fetch()
                 .all()
-                .collect { add(Role(it[RoleDao.Fields.ID_FIELD].toString())) }
+                .collect { add(users.security.Role(it[RoleDao.Fields.ID_FIELD].toString())) }
         }.toSet().right()
     } catch (e: Throwable) {
         e.left()

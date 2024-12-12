@@ -11,7 +11,7 @@ import users.User
 @SpringBootApplication(
     scanBasePackageClasses = [
         Application::class,
-        User::class,
+        users.User::class,
         AssistantManager::class,
     ]
 )

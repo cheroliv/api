@@ -16,6 +16,7 @@ import org.springframework.r2dbc.core.*
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
+import users.User
 import users.UserDao.Attributes.EMAILORLOGIN
 import users.UserDao.Attributes.EMAIL_ATTR
 import users.UserDao.Attributes.ID_ATTR
@@ -69,9 +70,6 @@ object UserDao {
     }
 
     object Constraints {
-        // Regex for acceptable logins
-        const val LOGIN_REGEX =
-            "^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$"
         const val PASSWORD_MIN: Int = 4
         const val PASSWORD_MAX: Int = 16
         const val IMAGE_URL_DEFAULT = "https://placehold.it/50x50"
@@ -266,7 +264,7 @@ object UserDao {
             .bind(ID_ATTR, id)
             .await()
 
-        suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
+        suspend inline fun <reified T : app.database.EntityModel<UUID>> ApplicationContext.findOne(
             emailOrLogin: String
         ): Either<Throwable, User> = when (T::class) {
             User::class -> try {
@@ -299,7 +297,7 @@ object UserDao {
                 .left()
         }
 
-        suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
+        suspend inline fun <reified T : app.database.EntityModel<UUID>> ApplicationContext.findOne(
             id: UUID
         ): Either<Throwable, User> = when (T::class) {
             User::class -> try {
@@ -333,7 +331,7 @@ object UserDao {
         }
 
 
-        suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneWithAuths(emailOrLogin: String): Either<Throwable, User> =
+        suspend inline fun <reified T : app.database.EntityModel<UUID>> ApplicationContext.findOneWithAuths(emailOrLogin: String): Either<Throwable, User> =
             when (T::class) {
                 User::class -> {
                     try {
@@ -358,7 +356,7 @@ object UserDao {
                                         roles = get(ROLES_MEMBER)
                                             .toString()
                                             .split(",")
-                                            .map { Role(it) }
+                                            .map { users.security.Role(it) }
                                             .toSet(),
                                         password = get(PASSWORD_FIELD).toString(),
                                         langKey = get(LANG_KEY_FIELD).toString(),
@@ -377,7 +375,7 @@ object UserDao {
                     .left()
             }
 
-        suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneByLogin(login: String): Either<Throwable, UUID> =
+        suspend inline fun <reified T : app.database.EntityModel<UUID>> ApplicationContext.findOneByLogin(login: String): Either<Throwable, UUID> =
             when (T::class) {
                 User::class -> {
                     try {
@@ -397,7 +395,7 @@ object UserDao {
             }
 
 
-        suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneByEmail(email: String): Either<Throwable, UUID> =
+        suspend inline fun <reified T : app.database.EntityModel<UUID>> ApplicationContext.findOneByEmail(email: String): Either<Throwable, UUID> =
             when (T::class) {
                 User::class -> {
                     try {
@@ -425,7 +423,7 @@ object UserDao {
             second.findOneByEmail<User>(first.email).mapLeft {
                 return Exception("Unable to find user by email").left()
             }.map {
-                (UserRole(userId = it, role = ROLE_USER) to second).signup()
+                (users.security.UserRole(userId = it, role = ROLE_USER) to second).signup()
                 val userActivation = UserActivation(id = it)
                 (userActivation to second).save()
                 return (it to userActivation.activationKey).right()

@@ -41,6 +41,7 @@ version = "0.0.1"
 //version = ("artifact.version" to "artifact.version.key").artifactVersion
 idea.module.excludeDirs.plusAssign(files("node_modules"))
 springBoot.mainClass.set("app.Application")
+val USER_HOME_KEY = "user.home"
 val BLANK = ""
 val sep: String get() = FileSystems.getDefault().separator
 
@@ -53,18 +54,16 @@ data class DockerHub(
 )
 
 
-val Pair<String, String>.artifactVersion: String
-    get() = first.run(
-        Properties().apply {
-            second.run(properties::get).let {
-                "user.home"
-                    .run(System::getProperty)
-                    .run { "$this$it" }
-            }.run(::File)
-                .inputStream()
-                .use(::load)
-        }::get
-    ).toString()
+val Pair<String, String>.artifactVersion
+    get() = first.run(Properties().apply {
+        second.run(properties::get).let {
+            USER_HOME_KEY
+                .run(System::getProperty)
+                .run { "$this$it" }
+        }.run(::File)
+            .inputStream()
+            .use(::load)
+    }::get).toString()
 
 repositories {
     mavenCentral()
@@ -75,9 +74,7 @@ repositories {
 }
 
 dependencyManagement {
-    imports {
-        mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}")
-    }
+    imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") }
 }
 
 dependencies {
@@ -125,8 +122,6 @@ dependencies {
     // SSL
     implementation("io.netty:netty-tcnative-boringssl-static:${properties["boring_ssl.version"]}")
     // Database
-//    runtimeOnly("com.h2database:h2")
-//    runtimeOnly("io.r2dbc:r2dbc-h2")
     runtimeOnly("org.postgresql:r2dbc-postgresql:${properties["r2dbc-postgresql.version"]}")
     // Kotlin-JUnit5
     testImplementation("org.jetbrains.kotlin:kotlin-test")
@@ -190,6 +185,7 @@ val buildWorkspaceModel: TaskProvider<GradleBuild> by tasks.registering(GradleBu
     dir = "../workspace-model/lib".run(::File)
     tasks = listOf("build") // Or whatever tasks produce the lib.jar
 }
+
 // Add a dependency on the buildWorkspaceModel task
 tasks.named("compileKotlin") { dependsOn(buildWorkspaceModel) }
 

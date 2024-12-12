@@ -84,7 +84,7 @@ import java.util.*
 import java.util.UUID.fromString
 import javax.inject.Inject
 import kotlin.test.*
-
+import users.User
 
 @ActiveProfiles("test")
 @SpringBootTest(

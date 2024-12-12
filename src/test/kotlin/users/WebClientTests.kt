@@ -115,7 +115,7 @@ class WebClientTests {
             .logBody()
         assertEquals(countUserBefore, context.countUsers())
         assertEquals(countUserAuthBefore, context.countUserAuthority())
-        context.findOneByEmail<User>(user.email).run {
+        context.findOneByEmail<users.User>(user.email).run {
             when (this) {
                 is Left -> assertEquals(
                     EmptyResultDataAccessException::class.java,

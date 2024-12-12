@@ -57,7 +57,7 @@ object UserRoleDao {
     }
 
     object Dao {
-        suspend fun Pair<UserRole, ApplicationContext>.signup(): Either<Throwable, Long> = try {
+        suspend fun Pair<users.security.UserRole, ApplicationContext>.signup(): Either<Throwable, Long> = try {
             second.getBean<R2dbcEntityTemplate>()
                 .databaseClient.sql(Relations.INSERT)
                 .bind(Attributes.USER_ID_ATTR, first.userId)

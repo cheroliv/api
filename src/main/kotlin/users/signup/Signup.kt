@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size
 @JvmRecord
 data class Signup(
     @field:NotNull
-    @field:Pattern(regexp = UserDao.Constraints.LOGIN_REGEX)
+    @field:Pattern(regexp = users.User.LOGIN_REGEX)
     @field:Size(min = 1, max = 50)
     val login: String,
     @field:NotNull

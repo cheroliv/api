@@ -91,15 +91,15 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         ): Mono<UserDetails> = getBean<Validator>().run {
             when {
                 validateProperty(
-                    User(email = emailOrLogin),
+                    users.User(email = emailOrLogin),
                     UserDao.Fields.EMAIL_FIELD
                 ).isNotEmpty() && validateProperty(
-                    User(login = emailOrLogin),
+                    users.User(login = emailOrLogin),
                     UserDao.Fields.LOGIN_FIELD
                 ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
 
                 else -> mono {
-                    findOneWithAuths<User>(emailOrLogin).map { user ->
+                    findOneWithAuths<users.User>(emailOrLogin).map { user ->
                         return@mono org.springframework.security.core.userdetails.User(
                             user.login,
                             user.password,
