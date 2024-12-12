@@ -43,8 +43,8 @@ spring:
   application:
     name: server
   r2dbc:
-    url: r2dbc:postgresql://localhost:5432/dba
-    username: dba
+    url: r2dbc:postgresql://localhost:5432/dev
+    username: dev
     password: secret
   devtools:
     restart:
