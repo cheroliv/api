@@ -3,10 +3,12 @@ package users.profile
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import app.utils.Constants
+import users.User
 import users.UserDao
-import users.profile.UserProfile.UserProfileDao.Fields.FIRST_NAME_FIELD
-import users.profile.UserProfile.UserProfileDao.Fields.IMAGE_URL_FIELD
-import users.profile.UserProfile.UserProfileDao.Fields.LAST_NAME_FIELD
+import users.User.Fields.ID_FIELD
+import users.profile.UserProfile.Fields.FIRST_NAME_FIELD
+import users.profile.UserProfile.Fields.IMAGE_URL_FIELD
+import users.profile.UserProfile.Fields.LAST_NAME_FIELD
 import java.util.*
 
 @JvmRecord
@@ -20,27 +22,26 @@ data class UserProfile(
     @field:Size(max = 256)
     val imageUrl: String? = null,
 ) {
-    object UserProfileDao {
-        object Fields {
-            const val ID = "id"
-            const val FIRST_NAME_FIELD = "first_name"
-            const val LAST_NAME_FIELD = "last_name"
-            const val IMAGE_URL_FIELD = "image_url"
-        }
+    object Fields {
+        const val ID = "id"
+        const val FIRST_NAME_FIELD = "first_name"
+        const val LAST_NAME_FIELD = "last_name"
+        const val IMAGE_URL_FIELD = "image_url"
+    }
 
-        object Relations {
-            const val TABLE_NAME = "`user_profile`"
-            const val SQL_SCRIPT = """
-            CREATE TABLE IF NOT EXISTS $TABLE_NAME (
-                ${UserDao.Fields.ID_FIELD}                     UUID PRIMARY KEY,
-                $FIRST_NAME_FIELD             VARCHAR,
-                $LAST_NAME_FIELD              VARCHAR,
-                $IMAGE_URL_FIELD              VARCHAR,
-            FOREIGN KEY (${UserDao.Fields.ID_FIELD}) REFERENCES ${UserDao.Relations.TABLE_NAME} (${UserDao.Fields.ID_FIELD})
-                ON DELETE CASCADE
-                ON UPDATE CASCADE);
+    object Relations {
+        const val TABLE_NAME = "`user_profile`"
+        const val SQL_SCRIPT = """
+        CREATE TABLE IF NOT EXISTS $TABLE_NAME (
+            $ID_FIELD                     UUID PRIMARY KEY,
+            $FIRST_NAME_FIELD             VARCHAR,
+            $LAST_NAME_FIELD              VARCHAR,
+            $IMAGE_URL_FIELD              VARCHAR,
+        FOREIGN KEY ($ID_FIELD) REFERENCES ${User.Relations.TABLE_NAME} ($ID_FIELD)
+            ON DELETE CASCADE
+            ON UPDATE CASCADE);
 """
-            const val INSERT = ""
+        const val INSERT = ""
 //                """
 //            insert into $TABLE_NAME (
 //            ${Fields.LOGIN_FIELD}, ${Fields.EMAIL_FIELD}, ${Fields.PASSWORD_FIELD},
@@ -51,40 +52,5 @@ data class UserProfile(
 //            :langKey, :imageUrl, :enabled, :activationKey, :resetKey, :resetDate,
 //            :createdBy, :createdDate, :lastModifiedBy, :lastModifiedDate, :version)
 //            """
-        }
-
-        object Dao {
-//            val Pair<User, ApplicationContext>.toJson: String
-//                get() = second.getBean<ObjectMapper>().writeValueAsString(first)
-//
-//            suspend fun Pair<User, ApplicationContext>.save(): Either<Throwable, Long> = try {
-//                second
-//                    .getBean<R2dbcEntityTemplate>()
-//                    .databaseClient
-//                    .sql(Relations.INSERT)
-//                    .bind("login", first.login)
-//                    .bind("email", first.email)
-//                    .bind("password", first.password)
-////                .bind("firstName", first.firstName)
-////                .bind("lastName", first.lastName)
-//                    .bind("langKey", first.langKey)
-////                .bind("imageUrl", first.imageUrl)
-//                    .bind("enabled", first.enabled)
-////                .bind("activationKey", first.activationKey)
-////                .bind("resetKey", first.resetKey)
-////                .bind("resetDate", first.resetDate)
-////                .bind("createdBy", first.createdBy)
-////                .bind("createdDate", first.createdDate)
-////                .bind("lastModifiedBy", first.lastModifiedBy)
-////                .bind("lastModifiedDate", first.lastModifiedDate)
-//                    .bind("version", first.version)
-//                    .fetch()
-//                    .awaitRowsUpdated()
-//                    .right()
-//            } catch (e: Throwable) {
-//                e.left()
-//            }
-        }
-
     }
 }

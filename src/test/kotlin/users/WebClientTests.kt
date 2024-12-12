@@ -5,12 +5,12 @@ package users
 import app.Application
 import arrow.core.Either.Left
 import arrow.core.Either.Right
-import users.UserDao.Attributes.LOGIN_ATTR
-import users.UserDao.Dao.countUsers
-import users.UserDao.Dao.deleteAllUsersOnly
-import users.UserDao.Dao.findOneByEmail
+import users.User.Attributes.LOGIN_ATTR
+import users.UserDao.countUsers
+import users.UserDao.deleteAllUsersOnly
+import users.UserDao.findOneByEmail
 import users.UserController.UserRestApiRoutes.API_SIGNUP_PATH
-import users.security.UserRoleDao.Dao.countUserAuthority
+import users.security.UserRoleDao.countUserAuthority
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.validation.constraints.Pattern
 import kotlinx.coroutines.runBlocking
@@ -80,9 +80,9 @@ class WebClientTests {
             .run {
                 user.run {
                     mapOf(
-                        UserDao.Fields.LOGIN_FIELD to login,
-                        UserDao.Fields.PASSWORD_FIELD to password,
-                        UserDao.Fields.EMAIL_FIELD to email,
+                        User.Fields.LOGIN_FIELD to login,
+                        User.Fields.PASSWORD_FIELD to password,
+                        User.Fields.EMAIL_FIELD to email,
                         //FIRST_NAME_FIELD to firstName,
                         //LAST_NAME_FIELD to lastName,
                     ).map { (key, value) ->

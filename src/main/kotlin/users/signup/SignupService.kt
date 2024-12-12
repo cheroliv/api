@@ -20,13 +20,13 @@ import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ServerWebExchange
+import users.User
 import users.UserController.UserRestApiRoutes.API_SIGNUP
 import users.UserController.UserRestApiRoutes.API_USERS
-import users.UserDao
-import users.UserDao.Dao.signup
-import users.UserDao.Dao.signupAvailability
-import users.UserDao.Dao.signupToUser
-import users.signup.UserActivationDao.Dao.activate
+import users.UserDao.signup
+import users.UserDao.signupAvailability
+import users.UserDao.signupToUser
+import users.signup.UserActivationDao.activate
 import workspace.Log.i
 
 @Service
@@ -123,9 +123,9 @@ class SignupService(private val context: ApplicationContext) {
             exchange: ServerWebExchange
         ): Set<Map<String, String?>> = exchange.validator.run {
             setOf(
-                UserDao.Attributes.PASSWORD_ATTR,
-                UserDao.Attributes.EMAIL_ATTR,
-                UserDao.Attributes.LOGIN_ATTR,
+                User.Attributes.PASSWORD_ATTR,
+                User.Attributes.EMAIL_ATTR,
+                User.Attributes.LOGIN_ATTR,
             ).map { it to validateProperty(this@validate, it) }
                 .flatMap { violatedField: Pair<String, MutableSet<ConstraintViolation<Signup>>> ->
                     violatedField.second.map {
@@ -142,37 +142,37 @@ class SignupService(private val context: ApplicationContext) {
         val signupProblems = defaultProblems.copy(path = "$API_USERS$API_SIGNUP")
 
         @JvmStatic
-        val ProblemsModel.badResponseLoginAndEmailIsNotAvailable
+        val ProblemsModel.badResponseLoginAndEmailIsNotAvailable: ResponseEntity<ProblemDetail>
             get() = badResponse(
                 setOf(
                     mapOf(
-                        MODEL_FIELD_OBJECTNAME to users.User.objectName,
-                        MODEL_FIELD_FIELD to UserDao.Fields.LOGIN_FIELD,
-                        MODEL_FIELD_FIELD to UserDao.Fields.EMAIL_FIELD,
+                        MODEL_FIELD_OBJECTNAME to User.objectName,
+                        MODEL_FIELD_FIELD to User.Fields.LOGIN_FIELD,
+                        MODEL_FIELD_FIELD to User.Fields.EMAIL_FIELD,
                         MODEL_FIELD_MESSAGE to "Login name already used and email is already in use!!"
                     )
                 )
             )
 
         @JvmStatic
-        val ProblemsModel.badResponseLoginIsNotAvailable
+        val ProblemsModel.badResponseLoginIsNotAvailable: ResponseEntity<ProblemDetail>
             get() = badResponse(
                 setOf(
                     mapOf(
                         MODEL_FIELD_OBJECTNAME to users.User.objectName,
-                        MODEL_FIELD_FIELD to UserDao.Fields.LOGIN_FIELD,
+                        MODEL_FIELD_FIELD to User.Fields.LOGIN_FIELD,
                         MODEL_FIELD_MESSAGE to "Login name already used!"
                     )
                 )
             )
 
         @JvmStatic
-        val ProblemsModel.badResponseEmailIsNotAvailable
+        val ProblemsModel.badResponseEmailIsNotAvailable: ResponseEntity<ProblemDetail>
             get() = badResponse(
                 setOf(
                     mapOf(
                         MODEL_FIELD_OBJECTNAME to users.User.objectName,
-                        MODEL_FIELD_FIELD to UserDao.Fields.EMAIL_FIELD,
+                        MODEL_FIELD_FIELD to User.Fields.EMAIL_FIELD,
                         MODEL_FIELD_MESSAGE to "Email is already in use!"
                     )
                 )

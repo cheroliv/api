@@ -20,12 +20,12 @@ import org.springframework.context.MessageSource
 import org.springframework.test.context.ActiveProfiles
 import users.TestUtils.Data.OFFICIAL_SITE
 import users.TestUtils.Data.user
-import users.UserDao.Dao.countUsers
-import users.UserDao.Dao.deleteAllUsersOnly
-import users.security.UserRoleDao.Dao.countUserAuthority
+import users.UserDao.countUsers
+import users.UserDao.deleteAllUsersOnly
+import users.security.UserRoleDao.countUserAuthority
 import users.signup.Signup
 import users.signup.SignupService
-import users.signup.UserActivationDao.Dao.countUserActivation
+import users.signup.UserActivationDao.countUserActivation
 import workspace.Log.i
 import java.io.File
 import java.nio.file.Paths

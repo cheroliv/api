@@ -21,21 +21,20 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import users.TestUtils.Data.displayInsertUserScript
-import users.UserDao.Attributes.EMAIL_ATTR
-import users.UserDao.Attributes.LOGIN_ATTR
-import users.UserDao.Dao.countUsers
+import users.User.Attributes.EMAIL_ATTR
+import users.User.Attributes.LOGIN_ATTR
+import users.UserDao.countUsers
 import users.security.Role
-import users.security.RoleDao
-import users.security.UserRoleDao.Dao.countUserAuthority
+import users.security.UserRoleDao.countUserAuthority
 import users.signup.Signup
 import users.signup.UserActivation
-import users.signup.UserActivationDao.Attributes.ACTIVATION_KEY_ATTR
-import users.signup.UserActivationDao.Dao.countUserActivation
-import users.signup.UserActivationDao.Fields.ACTIVATION_DATE_FIELD
-import users.signup.UserActivationDao.Fields.ACTIVATION_KEY_FIELD
-import users.signup.UserActivationDao.Fields.CREATED_DATE_FIELD
-import users.signup.UserActivationDao.Fields.ID_FIELD
-import users.signup.UserActivationDao.Relations.FIND_BY_ACTIVATION_KEY
+import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
+import users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
+import users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
+import users.signup.UserActivation.Fields.CREATED_DATE_FIELD
+import users.signup.UserActivation.Fields.ID_FIELD
+import users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
+import users.signup.UserActivationDao.countUserActivation
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneOffset.UTC
@@ -133,7 +132,7 @@ object TestUtils {
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun ApplicationContext.findUserActivationByKey(key: String)
-            : Either<Throwable, users.signup.UserActivation> = try {
+            : Either<Throwable, UserActivation> = try {
         FIND_BY_ACTIVATION_KEY
             .trimIndent()
             .run(getBean<R2dbcEntityTemplate>().databaseClient::sql)
@@ -143,7 +142,7 @@ object TestUtils {
             .let {
                 when (it) {
                     null -> return EmptyResultDataAccessException(1).left()
-                    else -> return users.signup.UserActivation(
+                    else -> return UserActivation(
                         id = it[ID_FIELD].toString().run(UUID::fromString),
                         activationKey = it[ACTIVATION_KEY_FIELD].toString(),
                         createdDate = parse(it[CREATED_DATE_FIELD].toString())
@@ -161,8 +160,8 @@ object TestUtils {
         e.left()
     }
 
-    suspend fun ApplicationContext.findAuthsByEmail(email: String): Either<Throwable, Set<users.security.Role>> = try {
-        mutableSetOf<users.security.Role>().apply {
+    suspend fun ApplicationContext.findAuthsByEmail(email: String): Either<Throwable, Set<Role>> = try {
+        mutableSetOf<Role>().apply {
             """
             SELECT ua."role" 
             FROM "user" u 
@@ -174,14 +173,14 @@ object TestUtils {
                 .bind(EMAIL_ATTR, email)
                 .fetch()
                 .all()
-                .collect { add(users.security.Role(it[RoleDao.Fields.ID_FIELD].toString())) }
+                .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
         }.toSet().right()
     } catch (e: Throwable) {
         e.left()
     }
 
-    suspend fun ApplicationContext.findAuthsByLogin(login: String): Either<Throwable, Set<users.security.Role>> = try {
-        mutableSetOf<users.security.Role>().apply {
+    suspend fun ApplicationContext.findAuthsByLogin(login: String): Either<Throwable, Set<Role>> = try {
+        mutableSetOf<Role>().apply {
             """
             SELECT ua."role" 
             FROM "user" u 
@@ -193,7 +192,7 @@ object TestUtils {
                 .bind(LOGIN_ATTR, login)
                 .fetch()
                 .all()
-                .collect { add(users.security.Role(it[RoleDao.Fields.ID_FIELD].toString())) }
+                .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
         }.toSet().right()
     } catch (e: Throwable) {
         e.left()
@@ -213,8 +212,8 @@ object TestUtils {
         e.left()
     }
 
-    suspend fun ApplicationContext.findAuthsById(userId: UUID): Either<Throwable, Set<users.security.Role>> = try {
-        mutableSetOf<users.security.Role>().apply {
+    suspend fun ApplicationContext.findAuthsById(userId: UUID): Either<Throwable, Set<Role>> = try {
+        mutableSetOf<Role>().apply {
             """
             SELECT ua."role" 
             FROM "user" as u 
@@ -226,7 +225,7 @@ object TestUtils {
                 .bind("userId", userId)
                 .fetch()
                 .all()
-                .collect { add(users.security.Role(it[RoleDao.Fields.ID_FIELD].toString())) }
+                .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
         }.toSet().right()
     } catch (e: Throwable) {
         e.left()

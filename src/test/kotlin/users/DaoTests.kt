@@ -15,7 +15,6 @@ import app.database.EntityModel.Members.withId
 import app.utils.Constants.EMPTY_STRING
 import app.utils.Constants.ROLE_USER
 import arrow.core.Either
-import arrow.core.None.getOrNull
 import arrow.core.getOrElse
 import jakarta.validation.Validator
 import kotlinx.coroutines.reactive.collect
@@ -43,25 +42,24 @@ import users.TestUtils.findAuthsByLogin
 import users.TestUtils.findUserActivationByKey
 import users.TestUtils.findUserById
 import users.TestUtils.tripleCounts
-import users.UserDao.Attributes.EMAIL_ATTR
-import users.UserDao.Attributes.LOGIN_ATTR
-import users.UserDao.Attributes.PASSWORD_ATTR
-import users.UserDao.Dao.countUsers
-import users.UserDao.Dao.delete
-import users.UserDao.Dao.deleteAllUsersOnly
-import users.UserDao.Dao.findOne
-import users.UserDao.Dao.findOneByEmail
-import users.UserDao.Dao.findOneWithAuths
-import users.UserDao.Dao.save
-import users.UserDao.Dao.signup
-import users.UserDao.Dao.signupAvailability
-import users.UserDao.Relations.FIND_ALL_USERS
-import users.UserDao.Relations.FIND_USER_BY_LOGIN
+import users.User.Attributes.EMAIL_ATTR
+import users.User.Attributes.LOGIN_ATTR
+import users.User.Attributes.PASSWORD_ATTR
+import users.User.Relations.FIND_ALL_USERS
+import users.User.Relations.FIND_USER_BY_LOGIN
+import users.UserDao.countUsers
+import users.UserDao.delete
+import users.UserDao.deleteAllUsersOnly
+import users.UserDao.findOne
+import users.UserDao.findOneByEmail
+import users.UserDao.findOneWithAuths
+import users.UserDao.save
+import users.UserDao.signup
+import users.UserDao.signupAvailability
 import users.security.Role
-import users.security.RoleDao
-import users.security.RoleDao.Dao.countRoles
-import users.security.UserRoleDao
-import users.security.UserRoleDao.Dao.countUserAuthority
+import users.security.RoleDao.countRoles
+import users.security.UserRole
+import users.security.UserRoleDao.countUserAuthority
 import users.signup.Signup
 import users.signup.Signup.Companion.objectName
 import users.signup.SignupService.Companion.SIGNUP_AVAILABLE
@@ -69,15 +67,15 @@ import users.signup.SignupService.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
 import users.signup.SignupService.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
 import users.signup.SignupService.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
 import users.signup.UserActivation
+import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
+import users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
+import users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
+import users.signup.UserActivation.Fields.CREATED_DATE_FIELD
+import users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
+import users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import users.signup.UserActivationDao
-import users.signup.UserActivationDao.Attributes.ACTIVATION_KEY_ATTR
-import users.signup.UserActivationDao.Dao.activate
-import users.signup.UserActivationDao.Dao.countUserActivation
-import users.signup.UserActivationDao.Fields.ACTIVATION_DATE_FIELD
-import users.signup.UserActivationDao.Fields.ACTIVATION_KEY_FIELD
-import users.signup.UserActivationDao.Fields.CREATED_DATE_FIELD
-import users.signup.UserActivationDao.Relations.FIND_ALL_USERACTIVATION
-import users.signup.UserActivationDao.Relations.FIND_BY_ACTIVATION_KEY
+import users.signup.UserActivationDao.activate
+import users.signup.UserActivationDao.countUserActivation
 import workspace.Log.i
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
@@ -327,8 +325,8 @@ class DaoTests {
                 .fetch()
                 .all()
                 .collect { rows ->
-                    assertEquals(rows[RoleDao.Fields.ID_FIELD], ROLE_USER)
-                    resultRoles.add(rows[RoleDao.Fields.ID_FIELD].toString())
+                    assertEquals(rows[Role.Fields.ID_FIELD], ROLE_USER)
+                    resultRoles.add(rows[Role.Fields.ID_FIELD].toString())
                 }
             assertEquals(ROLE_USER, resultRoles.first())
             assertEquals(ROLE_USER, resultRoles.first())
@@ -355,12 +353,12 @@ class DaoTests {
             WHERE ur.user_id = :userId"""
                 .trimIndent()
                 .run(context.getBean<DatabaseClient>()::sql)
-                .bind(UserRoleDao.Attributes.USER_ID_ATTR, signupResult.first)
+                .bind(UserRole.Attributes.USER_ID_ATTR, signupResult.first)
                 .fetch()
                 .all()
                 .collect { rows ->
-                    assertEquals(rows[RoleDao.Fields.ID_FIELD], ROLE_USER)
-                    resultRoles.add(Role(id = rows[RoleDao.Fields.ID_FIELD].toString()))
+                    assertEquals(rows[Role.Fields.ID_FIELD], ROLE_USER)
+                    resultRoles.add(Role(id = rows[Role.Fields.ID_FIELD].toString()))
                 }
             assertEquals(
                 ROLE_USER,
@@ -396,7 +394,7 @@ class DaoTests {
                 .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
                 .fetch()
                 .all()
-                .collect { it[UserDao.Fields.ID_FIELD].toString().run(UUID::fromString) }
+                .collect { it[User.Fields.ID_FIELD].toString().run(UUID::fromString) }
         }
     }
 
@@ -416,21 +414,21 @@ class DaoTests {
             .bind(LOGIN_ATTR, user.login.lowercase())
             .fetch()
             .one()
-            .awaitSingle()[UserDao.Attributes.ID_ATTR]
+            .awaitSingle()[User.Attributes.ID_ATTR]
             .toString()
             .run(UUID::fromString)
 
         context.getBean<DatabaseClient>()
-            .sql(UserRoleDao.Relations.INSERT)
-            .bind(UserRoleDao.Attributes.USER_ID_ATTR, userId)
-            .bind(UserRoleDao.Attributes.ROLE_ATTR, ROLE_USER)
+            .sql(UserRole.Relations.INSERT)
+            .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+            .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
             .fetch()
             .one()
             .awaitSingleOrNull()
 
         """
-        SELECT ua.${UserRoleDao.Fields.ID_FIELD} 
-        FROM ${UserRoleDao.Relations.TABLE_NAME} AS ua 
+        SELECT ua.${UserRole.Fields.ID_FIELD} 
+        FROM ${UserRole.Relations.TABLE_NAME} AS ua 
         where ua.user_id= :userId and ua."role" = :role"""
             .trimIndent()
             .run(context.getBean<DatabaseClient>()::sql)
@@ -513,7 +511,7 @@ class DaoTests {
                 .bind(LOGIN_ATTR, user.login.lowercase())
                 .fetch()
                 .one()
-                .awaitSingle()[UserDao.Attributes.ID_ATTR]
+                .awaitSingle()[User.Attributes.ID_ATTR]
                 .toString()
                 .run(UUID::fromString)
                 .run { i("UserId : $this") }
@@ -681,7 +679,7 @@ class DaoTests {
                                 .apply { toString().run(::i) }
                                 .let {
                                     UserActivation(
-                                        id = UserActivationDao.Fields.ID_FIELD
+                                        id = UserActivation.Fields.ID_FIELD
                                             .run(it::get)
                                             .toString()
                                             .run(UUID::fromString),

@@ -37,7 +37,7 @@ import app.utils.Constants
 import app.utils.Properties
 import users.User
 import users.UserDao
-import users.UserDao.Dao.findOneWithAuths
+import users.UserDao.findOneWithAuths
 import workspace.Log
 
 @Configuration
@@ -92,14 +92,14 @@ class SecurityConfiguration(private val context: ApplicationContext) {
             when {
                 validateProperty(
                     users.User(email = emailOrLogin),
-                    UserDao.Fields.EMAIL_FIELD
+                    User.Fields.EMAIL_FIELD
                 ).isNotEmpty() && validateProperty(
                     users.User(login = emailOrLogin),
-                    UserDao.Fields.LOGIN_FIELD
+                    User.Fields.LOGIN_FIELD
                 ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
 
                 else -> mono {
-                    findOneWithAuths<users.User>(emailOrLogin).map { user ->
+                    findOneWithAuths<User>(emailOrLogin).map { user ->
                         return@mono org.springframework.security.core.userdetails.User(
                             user.login,
                             user.password,
