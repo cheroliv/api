@@ -73,7 +73,6 @@ import users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
 import users.signup.UserActivation.Fields.CREATED_DATE_FIELD
 import users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
-import users.signup.UserActivationDao
 import users.signup.UserActivationDao.activate
 import users.signup.UserActivationDao.countUserActivation
 import workspace.Log.i
@@ -96,14 +95,37 @@ class DaoTests {
     @AfterTest
     fun cleanUp() = runBlocking { context.deleteAllUsersOnly() }
 
+    @Test
+    fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit = runBlocking {
+        assertEquals(0, context.countUsers())
+        (user to context).signup().onRight {
+            //Because 36 == UUID.toString().length
+            it.toString().apply { assertEquals(36, it.first.toString().length) }.apply(::i)
+        }
+        assertEquals(1, context.countUsers())
+        assertDoesNotThrow {
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .fetch()
+                .all()
+                .collect {
+                    it[User.Fields.ID_FIELD]
+                        .toString()
+                        .run(UUID::fromString)
+                }
+        }
+    }
 
     @Test
     fun `test findOneWithAuths using one query`(): Unit = runBlocking {
-        assertEquals(0, context.countUsers())
-        assertEquals(0, context.countUserAuthority())
-        (user to context).signup()
-        assertEquals(1, context.countUsers())
-        assertEquals(1, context.countUserAuthority())
+        context.tripleCounts().run {
+            assertEquals(Triple(0, 0, 0), this)
+            (user to context).signup()
+            assertEquals(first + 1, context.countUsers())
+            assertEquals(second + 1, context.countUserAuthority())
+            assertEquals(third + 1, context.countUserActivation())
+        }
         """
             SELECT 
                u.id,
@@ -125,6 +147,7 @@ class DaoTests {
             GROUP BY 
                u.id, u."email", u."login";"""
             .trimIndent()
+            .apply(::i)
             .run(context.getBean<DatabaseClient>()::sql)
             .bind("emailOrLogin", user.email)
             .fetch()
@@ -380,23 +403,6 @@ class DaoTests {
         assertEquals(1, context.countUserAuthority())
     }
 
-    @Test
-    fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit = runBlocking {
-        assertEquals(0, context.countUsers())
-        (user to context).signup().onRight {
-            //Because 36 == UUID.toString().length
-            it.toString().apply { assertEquals(36, it.first.toString().length) }.apply(::i)
-        }
-        assertEquals(1, context.countUsers())
-        assertDoesNotThrow {
-            FIND_ALL_USERS
-                .trimIndent()
-                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                .fetch()
-                .all()
-                .collect { it[User.Fields.ID_FIELD].toString().run(UUID::fromString) }
-        }
-    }
 
     @Test
     fun `test UserRoleDao signup with existing user without user_role`(): Unit = runBlocking {

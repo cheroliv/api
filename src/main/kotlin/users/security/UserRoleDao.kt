@@ -11,21 +11,28 @@ import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.await
 import org.springframework.r2dbc.core.awaitSingle
 import users.User
-import users.profile.UserProfile
-import users.security.UserRole.Fields.ROLE_FIELD
-import users.security.UserRole.Fields.USER_ID_FIELD
+import users.User.Attributes.LOGIN_ATTR
+import users.security.UserRole.Attributes.ROLE_ATTR
+import users.security.UserRole.Attributes.USER_ID_ATTR
+import users.security.UserRole.Fields.ID_FIELD
+import users.security.UserRole.Relations.COUNT
+import users.security.UserRole.Relations.DELETE
+import users.security.UserRole.Relations.DELETE_USER_AUTHORITIES_BY_LOGIN
+import users.security.UserRole.Relations.DELETE_USER_AUTHORITIES_BY_USER_ID
+import users.security.UserRole.Relations.INSERT
 import java.util.*
 
 @Suppress("unused")
 object UserRoleDao {
-    suspend fun Pair<users.security.UserRole, ApplicationContext>.signup(): Either<Throwable, Long> = try {
+    suspend fun Pair<UserRole, ApplicationContext>.signup(): Either<Throwable, Long> = try {
         second.getBean<R2dbcEntityTemplate>()
-            .databaseClient.sql(UserProfile.Relations.INSERT)
-            .bind(UserRole.Attributes.USER_ID_ATTR, first.userId)
-            .bind(UserRole.Attributes.ROLE_ATTR, first.role)
+            .databaseClient
+            .sql(INSERT)
+            .bind(USER_ID_ATTR, first.userId)
+            .bind(ROLE_ATTR, first.role)
             .fetch()
             .one()
-            .collect { it[UserRole.Fields.ID_FIELD] }
+            .collect { it[ID_FIELD] }
             .toString()
             .toLong()
             .right()
@@ -33,86 +40,46 @@ object UserRoleDao {
         e.left()
     }
 
-    suspend fun ApplicationContext.countUserAuthority(): Int =
-        "SELECT COUNT(*) FROM user_authority;"
-            .let(getBean<DatabaseClient>()::sql)
-            .fetch()
-            .awaitSingle()
-            .values
-            .first()
-            .toString()
-            .toInt()
+    suspend fun ApplicationContext.countUserAuthority(): Int = COUNT
+        .let(getBean<DatabaseClient>()::sql)
+        .fetch()
+        .awaitSingle()
+        .values
+        .first()
+        .toString()
+        .toInt()
 
-    suspend fun ApplicationContext.deleteAllUserAuthorities(): Unit =
-        "DELETE FROM user_authority;"
-            .let(getBean<DatabaseClient>()::sql)
-            .await()
+    suspend fun ApplicationContext.deleteAllUserAuthorities(): Unit = DELETE
+        .trimIndent()
+        .let(getBean<DatabaseClient>()::sql)
+        .await()
 
-    suspend fun ApplicationContext.deleteAllUserAuthorityByUserId(id: UUID) =
-        "delete from user_authority as ua where ua.user_id = :userId;"
-            .let(getBean<DatabaseClient>()::sql)
-            .bind("userId", id)
-            .await()
-
-    suspend fun ApplicationContext.deleteAuthorityByRole(role: String): Unit =
-        """delete from authority as a where upper(a."${Role.Fields.ID_FIELD}") = upper(:role)"""
-            .let(getBean<DatabaseClient>()::sql)
-            .bind("role", role)
-            .await()
+    suspend fun ApplicationContext.deleteAllUserAuthorityByUserId(id: UUID) = DELETE_USER_AUTHORITIES_BY_USER_ID
+        .let(getBean<DatabaseClient>()::sql)
+        .bind(USER_ID_ATTR, id)
+        .await()
 
     suspend fun ApplicationContext.deleteUserByIdWithAuthorities_(id: UUID) =
         getBean<DatabaseClient>().run {
-            "delete from user_authority where user_id = :userId"
+            DELETE_USER_AUTHORITIES_BY_USER_ID
+                .trimIndent()
                 .let(::sql)
-                .bind("userId", id)
+                .bind(USER_ID_ATTR, id)
                 .await()
-            """delete from "user" as u where u.${User.Fields.ID_FIELD} = :userId"""
+            """delete from "${User.Relations.TABLE_NAME}" as u where u.${User.Fields.ID_FIELD} = :$USER_ID_ATTR"""
                 .let(::sql)
+                .bind(USER_ID_ATTR, id)
                 .await()
         }
 
     val ApplicationContext.queryDeleteAllUserAuthorityByUserLogin
-        get() = """delete from user_authority 
-                    |where user_id = (
-                    |select u.id from "user" as u where u."login" = :login
-                    |);""".trimMargin()
+        get() = DELETE_USER_AUTHORITIES_BY_LOGIN
+            .trimIndent()
 
     suspend fun ApplicationContext.deleteAllUserAuthorityByUserLogin(
         login: String
-    ): Unit = getBean<DatabaseClient>()
+    ) = getBean<DatabaseClient>()
         .sql(queryDeleteAllUserAuthorityByUserLogin)
-        .bind("login", login)
+        .bind(LOGIN_ATTR, login)
         .await()
-
-
-//            val Pair<User, ApplicationContext>.toJson: String
-//                get() = second.getBean<ObjectMapper>().writeValueAsString(first)
-//
-//            suspend fun Pair<User, ApplicationContext>.save(): Either<Throwable, Long> = try {
-//                second
-//                    .getBean<R2dbcEntityTemplate>()
-//                    .databaseClient
-//                    .sql(Relations.INSERT)
-//                    .bind("login", first.login)
-//                    .bind("email", first.email)
-//                    .bind("password", first.password)
-////                .bind("firstName", first.firstName)
-////                .bind("lastName", first.lastName)
-//                    .bind("langKey", first.langKey)
-////                .bind("imageUrl", first.imageUrl)
-//                    .bind("enabled", first.enabled)
-////                .bind("activationKey", first.activationKey)
-////                .bind("resetKey", first.resetKey)
-////                .bind("resetDate", first.resetDate)
-////                .bind("createdBy", first.createdBy)
-////                .bind("createdDate", first.createdDate)
-////                .bind("lastModifiedBy", first.lastModifiedBy)
-////                .bind("lastModifiedDate", first.lastModifiedDate)
-//                    .bind("version", first.version)
-//                    .fetch()
-//                    .awaitRowsUpdated()
-//                    .right()
-//            } catch (e: Throwable) {
-//                e.left()
-//            }
 }
