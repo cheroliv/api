@@ -118,7 +118,7 @@ class ServiceTests {
 
     @Test
     fun `test signupService signup saves user and role_user and user_activation`(): Unit = runBlocking {
-        Signup(
+        users.signup.Signup(
             login = "jdoe",
             email = "jdoe@acme.com",
             password = "secr3t",

@@ -15,6 +15,7 @@ import app.database.EntityModel.Members.withId
 import app.utils.Constants.EMPTY_STRING
 import app.utils.Constants.ROLE_USER
 import arrow.core.Either
+import arrow.core.None.getOrNull
 import arrow.core.getOrElse
 import jakarta.validation.Validator
 import kotlinx.coroutines.reactive.collect
@@ -84,7 +85,6 @@ import java.util.*
 import java.util.UUID.fromString
 import javax.inject.Inject
 import kotlin.test.*
-import users.User
 
 @ActiveProfiles("test")
 @SpringBootTest(
@@ -730,7 +730,7 @@ class DaoTests {
                 "activation key : $second".run(::i)
 //                assertEquals(
 //                    1,
-                    context.activate(second).getOrNull()!!
+                context.activate(second).getOrNull()!!
 //                )
                 assertEquals(this@counts.first + 1, context.countUsers())
                 assertEquals(this@counts.second + 1, context.countUserAuthority())
@@ -751,7 +751,7 @@ class DaoTests {
     }
 
     @Test
-    fun`test activateUser return triple isSuccess isKeyExists isAlreadyActivated`(){
+    fun `test activateUser return triple isSuccess isKeyExists isAlreadyActivated`() {
 
     }
 }

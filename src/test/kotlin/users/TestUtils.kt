@@ -133,7 +133,7 @@ object TestUtils {
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun ApplicationContext.findUserActivationByKey(key: String)
-            : Either<Throwable, UserActivation> = try {
+            : Either<Throwable, users.signup.UserActivation> = try {
         FIND_BY_ACTIVATION_KEY
             .trimIndent()
             .run(getBean<R2dbcEntityTemplate>().databaseClient::sql)
@@ -143,7 +143,7 @@ object TestUtils {
             .let {
                 when (it) {
                     null -> return EmptyResultDataAccessException(1).left()
-                    else -> return UserActivation(
+                    else -> return users.signup.UserActivation(
                         id = it[ID_FIELD].toString().run(UUID::fromString),
                         activationKey = it[ACTIVATION_KEY_FIELD].toString(),
                         createdDate = parse(it[CREATED_DATE_FIELD].toString())
