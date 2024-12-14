@@ -18,7 +18,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatus
-import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ServerWebExchange
@@ -28,13 +27,12 @@ import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
 import users.UserController.UserRestApiRoutes.API_SIGNUP
 import users.UserController.UserRestApiRoutes.API_USERS
-import users.UserDao.signupDao
 import users.UserDao.signupAvailability
+import users.UserDao.signupDao
 import users.UserDao.signupToUser
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivationDao.activateDao
 import workspace.Log.i
-import java.net.URI
 import java.nio.channels.AlreadyBoundException
 import java.util.UUID.randomUUID
 

@@ -1,4 +1,8 @@
-@file:Suppress("NonAsciiCharacters", "SqlResolve", "RedundantUnitReturnType")
+@file:Suppress(
+    "NonAsciiCharacters",
+    "SqlResolve",
+    "RedundantUnitReturnType"
+)
 
 package users
 
@@ -24,6 +28,7 @@ import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
+import org.apache.commons.lang3.RandomStringUtils.random
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
@@ -49,8 +54,8 @@ import users.UserDao.findOne
 import users.UserDao.findOneByEmail
 import users.UserDao.findOneWithAuths
 import users.UserDao.save
-import users.UserDao.signupDao
 import users.UserDao.signupAvailability
+import users.UserDao.signupDao
 import users.Utils.Data.OFFICIAL_SITE
 import users.Utils.Data.signup
 import users.Utils.Data.user
@@ -74,6 +79,7 @@ import users.signup.SignupService.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
 import users.signup.SignupService.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
 import users.signup.UserActivation
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
+import users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
 import users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
 import users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
 import users.signup.UserActivation.Fields.CREATED_DATE_FIELD
@@ -84,12 +90,14 @@ import users.signup.UserActivationDao.countUserActivation
 import workspace.Log.i
 import java.io.File
 import java.nio.file.Paths
+import java.security.SecureRandom
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
 import java.util.*
 import java.util.Locale.FRENCH
 import java.util.Locale.getDefault
 import java.util.UUID.fromString
+import java.util.UUID.randomUUID
 import javax.inject.Inject
 import kotlin.test.*
 
@@ -252,14 +260,8 @@ class ServiceTests {
                 assertNotNull(expectedUserResult)
                 assertNotNull(expectedUserResult.id)
                 assertTrue(expectedUserResult.roles.isNotEmpty())
-                assertEquals(
-                    expectedUserResult.roles.first().id,
-                    ROLE_USER
-                )
-                assertEquals(
-                    1,
-                    expectedUserResult.roles.size
-                )
+                assertEquals(expectedUserResult.roles.first().id, ROLE_USER)
+                assertEquals(1, expectedUserResult.roles.size)
                 assertEquals(expectedUserResult, userResult)
                 assertEquals(
                     user.withId(expectedUserResult.id!!)
@@ -281,11 +283,11 @@ class ServiceTests {
         assertEquals(1, context.countUserAuthority())
         context.findOneWithAuths<User>(user.email)
             .getOrNull()
-            .apply {
+            ?.apply {
                 run(::assertNotNull)
-                assertEquals(1, this?.roles?.size)
-                assertEquals(ROLE_USER, this?.roles?.first()?.id)
-                assertEquals(userId, this?.id)
+                assertEquals(1, roles.size)
+                assertEquals(ROLE_USER, roles.first().id)
+                assertEquals(userId, id)
             }.run { "context.findOneWithAuths<User>(${user.email}).getOrNull() : $this" }
             .run(::println)
         context.findOne<User>(user.email).getOrNull()
@@ -837,8 +839,22 @@ class ServiceTests {
     }
 
     @Test
-    fun `test activateUser`(): Unit {
-
+    fun `test activate with key out of bound`(): Unit = runBlocking{
+        UserActivation(
+            id = randomUUID(),
+            activationKey = random(
+                ACTIVATION_KEY_SIZE * 2,
+                0,
+                0,
+                true,
+                true,
+                null,
+                SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
+            )).run {
+            assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
+            context.activateDao(activationKey)
+//            context.getBean<SignupService>().activateService(activationKey)
+        }
     }
 
 

@@ -20,8 +20,6 @@ import users.signup.UserActivation.Relations.UPDATE_ACTIVATION_BY_KEY
 import java.util.*
 
 object UserActivationDao {
-
-
     suspend fun ApplicationContext.countUserActivation() = COUNT
         .trimIndent()
         .let(getBean<DatabaseClient>()::sql)
@@ -31,7 +29,6 @@ object UserActivationDao {
         .first()
         .toString()
         .toInt()
-
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<UserActivation, ApplicationContext>.save(): Either<Throwable, Long> = try {
