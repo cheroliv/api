@@ -732,10 +732,10 @@ class DaoTests {
                 assertEquals(third + 1, context.countUserActivation())
                 "user.id : $first".run(::i)
                 "activation key : $second".run(::i)
-//                assertEquals(
-//                    1,
-                context.activate(second).getOrNull()!!
-//                )
+                assertEquals(
+                    1,
+                    context.activate(second).getOrNull()!!
+                )
                 assertEquals(this@counts.first + 1, context.countUsers())
                 assertEquals(this@counts.second + 1, context.countUserAuthority())
                 assertEquals(third + 1, context.countUserActivation())

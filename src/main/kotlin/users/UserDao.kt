@@ -23,6 +23,7 @@ import users.User.Attributes.LANG_KEY_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
 import users.User.Attributes.VERSION_ATTR
+import users.User.Companion.USERCLASS
 import users.User.Fields.EMAIL_FIELD
 import users.User.Fields.ID_FIELD
 import users.User.Fields.LANG_KEY_FIELD
@@ -46,23 +47,30 @@ import users.User.Relations.SELECT_SIGNUP_AVAILABILITY
 import users.security.UserRoleDao.signup
 import users.signup.Signup
 import users.signup.UserActivation
+import users.signup.UserActivation.Companion.USERACTIVATIONCLASS
 import users.signup.UserActivationDao.save
 import java.lang.Boolean.parseBoolean
 import java.lang.Long.getLong
 import java.util.*
 import java.util.UUID.fromString
 
+
 object UserDao {
+
+
+    fun Pair<String, ApplicationContext>.isActivationKeySizeValid()= second
+        .getBean<Validator>()
+        .validateValue(USERACTIVATIONCLASS, UserActivation.Attributes.ACTIVATION_KEY_ATTR, first)
 
 
     fun Pair<String, ApplicationContext>.isEmail(): Boolean = second
         .getBean<Validator>()
-        .validateValue(User.USERCLASS, EMAIL_ATTR, first)
+        .validateValue(USERCLASS, EMAIL_ATTR, first)
         .isEmpty()
 
     fun Pair<String, ApplicationContext>.isLogin(): Boolean = second
         .getBean<Validator>()
-        .validateValue(User.USERCLASS, LOGIN_ATTR, first)
+        .validateValue(USERCLASS, LOGIN_ATTR, first)
         .isEmpty()
 
     suspend fun ApplicationContext.countUsers(): Int = COUNT

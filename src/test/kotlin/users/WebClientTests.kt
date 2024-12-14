@@ -3,14 +3,9 @@
 package users
 
 import app.Application
+import app.http.HttpUtils.validator
 import arrow.core.Either.Left
 import arrow.core.Either.Right
-import users.User.Attributes.LOGIN_ATTR
-import users.UserDao.countUsers
-import users.UserDao.deleteAllUsersOnly
-import users.UserDao.findOneByEmail
-import users.UserController.UserRestApiRoutes.API_SIGNUP_PATH
-import users.security.UserRoleDao.countUserAuthority
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.validation.constraints.Pattern
 import kotlinx.coroutines.runBlocking
@@ -25,13 +20,18 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.server.ServerWebExchange
-import app.http.HttpUtils.validator
 import users.TestTools.logBody
 import users.TestTools.requestToString
 import users.TestUtils.Data.DEFAULT_USER_JSON
 import users.TestUtils.Data.signup
 import users.TestUtils.Data.user
 import users.TestUtils.Data.users
+import users.User.Attributes.LOGIN_ATTR
+import users.UserController.UserRestApiRoutes.API_SIGNUP_PATH
+import users.UserDao.countUsers
+import users.UserDao.deleteAllUsersOnly
+import users.UserDao.findOneByEmail
+import users.security.UserRoleDao.countUserAuthority
 import workspace.Log.i
 import javax.inject.Inject
 import kotlin.test.*
@@ -115,7 +115,7 @@ class WebClientTests {
             .logBody()
         assertEquals(countUserBefore, context.countUsers())
         assertEquals(countUserAuthBefore, context.countUserAuthority())
-        context.findOneByEmail<users.User>(user.email).run {
+        context.findOneByEmail<User>(user.email).run {
             when (this) {
                 is Left -> assertEquals(
                     EmptyResultDataAccessException::class.java,
