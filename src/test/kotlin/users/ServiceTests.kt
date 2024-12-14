@@ -37,16 +37,6 @@ import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
-import users.Utils.Data.OFFICIAL_SITE
-import users.Utils.Data.signup
-import users.Utils.Data.user
-import users.Utils.Data.users
-import users.Utils.defaultRoles
-import users.Utils.findAuthsByEmail
-import users.Utils.findAuthsByLogin
-import users.Utils.findUserActivationByKey
-import users.Utils.findUserById
-import users.Utils.tripleCounts
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
@@ -61,6 +51,16 @@ import users.UserDao.findOneWithAuths
 import users.UserDao.save
 import users.UserDao.signup
 import users.UserDao.signupAvailability
+import users.Utils.Data.OFFICIAL_SITE
+import users.Utils.Data.signup
+import users.Utils.Data.user
+import users.Utils.Data.users
+import users.Utils.defaultRoles
+import users.Utils.findAuthsByEmail
+import users.Utils.findAuthsByLogin
+import users.Utils.findUserActivationByKey
+import users.Utils.findUserById
+import users.Utils.tripleCounts
 import users.security.Role
 import users.security.RoleDao.countRoles
 import users.security.UserRole
@@ -108,22 +108,23 @@ class ServiceTests {
 
 
     @Test
-    fun `ConfigurationsTests - MessageSource test email_activation_greeting message fr`() = "artisan-logiciel".run {
-        assertEquals(
-            expected = "Cher $this",
-            actual = context
-                .getBean<MessageSource>()
-                .getMessage(
-                    "email.activation.greeting",
-                    arrayOf(this),
-                    FRENCH
-                )
-        )
-    }
+    fun `ConfigurationsTests - MessageSource test email_activation_greeting message fr`(): Unit =
+        "artisan-logiciel".run {
+            assertEquals(
+                expected = "Cher $this",
+                actual = context
+                    .getBean<MessageSource>()
+                    .getMessage(
+                        "email.activation.greeting",
+                        arrayOf(this),
+                        FRENCH
+                    )
+            )
+        }
 
 
     @Test
-    fun `ConfigurationsTests - MessageSource test message startupLog`() = context
+    fun `ConfigurationsTests - MessageSource test message startupLog`(): Unit = context
         .getBean<MessageSource>()
         .getMessage(
             STARTUP_LOG_MSG_KEY,
@@ -140,7 +141,7 @@ class ServiceTests {
 
 
     @Test
-    fun `ConfigurationsTests - test go visit message`() = assertEquals(
+    fun `ConfigurationsTests - test go visit message`(): Unit = assertEquals(
         OFFICIAL_SITE,
         context.getBean<Properties>().goVisitMessage
     )
@@ -162,7 +163,7 @@ class ServiceTests {
 
 
     @Test
-    fun `display user formatted in JSON`() = assertDoesNotThrow {
+    fun `display user formatted in JSON`(): Unit = assertDoesNotThrow {
         (user to context).toJson.let(::i)
     }
 
@@ -647,17 +648,18 @@ class ServiceTests {
     }
 
     @Test
-    fun `signupAvailability should return SIGNUP_AVAILABLE for all when login and email are available`() = runBlocking {
-        (Signup(
-            "testuser",
-            "password",
-            "password",
-            "testuser@example.com"
-        ) to context).signupAvailability().run {
-            isRight().run(::assertTrue)
-            assertEquals(SIGNUP_AVAILABLE, getOrNull()!!)
+    fun `signupAvailability should return SIGNUP_AVAILABLE for all when login and email are available`(): Unit =
+        runBlocking {
+            (Signup(
+                "testuser",
+                "password",
+                "password",
+                "testuser@example.com"
+            ) to context).signupAvailability().run {
+                isRight().run(::assertTrue)
+                assertEquals(SIGNUP_AVAILABLE, getOrNull()!!)
+            }
         }
-    }
 
     @Test
     fun `signupAvailability should return SIGNUP_NOT_AVAILABLE_AGAINST_LOGIN_AND_EMAIL for all when login and email are not available`(): Unit =
@@ -674,37 +676,39 @@ class ServiceTests {
         }
 
     @Test
-    fun `signupAvailability should return SIGNUP_EMAIL_NOT_AVAILABLE when only email is not available`() = runBlocking {
-        assertEquals(0, context.countUsers())
-        (user to context).save()
-        assertEquals(1, context.countUsers())
-        (Signup(
-            "testuser",
-            "password",
-            "password",
-            user.email
-        ) to context).signupAvailability().run {
-            assertEquals(SIGNUP_EMAIL_NOT_AVAILABLE, getOrNull()!!)
+    fun `signupAvailability should return SIGNUP_EMAIL_NOT_AVAILABLE when only email is not available`(): Unit =
+        runBlocking {
+            assertEquals(0, context.countUsers())
+            (user to context).save()
+            assertEquals(1, context.countUsers())
+            (Signup(
+                "testuser",
+                "password",
+                "password",
+                user.email
+            ) to context).signupAvailability().run {
+                assertEquals(SIGNUP_EMAIL_NOT_AVAILABLE, getOrNull()!!)
+            }
         }
-    }
 
     @Test
-    fun `signupAvailability should return SIGNUP_LOGIN_NOT_AVAILABLE when only login is not available`() = runBlocking {
-        assertEquals(0, context.countUsers())
-        (user to context).save()
-        assertEquals(1, context.countUsers())
-        (Signup(
-            user.login,
-            "password",
-            "password",
-            "testuser@example.com"
-        ) to context).signupAvailability().run {
-            assertEquals(SIGNUP_LOGIN_NOT_AVAILABLE, getOrNull()!!)
+    fun `signupAvailability should return SIGNUP_LOGIN_NOT_AVAILABLE when only login is not available`(): Unit =
+        runBlocking {
+            assertEquals(0, context.countUsers())
+            (user to context).save()
+            assertEquals(1, context.countUsers())
+            (Signup(
+                user.login,
+                "password",
+                "password",
+                "testuser@example.com"
+            ) to context).signupAvailability().run {
+                assertEquals(SIGNUP_LOGIN_NOT_AVAILABLE, getOrNull()!!)
+            }
         }
-    }
 
     @Test
-    fun `check signup validate implementation`() {
+    fun `check signup validate implementation`(): Unit {
         setOf(PASSWORD_ATTR, EMAIL_ATTR, LOGIN_ATTR)
             .map { it to context.getBean<Validator>().validateProperty(signup, it) }
             .flatMap { (first, second) ->
@@ -833,7 +837,7 @@ class ServiceTests {
     }
 
     @Test
-    fun `test activateUser`() {
+    fun `test activateUser`(): Unit {
 
     }
 
