@@ -17,31 +17,35 @@ import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ProblemDetail
+import org.springframework.http.ProblemDetail.forStatus
+import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ServerWebExchange
 import users.User
+import users.User.Attributes.EMAIL_ATTR
+import users.User.Attributes.LOGIN_ATTR
+import users.User.Attributes.PASSWORD_ATTR
 import users.UserController.UserRestApiRoutes.API_SIGNUP
 import users.UserController.UserRestApiRoutes.API_USERS
-import users.UserDao.signup
+import users.UserDao.signupDao
 import users.UserDao.signupAvailability
 import users.UserDao.signupToUser
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
-import users.signup.UserActivationDao.activate
+import users.signup.UserActivationDao.activateDao
 import workspace.Log.i
+import java.net.URI
 import java.nio.channels.AlreadyBoundException
 import java.util.UUID.randomUUID
 
 @Service
 class SignupService(private val context: ApplicationContext) {
-    suspend fun signup(signup: Signup): Either<Throwable, User> = try {
-        context
-            .signupToUser(signup)
-            .run {
-                (this to context).signup()
-                    .mapLeft { return Exception("Unable to save user with id").left() }
-                    .map { return withId(it.first).right() }
-            }
+    suspend fun signupService(signup: Signup): Either<Throwable, User> = try {
+        context.signupToUser(signup).run {
+            (this to context).signupDao()
+                .mapLeft { return Exception("Unable to save user with id").left() }
+                .map { return withId(it.first).right() }
+        }
     } catch (t: Throwable) {
         t.left()
     }
@@ -59,24 +63,22 @@ class SignupService(private val context: ApplicationContext) {
     suspend fun signupRequest(
         signup: Signup,
         exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = signup
-        .validate(exchange)
-        .run {
-            "signup attempt: ${this@run} ${signup.login} ${signup.email}".run(::i)
-            if (isNotEmpty()) return signupProblems.badResponse(this)
-        }.run {
-            signupAvailability(signup).map {
-                return when (it) {
-                    SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseLoginAndEmailIsNotAvailable
-                    SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
-                    SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
-                    else -> {
-                        signup(signup).run { CREATED.run(::ResponseEntity) }
-                    }
+    ): ResponseEntity<ProblemDetail> = signup.validate(exchange).run {
+        "signup attempt: ${this@run} ${signup.login} ${signup.email}".run(::i)
+        if (isNotEmpty()) return signupProblems.badResponse(this)
+    }.run {
+        signupAvailability(signup).map {
+            return when (it) {
+                SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseLoginAndEmailIsNotAvailable
+                SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
+                SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
+                else -> {
+                    signupService(signup).run { CREATED.run(::ResponseEntity) }
                 }
             }
-            SERVICE_UNAVAILABLE.run(::ResponseEntity)
         }
+        SERVICE_UNAVAILABLE.run(::ResponseEntity)
+    }
 
     suspend fun activateRequest(
         key: String,
@@ -112,7 +114,7 @@ class SignupService(private val context: ApplicationContext) {
         }
     }
 
-    suspend fun activateService(key: String): Long = context.activate(key)
+    suspend fun activateService(key: String): Long = context.activateDao(key)
         .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
         .takeIf { it == ONE_ROW_UPADTED }
         ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")
@@ -137,9 +139,9 @@ class SignupService(private val context: ApplicationContext) {
             exchange: ServerWebExchange
         ): Set<Map<String, String?>> = exchange.validator.run {
             setOf(
-                User.Attributes.PASSWORD_ATTR,
-                User.Attributes.EMAIL_ATTR,
-                User.Attributes.LOGIN_ATTR,
+                PASSWORD_ATTR,
+                EMAIL_ATTR,
+                LOGIN_ATTR,
             ).map { it to validateProperty(this@validate, it) }
                 .flatMap { violatedField: Pair<String, MutableSet<ConstraintViolation<Signup>>> ->
                     violatedField.second.map {
@@ -179,19 +181,23 @@ class SignupService(private val context: ApplicationContext) {
             status: HttpStatus,
             obj: Class<*>
         ): ResponseEntity<ProblemDetail> =
-            badResponse(
-                setOf(
-                    mapOf(
-                        MODEL_FIELD_OBJECTNAME to obj.simpleName.run {
-                            replaceFirst(
-                                first(),
-                                first().lowercaseChar()
-                            )
-                        },
-                        MODEL_FIELD_MESSAGE to ex.message
+            forStatus(status).apply {
+                setProperty("path", path)
+                setProperty("message", message)
+                setProperty(
+                    "fieldErrors", setOf(
+                        mapOf(
+                            MODEL_FIELD_OBJECTNAME to obj.simpleName.run {
+                                replaceFirst(
+                                    first(),
+                                    first().lowercaseChar()
+                                )
+                            },
+                            MODEL_FIELD_MESSAGE to ex.message
+                        )
                     )
                 )
-            )
+            }.run { ResponseEntity.status(status).body(this) }
 
 
         @JvmStatic

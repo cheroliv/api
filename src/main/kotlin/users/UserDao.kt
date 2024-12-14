@@ -265,7 +265,7 @@ object UserDao {
         }
 
     @Throws(EmptyResultDataAccessException::class)
-    suspend fun Pair<User, ApplicationContext>.signup(): Either<Throwable, Pair<UUID, String>> = try {
+    suspend fun Pair<User, ApplicationContext>.signupDao(): Either<Throwable, Pair<UUID, String>> = try {
         second.getBean<TransactionalOperator>().executeAndAwait {
             (first to second).save()
         }

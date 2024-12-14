@@ -49,7 +49,7 @@ import users.UserDao.findOne
 import users.UserDao.findOneByEmail
 import users.UserDao.findOneWithAuths
 import users.UserDao.save
-import users.UserDao.signup
+import users.UserDao.signupDao
 import users.UserDao.signupAvailability
 import users.Utils.Data.OFFICIAL_SITE
 import users.Utils.Data.signup
@@ -79,7 +79,7 @@ import users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
 import users.signup.UserActivation.Fields.CREATED_DATE_FIELD
 import users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
-import users.signup.UserActivationDao.activate
+import users.signup.UserActivationDao.activateDao
 import users.signup.UserActivationDao.countUserActivation
 import workspace.Log.i
 import java.io.File
@@ -177,7 +177,7 @@ class ServiceTests {
     @Test
     fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit = runBlocking {
         assertEquals(0, context.countUsers())
-        (user to context).signup().onRight {
+        (user to context).signupDao().onRight {
             //Because 36 == UUID.toString().length
             it.toString().apply { assertEquals(36, it.first.toString().length) }.apply(::i)
         }
@@ -200,7 +200,7 @@ class ServiceTests {
     fun `test findOneWithAuths using one query`(): Unit = runBlocking {
         context.tripleCounts().run {
             assertEquals(Triple(0, 0, 0), this)
-            (user to context).signup()
+            (user to context).signupDao()
             assertEquals(first + 1, context.countUsers())
             assertEquals(second + 1, context.countUserAuthority())
             assertEquals(third + 1, context.countUserActivation())
@@ -273,7 +273,7 @@ class ServiceTests {
     fun `test findOneWithAuths`(): Unit = runBlocking {
         assertEquals(0, context.countUsers())
         assertEquals(0, context.countUserAuthority())
-        val userId: UUID = (user to context).signup().getOrNull()!!.first
+        val userId: UUID = (user to context).signupDao().getOrNull()!!.first
         userId.apply { run(::assertNotNull) }
             .run { "(user to context).signup() : $this" }
             .run(::println)
@@ -314,7 +314,7 @@ class ServiceTests {
         val countUserAuthBefore = context.countUserAuthority()
         assertEquals(0, countUserAuthBefore)
         lateinit var userWithAuths: User
-        (user to context).signup().apply {
+        (user to context).signupDao().apply {
             isRight().run(::assertTrue)
             isLeft().run(::assertFalse)
         }.map {
@@ -346,7 +346,7 @@ class ServiceTests {
         val countUserAuthBefore = context.countUserAuthority()
         assertEquals(0, countUserAuthBefore)
         lateinit var userWithAuths: User
-        (user to context).signup().apply {
+        (user to context).signupDao().apply {
             isRight().run(::assertTrue)
             isLeft().run(::assertFalse)
         }.map {
@@ -371,7 +371,7 @@ class ServiceTests {
         val countUserAuthBefore = context.countUserAuthority()
         assertEquals(0, countUserAuthBefore)
         lateinit var userWithAuths: User
-        (user to context).signup().apply {
+        (user to context).signupDao().apply {
             isRight().run(::assertTrue)
             isLeft().run(::assertFalse)
         }.map {
@@ -395,7 +395,7 @@ class ServiceTests {
         assertEquals(0, countUserBefore)
         val countUserAuthBefore = context.countUserAuthority()
         assertEquals(0, countUserAuthBefore)
-        (user to context).signup()
+        (user to context).signupDao()
         val resultRoles = mutableSetOf<Role>()
         context.findAuthsByEmail(user.email).run {
             resultRoles.addAll(map { it }.getOrElse { emptySet() })
@@ -414,7 +414,7 @@ class ServiceTests {
             val countUserAuthBefore = context.countUserAuthority()
             assertEquals(0, countUserAuthBefore)
             val resultRoles = mutableSetOf<String>()
-            (user to context).signup()
+            (user to context).signupDao()
             """
             SELECT ua."role" 
             FROM "user" u 
@@ -445,7 +445,7 @@ class ServiceTests {
         val resultRoles = mutableSetOf<Role>()
         val findAuthsAnswer: Any?//= Either<Throwable,Set<String>>()
         lateinit var resultUserId: UUID
-        (user to context).signup().apply {
+        (user to context).signupDao().apply {
             assertTrue(isRight())
             assertFalse(isLeft())
         }.onRight { signupResult ->
@@ -627,7 +627,7 @@ class ServiceTests {
     fun test_deleteAllUsersOnly(): Unit = runBlocking {
         val countUserBefore = context.countUsers()
         val countUserAuthBefore = context.countUserAuthority()
-        users.forEach { (it to context).signup() }
+        users.forEach { (it to context).signupDao() }
         assertEquals(countUserBefore + 2, context.countUsers())
         assertEquals(countUserAuthBefore + 2, context.countUserAuthority())
         context.deleteAllUsersOnly()
@@ -639,7 +639,7 @@ class ServiceTests {
     fun test_delete(): Unit = runBlocking {
         val countUserBefore = context.countUsers()
         val countUserAuthBefore = context.countUserAuthority()
-        val ids = users.map { (it to context).signup().getOrNull()!! }
+        val ids = users.map { (it to context).signupDao().getOrNull()!! }
         assertEquals(countUserBefore + 2, context.countUsers())
         assertEquals(countUserAuthBefore + 2, context.countUserAuthority())
         ids.forEach { context.delete(it.first) }
@@ -726,7 +726,7 @@ class ServiceTests {
     @Test
     fun `test create userActivation inside signup`(): Unit = runBlocking {
         context.tripleCounts().run {
-            (user to context).signup().apply {
+            (user to context).signupDao().apply {
                 assertTrue(isRight())
                 assertFalse(isLeft())
             }
@@ -739,7 +739,7 @@ class ServiceTests {
     @Test
     fun `test find userActivation by key`(): Unit = runBlocking {
         context.tripleCounts().run counts@{
-            (user to context).signup()
+            (user to context).signupDao()
                 .getOrNull()!!
                 .run {
                     assertEquals(this@counts.first + 1, context.countUsers())
@@ -798,7 +798,7 @@ class ServiceTests {
     @Test
     fun `test activate user by key`(): Unit = runBlocking {
         context.tripleCounts().run counts@{
-            (user to context).signup().getOrNull()!!.run {
+            (user to context).signupDao().getOrNull()!!.run {
                 assertEquals(
                     "null",
                     FIND_ALL_USERACTIVATION
@@ -816,7 +816,7 @@ class ServiceTests {
                 "activation key : $second".run(::i)
                 assertEquals(
                     1,
-                    context.activate(second).getOrNull()!!
+                    context.activateDao(second).getOrNull()!!
                 )
                 assertEquals(this@counts.first + 1, context.countUsers())
                 assertEquals(this@counts.second + 1, context.countUserAuthority())
@@ -858,7 +858,7 @@ class ServiceTests {
                 assertEquals(0, first)
                 assertEquals(0, second)
                 assertEquals(0, third)
-                context.getBean<SignupService>().signup(this@signup)
+                context.getBean<SignupService>().signupService(this@signup)
                 assertEquals(first + 1, context.countUsers())
                 assertEquals(second + 1, context.countUserAuthority())
                 assertEquals(third + 1, context.countUserActivation())
@@ -869,7 +869,7 @@ class ServiceTests {
     @Test
     fun `test activateService with a valid key`(): Unit = runBlocking {
         context.tripleCounts().run counts@{
-            (user to context).signup().getOrNull()!!.run {
+            (user to context).signupDao().getOrNull()!!.run {
                 assertEquals(
                     "null",
                     FIND_ALL_USERACTIVATION
