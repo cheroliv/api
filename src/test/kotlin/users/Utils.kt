@@ -20,7 +20,7 @@ import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingleOrNull
-import users.TestUtils.Data.displayInsertUserScript
+import users.Utils.Data.displayInsertUserScript
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.UserDao.countUsers
@@ -42,7 +42,7 @@ import java.util.*
 import java.util.regex.Pattern
 import kotlin.test.assertEquals
 
-object TestUtils {
+object Utils {
     @JvmStatic
     fun main(args: Array<String>): Unit = displayInsertUserScript()
 

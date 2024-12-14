@@ -32,7 +32,7 @@ import kotlin.reflect.full.createInstance
 import kotlin.repeat
 import kotlin.run
 
-object TestTools {
+object Tools {
 
 //@Suppress("MemberVisibilityCanBePrivate")
 //object DataTests {
