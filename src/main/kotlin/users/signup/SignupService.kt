@@ -30,7 +30,6 @@ import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivationDao.activate
 import workspace.Log.i
 import java.nio.channels.AlreadyBoundException
-import java.util.*
 import java.util.UUID.randomUUID
 
 @Service
@@ -91,7 +90,7 @@ class SignupService(private val context: ApplicationContext) {
     }.run {
         try {
             when (ONE_ROW_UPADTED) {
-                activate(key) -> OK.run(::ResponseEntity)
+                activateService(key) -> OK.run(::ResponseEntity)
                 else -> signupProblems.exceptionProblem(
                     AlreadyBoundException(),
                     UNPROCESSABLE_ENTITY,
@@ -113,7 +112,7 @@ class SignupService(private val context: ApplicationContext) {
         }
     }
 
-    suspend fun activate(key: String): Long = context.activate(key)
+    suspend fun activateService(key: String): Long = context.activate(key)
         .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
         .takeIf { it == ONE_ROW_UPADTED }
         ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")

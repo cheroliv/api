@@ -17,14 +17,21 @@ import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
+import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.test.context.ActiveProfiles
 import users.TestUtils.Data.OFFICIAL_SITE
 import users.TestUtils.Data.user
+import users.TestUtils.tripleCounts
 import users.UserDao.countUsers
 import users.UserDao.deleteAllUsersOnly
+import users.UserDao.signup
 import users.security.UserRoleDao.countUserAuthority
 import users.signup.Signup
 import users.signup.SignupService
+import users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
+import users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
+import users.signup.UserActivationDao.activate
 import users.signup.UserActivationDao.countUserActivation
 import workspace.Log.i
 import java.io.File
@@ -35,6 +42,7 @@ import javax.inject.Inject
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 @ActiveProfiles("test")
 @SpringBootTest(
@@ -136,6 +144,47 @@ class ServiceTests {
                 assertEquals(first + 1, context.countUsers())
                 assertEquals(second + 1, context.countUserAuthority())
                 assertEquals(third + 1, context.countUserActivation())
+            }
+        }
+    }
+
+    @Test
+    fun `test activateService with a valid key`(): Unit = runBlocking {
+        context.tripleCounts().run counts@{
+            (user to context).signup().getOrNull()!!.run {
+                assertEquals(
+                    "null",
+                    FIND_ALL_USERACTIVATION
+                        .trimIndent()
+                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+                        .toString()
+                        .lowercase()
+                )
+                assertEquals(this@counts.first + 1, context.countUsers())
+                assertEquals(this@counts.second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+                "user.id : $first".run(::i)
+                "activation key : $second".run(::i)
+                assertEquals(
+                    1,
+                    context.getBean<SignupService>().activateService(second)
+                )
+                assertEquals(this@counts.first + 1, context.countUsers())
+                assertEquals(this@counts.second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+                assertNotEquals(
+                    "null",
+                    FIND_ALL_USERACTIVATION
+                        .trimIndent()
+                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!!
+                        .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
+                        .toString()
+                        .lowercase()
+                )
             }
         }
     }

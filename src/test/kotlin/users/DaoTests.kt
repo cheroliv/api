@@ -755,7 +755,7 @@ class DaoTests {
     }
 
     @Test
-    fun `test activateUser return triple isSuccess isKeyExists isAlreadyActivated`() {
+    fun `test activateUser`() {
 
     }
 }
