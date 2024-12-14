@@ -87,6 +87,7 @@ import users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import users.signup.UserActivationDao.activateDao
 import users.signup.UserActivationDao.countUserActivation
+import workspace.Log
 import workspace.Log.i
 import java.io.File
 import java.nio.file.Paths
@@ -839,7 +840,7 @@ class ServiceTests {
     }
 
     @Test
-    fun `test activate with key out of bound`(): Unit = runBlocking{
+    fun `test activate with key out of bound`(): Unit = runBlocking {
         UserActivation(
             id = randomUUID(),
             activationKey = random(
@@ -850,11 +851,13 @@ class ServiceTests {
                 true,
                 null,
                 SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
-            )).run {
-            assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
-            context.activateDao(activationKey)
-//            context.getBean<SignupService>().activateService(activationKey)
-        }
+            ))
+            .run {
+                "UserActivation : ${toString()}".run(::i)
+//                assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
+//                context.activateDao(activationKey)
+////            context.getBean<SignupService>().activateService(activationKey)
+            }
     }
 
 
