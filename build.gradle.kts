@@ -242,12 +242,7 @@ tasks.register<Delete>("cleanResources") {
 }
 
 tasks.jacocoTestReport {
-// Give jacoco the file generated with the cucumber tests for the coverage.
-    executionData(
-        files(
-            "$buildDir/jacoco/test.exec",
-        )
-    )
+    executionData(files("$buildDir/jacoco/test.exec"))
     reports { xml.required.set(true) }
 }
 
@@ -263,23 +258,6 @@ tasks.register<TestReport>("testReport") {
     }))
     reportOn("test")
 }
-
-//tasks.register<Exec>("startLocalPostgresql") {
-//    group = "api"
-//    dependsOn(tasks.register<Exec>("pullPostgresImage") {
-//        commandLine(
-//            "docker",
-//            "pull",
-//            "postgres@sha256:b2653f33e2b9a49dceb8f3444108222875e25d993c1ba03a89c116bbccc53be4"
-//        )
-//    })
-//    commandLine("docker", "run", "-d", "-p", "5432:5432", "postgres")
-//}
-
-//tasks.register<Exec>("stopLocalPostgresql") {
-//    group = "api"
-//    commandLine("docker", "stop", "postgres")
-//}
 
 tasks.register<Exec>("springbootCheckOpenFirefox") {
     group = "verification"
