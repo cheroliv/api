@@ -64,7 +64,4 @@ object UserActivationDao {
     } catch (e: Throwable) {
         e.left()
     }
-}/*        context.activateUser(this)
-            .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
-            .takeIf { it == ONE_ROW_UPADTED }
-            ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")*/
+}

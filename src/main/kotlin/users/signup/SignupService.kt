@@ -157,12 +157,13 @@ class SignupService(private val context: ApplicationContext) {
         fun UserActivation.validate(
             exchange: ServerWebExchange
         ): Set<Map<String, String?>> = exchange.validator.run {
+            "Validate UserActivation : ${this@validate}".run(::i)
             setOf(ACTIVATION_KEY_ATTR)
                 .map { it to validateProperty(this@validate, it) }
                 .flatMap { violatedField: Pair<String, MutableSet<ConstraintViolation<UserActivation>>> ->
                     violatedField.second.map {
                         mapOf<String, String?>(
-                            MODEL_FIELD_OBJECTNAME to User.objectName,
+                            MODEL_FIELD_OBJECTNAME to UserActivation.objectName,
                             MODEL_FIELD_FIELD to violatedField.first,
                             MODEL_FIELD_MESSAGE to it.message
                         )

@@ -30,6 +30,7 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.RandomStringUtils.random
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.mockito.kotlin.mock
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
@@ -42,6 +43,7 @@ import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
+import org.springframework.web.server.ServerWebExchange
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
@@ -77,6 +79,7 @@ import users.signup.SignupService.Companion.SIGNUP_AVAILABLE
 import users.signup.SignupService.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
 import users.signup.SignupService.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
 import users.signup.SignupService.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
+import users.signup.SignupService.Companion.validate
 import users.signup.UserActivation
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
@@ -87,7 +90,6 @@ import users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import users.signup.UserActivationDao.activateDao
 import users.signup.UserActivationDao.countUserActivation
-import workspace.Log
 import workspace.Log.i
 import java.io.File
 import java.nio.file.Paths
@@ -851,13 +853,22 @@ class ServiceTests {
                 true,
                 null,
                 SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
-            ))
-            .run {
-                "UserActivation : ${toString()}".run(::i)
-//                assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
+            )).run {
+            "UserActivation : ${toString()}".run(::i)
+            assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
+            validate(mock() as ServerWebExchange).run {
+                assertTrue(isNotEmpty())
+                assertTrue(size == 1)
+                assertTrue(first().keys.contains("objectName"))
+                assertTrue(first().values.contains(UserActivation.objectName))
+                assertTrue(first().keys.contains("field"))
+                assertTrue(first().values.contains(ACTIVATION_KEY_ATTR))
+                assertTrue(first().keys.contains("message"))
+                assertTrue(first().values.contains("size must be between 0 and 20"))
+            }
 //                context.activateDao(activationKey)
 ////            context.getBean<SignupService>().activateService(activationKey)
-            }
+        }
     }
 
 
