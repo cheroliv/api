@@ -25,6 +25,7 @@ import users.User
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
+import users.UserController.UserRestApiRoutes.API_ACTIVATE
 import users.UserController.UserRestApiRoutes.API_SIGNUP
 import users.UserController.UserRestApiRoutes.API_USERS
 import users.UserDao.signupAvailability
@@ -86,29 +87,37 @@ class SignupService(private val context: ApplicationContext) {
         activationKey = key
     ).validate(exchange).run {
         "User activation attempt with key: $this".run(::i)
-        if (isNotEmpty()) return signupProblems.badResponse(this)
+        if (isNotEmpty()) return signupProblems
+            .copy(path = "$API_USERS$API_ACTIVATE")
+            .badResponse(this)
     }.run {
         try {
             when (ONE_ROW_UPADTED) {
                 activateService(key) -> OK.run(::ResponseEntity)
-                else -> signupProblems.exceptionProblem(
-                    AlreadyBoundException(),
-                    UNPROCESSABLE_ENTITY,
-                    UserActivation::class.java
-                )
+                else -> signupProblems
+                    .copy(path = "$API_USERS$API_ACTIVATE")
+                    .exceptionProblem(
+                        AlreadyBoundException(),
+                        UNPROCESSABLE_ENTITY,
+                        UserActivation::class.java
+                    )
             }
         } catch (ise: IllegalStateException) {
-            signupProblems.exceptionProblem(
-                ise,
-                EXPECTATION_FAILED,
-                UserActivation::class.java
-            )
+            signupProblems
+                .copy(path = "$API_USERS$API_ACTIVATE")
+                .exceptionProblem(
+                    ise,
+                    EXPECTATION_FAILED,
+                    UserActivation::class.java
+                )
         } catch (iae: IllegalArgumentException) {
-            signupProblems.exceptionProblem(
-                iae,
-                PRECONDITION_FAILED,
-                UserActivation::class.java
-            )
+            signupProblems
+                .copy(path = "$API_USERS$API_ACTIVATE")
+                .exceptionProblem(
+                    iae,
+                    PRECONDITION_FAILED,
+                    UserActivation::class.java
+                )
         }
     }
 
