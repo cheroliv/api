@@ -859,12 +859,14 @@ class ServiceTests {
             validate(mock() as ServerWebExchange).run {
                 assertTrue(isNotEmpty())
                 assertTrue(size == 1)
-                assertTrue(first().keys.contains("objectName"))
-                assertTrue(first().values.contains(UserActivation.objectName))
-                assertTrue(first().keys.contains("field"))
-                assertTrue(first().values.contains(ACTIVATION_KEY_ATTR))
-                assertTrue(first().keys.contains("message"))
-                assertTrue(first().values.contains("size must be between 0 and 20"))
+                first().run {
+                    assertTrue(keys.contains("objectName"))
+                    assertTrue(values.contains(UserActivation.objectName))
+                    assertTrue(keys.contains("field"))
+                    assertTrue(values.contains(ACTIVATION_KEY_ATTR))
+                    assertTrue(keys.contains("message"))
+                    assertTrue(values.contains("size must be between 0 and 20"))
+                }
             }
 //                context.activateDao(activationKey)
 ////            context.getBean<SignupService>().activateService(activationKey)
