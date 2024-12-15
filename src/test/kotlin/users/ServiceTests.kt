@@ -30,6 +30,7 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.RandomStringUtils.random
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
@@ -868,11 +869,15 @@ class ServiceTests {
                     assertTrue(values.contains("size must be between 0 and 20"))
                 }
             }
-//                context.activateDao(activationKey)
-////            context.getBean<SignupService>().activateService(activationKey)
+            context.activateDao(activationKey).run {
+                isRight().run(::assertTrue)
+                assertEquals(0, getOrNull()!!)
+            }
+            assertThrows<IllegalArgumentException>("Activation failed: No user was activated for key: $activationKey") {
+                context.getBean<SignupService>().activateService(activationKey)
+            }
         }
     }
-
 
     @Test
     fun `test signupService signup saves user and role_user and user_activation`(): Unit = runBlocking {

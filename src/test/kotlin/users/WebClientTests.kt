@@ -37,7 +37,9 @@ import javax.inject.Inject
 import kotlin.test.*
 
 @SpringBootTest(
-    classes = [Application::class],properties = ["spring.main.web-application-type=reactive"])
+    classes = [Application::class],
+    properties = ["spring.main.web-application-type=reactive"]
+)
 @ActiveProfiles("test")
 class WebClientTests {
 
