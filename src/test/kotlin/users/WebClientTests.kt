@@ -7,6 +7,7 @@ import app.http.HttpUtils.validator
 import arrow.core.Either.Left
 import arrow.core.Either.Right
 import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.validation.Validator
 import jakarta.validation.constraints.Pattern
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -15,11 +16,11 @@ import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON
 import org.springframework.http.ProblemDetail
+import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
@@ -37,7 +38,6 @@ import users.Utils.Data.user
 import users.Utils.Data.users
 import users.security.UserRoleDao.countUserAuthority
 import workspace.Log.i
-import java.util.*
 import java.util.Locale.FRENCH
 import javax.inject.Inject
 import kotlin.test.*
@@ -71,7 +71,6 @@ class WebClientTests {
             DEFAULT_USER_JSON.run(::i)
         }
     }
-
 
     @Test
     fun `SignupController - vérifie que la requête contient bien des données cohérentes`() {
@@ -135,7 +134,6 @@ class WebClientTests {
         }
     }
 
-
     @Test //TODO: mock(intercept) sendmail
     fun `SignupController - test signup avec un account valide`(): Unit = runBlocking {
         val countUserBefore = context.countUsers()
@@ -172,7 +170,7 @@ class WebClientTests {
     }
 
     @Test
-    fun `UserController - test signup account with invalid login`() = runBlocking{
+    fun `UserController - test signup account with invalid login`() = runBlocking {
         assertEquals(0, context.countUsers())
         client
             .post()
@@ -190,32 +188,30 @@ class WebClientTests {
             .run(::assertTrue)
         assertEquals(0, context.countUsers())
     }
-}
-//
-//
-//    @Test
-//    fun `UserController - test signup account avec un email invalid`() {
-//        val countBefore = countAccount(dao)
-//        assertEquals(0, countBefore)
-//        client
-//            .post()
-//            .uri(SIGNUP_API_PATH)
-//            .contentType(APPLICATION_JSON)
-//            .bodyValue(defaultAccount.copy(password = "inv"))
-//            .exchange()
-//            .expectStatus()
-//            .isBadRequest
-//            .returnResult<Unit>()
-//            .responseBodyContent!!
-//            .isNotEmpty()
-//            .run { assertTrue(this) }
-//        assertEquals(0, countBefore)
-//    }
-//
-//    @Test
-//    fun `UserController - test signup account validator avec un password invalid`() {
-//        val wrongPassword = "123"
-//        validator
+
+    @Test
+    fun `UserController - test signup account avec un email invalid`(): Unit = runBlocking {
+        val countBefore = context.countUsers()
+        assertEquals(0, countBefore)
+        client
+            .post()
+            .uri(API_SIGNUP_PATH)
+            .contentType(APPLICATION_PROBLEM_JSON)
+            .bodyValue(user.copy(password = "inv"))
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+            .returnResult<ResponseEntity<ProblemDetail>>()
+            .responseBodyContent!!
+            .isNotEmpty()
+            .run(::assertTrue)
+        assertEquals(0, countBefore)
+    }
+
+    @Test
+    fun `UserController - test signup account validator avec un password invalid`() {
+        val wrongPassword = "123"
+        context.getBean<Validator>()
 //            .validateProperty(AccountCredentials(password = wrongPassword), PASSWORD_FIELD)
 //            .run {
 //                assertTrue(isNotEmpty())
@@ -226,8 +222,8 @@ class WebClientTests {
 //                    )
 //                }
 //            }
-//    }
-//
+    }
+
 //    @Test
 //    fun `UserController - test signup account avec un password invalid`() {
 //        assertEquals(0, countAccount(dao))
@@ -1107,3 +1103,4 @@ class WebClientTests {
 //        }
 //    }
 
+}

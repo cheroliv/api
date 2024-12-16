@@ -5,6 +5,7 @@ package users
 import app.database.EntityModel
 import app.utils.Constants.ROLE_USER
 import arrow.core.Either
+import arrow.core.Either.Left
 import arrow.core.left
 import arrow.core.right
 import jakarta.validation.Validator
@@ -23,7 +24,6 @@ import users.User.Attributes.LANG_KEY_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
 import users.User.Attributes.VERSION_ATTR
-import users.User.Companion.USERCLASS
 import users.User.Fields.EMAIL_FIELD
 import users.User.Fields.ID_FIELD
 import users.User.Fields.LANG_KEY_FIELD
@@ -56,21 +56,18 @@ import java.util.UUID.fromString
 
 
 object UserDao {
-
-
     fun Pair<String, ApplicationContext>.isActivationKeySizeValid()= second
         .getBean<Validator>()
         .validateValue(USERACTIVATIONCLASS, UserActivation.Attributes.ACTIVATION_KEY_ATTR, first)
 
-
     fun Pair<String, ApplicationContext>.isEmail(): Boolean = second
         .getBean<Validator>()
-        .validateValue(USERCLASS, EMAIL_ATTR, first)
+        .validateValue(User::class.java, EMAIL_ATTR, first)
         .isEmpty()
 
     fun Pair<String, ApplicationContext>.isLogin(): Boolean = second
         .getBean<Validator>()
-        .validateValue(USERCLASS, LOGIN_ATTR, first)
+        .validateValue(User::class.java, LOGIN_ATTR, first)
         .isEmpty()
 
     suspend fun ApplicationContext.countUsers(): Int = COUNT
@@ -261,7 +258,7 @@ object UserDao {
                 }
             }
 
-            else -> Either.Left(IllegalArgumentException("Unsupported type: ${T::class.simpleName}"))
+            else -> IllegalArgumentException("Unsupported type: ${T::class.simpleName}").left()
         }
 
     @Throws(EmptyResultDataAccessException::class)
