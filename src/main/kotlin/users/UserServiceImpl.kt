@@ -1,4 +1,4 @@
-package users.signup
+package users
 
 import app.database.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
@@ -21,7 +21,6 @@ import org.springframework.http.ProblemDetail.forStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ServerWebExchange
-import users.User
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
@@ -31,6 +30,8 @@ import users.UserController.UserRestApiRoutes.API_USERS
 import users.UserDao.signupAvailability
 import users.UserDao.signupDao
 import users.UserDao.signupToUser
+import users.signup.Signup
+import users.signup.UserActivation
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivationDao.activateDao
 import workspace.Log.i
@@ -38,8 +39,8 @@ import java.nio.channels.AlreadyBoundException
 import java.util.UUID.randomUUID
 
 @Service
-class SignupService(private val context: ApplicationContext) {
-    suspend fun signupService(signup: Signup): Either<Throwable, User> = try {
+class UserServiceImpl(private val context: ApplicationContext) : UserService {
+    override suspend fun signupService(signup: Signup): Either<Throwable, User> = try {
         context.signupToUser(signup).run {
             (this to context).signupDao()
                 .mapLeft { return Exception("Unable to save user with id").left() }
@@ -49,7 +50,7 @@ class SignupService(private val context: ApplicationContext) {
         t.left()
     }
 
-    suspend fun signupAvailability(signup: Signup)
+    override suspend fun signupAvailability(signup: Signup)
             : Either<Throwable, Triple<Boolean, Boolean, Boolean>> = try {
         (signup to context)
             .signupAvailability()
@@ -92,7 +93,7 @@ class SignupService(private val context: ApplicationContext) {
             .badResponse(this)
     }.run {
         try {
-            when (ONE_ROW_UPADTED) {
+            when (ONE_ROW_UPDATED) {
                 activateService(key) -> OK.run(::ResponseEntity)
                 else -> signupProblems
                     .copy(path = "$API_USERS$API_ACTIVATE")
@@ -121,13 +122,13 @@ class SignupService(private val context: ApplicationContext) {
         }
     }
 
-    suspend fun activateService(key: String): Long = context.activateDao(key)
+    override suspend fun activateService(key: String): Long = context.activateDao(key)
         .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
-        .takeIf { it == ONE_ROW_UPADTED }
+        .takeIf { it == ONE_ROW_UPDATED }
         ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")
 
     companion object {
-        const val ONE_ROW_UPADTED = 1L
+        const val ONE_ROW_UPDATED = 1L
 
         @JvmStatic
         val SIGNUP_AVAILABLE = Triple(true, true, true)
@@ -246,3 +247,4 @@ class SignupService(private val context: ApplicationContext) {
             )
     }
 }
+

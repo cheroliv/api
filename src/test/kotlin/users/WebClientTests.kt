@@ -73,7 +73,7 @@ class WebClientTests {
     }
 
     @Test
-    fun `SignupController - vérifie que la requête contient bien des données cohérentes`() {
+    fun `Verify that the request contains consistent data`() {
         client
             .post()
             .uri("")
@@ -103,7 +103,7 @@ class WebClientTests {
     }
 
     @Test
-    fun `SignupController - test signup avec une url invalide`(): Unit = runBlocking {
+    fun `test signup request with an invalid url`(): Unit = runBlocking {
         val countUserBefore = context.countUsers()
         val countUserAuthBefore = context.countUserAuthority()
         assertEquals(0, countUserBefore)
@@ -135,7 +135,7 @@ class WebClientTests {
     }
 
     @Test //TODO: mock(intercept) sendmail
-    fun `SignupController - test signup avec un account valide`(): Unit = runBlocking {
+    fun `test signup request with a valid account`(): Unit = runBlocking {
         val countUserBefore = context.countUsers()
         val countUserAuthBefore = context.countUserAuthority()
         assertEquals(0, countUserBefore)
@@ -155,7 +155,7 @@ class WebClientTests {
     }
 
     @Test
-    fun `test signup account validator with invalid login`() {
+    fun `test signup validator with an invalid login`() {
         (mock() as ServerWebExchange).validator
             .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
             .run {
@@ -170,7 +170,7 @@ class WebClientTests {
     }
 
     @Test
-    fun `UserController - test signup account with invalid login`() = runBlocking {
+    fun `test signup request with an invalid login`() = runBlocking {
         assertEquals(0, context.countUsers())
         client
             .post()
@@ -190,7 +190,7 @@ class WebClientTests {
     }
 
     @Test
-    fun `UserController - test signup account avec un email invalid`(): Unit = runBlocking {
+    fun `test signup with an invalid password`(): Unit = runBlocking {
         val countBefore = context.countUsers()
         assertEquals(0, countBefore)
         client
@@ -209,7 +209,7 @@ class WebClientTests {
     }
 
     @Test
-    fun `UserController - test signup account validator avec un password invalid`() {
+    fun `test signup validator with an invalid password`() {
         val wrongPassword = "123"
         context.getBean<Validator>()
 //            .validateProperty(AccountCredentials(password = wrongPassword), PASSWORD_FIELD)

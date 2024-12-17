@@ -75,12 +75,11 @@ import users.security.UserRole
 import users.security.UserRoleDao.countUserAuthority
 import users.signup.Signup
 import users.signup.Signup.Companion.objectName
-import users.signup.SignupService
-import users.signup.SignupService.Companion.SIGNUP_AVAILABLE
-import users.signup.SignupService.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
-import users.signup.SignupService.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
-import users.signup.SignupService.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
-import users.signup.SignupService.Companion.validate
+import users.UserServiceImpl.Companion.SIGNUP_AVAILABLE
+import users.UserServiceImpl.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
+import users.UserServiceImpl.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
+import users.UserServiceImpl.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
+import users.UserServiceImpl.Companion.validate
 import users.signup.UserActivation
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
@@ -874,9 +873,9 @@ class ServiceTests {
                 assertEquals(0, getOrNull()!!)
             }
             assertThrows<IllegalArgumentException>("Activation failed: No user was activated for key: $activationKey") {
-                context.getBean<SignupService>().activateService(activationKey)
+                context.getBean<UserServiceImpl>().activateService(activationKey)
             }
-            context.getBean<SignupService>().activateRequest(
+            context.getBean<UserServiceImpl>().activateRequest(
                 activationKey,
                 mock() as ServerWebExchange
             ).toString().run(::i)
@@ -900,7 +899,7 @@ class ServiceTests {
                 assertEquals(0, first)
                 assertEquals(0, second)
                 assertEquals(0, third)
-                context.getBean<SignupService>().signupService(this@signup)
+                context.getBean<UserServiceImpl>().signupService(this@signup)
                 assertEquals(first + 1, context.countUsers())
                 assertEquals(second + 1, context.countUserAuthority())
                 assertEquals(third + 1, context.countUserActivation())
@@ -929,7 +928,7 @@ class ServiceTests {
                 "activation key : $second".run(::i)
                 assertEquals(
                     1,
-                    context.getBean<SignupService>().activateService(second)
+                    context.getBean<UserServiceImpl>().activateService(second)
                 )
                 assertEquals(this@counts.first + 1, context.countUsers())
                 assertEquals(this@counts.second + 1, context.countUserAuthority())

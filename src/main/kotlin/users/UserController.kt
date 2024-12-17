@@ -8,11 +8,10 @@ import users.UserController.UserRestApiRoutes.API_ACTIVATE_KEY
 import users.UserController.UserRestApiRoutes.API_SIGNUP
 import users.UserController.UserRestApiRoutes.API_USERS
 import users.signup.Signup
-import users.signup.SignupService
 
 @RestController
 @RequestMapping(API_USERS)
-class UserController(private val service: SignupService) {
+class UserController(private val service: UserServiceImpl) {
     internal class SignupException(message: String) : RuntimeException(message)
 
     /** User REST API URIs */
