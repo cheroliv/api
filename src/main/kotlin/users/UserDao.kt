@@ -5,7 +5,6 @@ package users
 import app.database.EntityModel
 import app.utils.Constants.ROLE_USER
 import arrow.core.Either
-import arrow.core.Either.Left
 import arrow.core.left
 import arrow.core.right
 import jakarta.validation.Validator
@@ -47,6 +46,7 @@ import users.User.Relations.SELECT_SIGNUP_AVAILABILITY
 import users.security.UserRoleDao.signup
 import users.signup.Signup
 import users.signup.UserActivation
+import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivation.Companion.USERACTIVATIONCLASS
 import users.signup.UserActivationDao.save
 import java.lang.Boolean.parseBoolean
@@ -58,7 +58,7 @@ import java.util.UUID.fromString
 object UserDao {
     fun Pair<String, ApplicationContext>.isActivationKeySizeValid()= second
         .getBean<Validator>()
-        .validateValue(USERACTIVATIONCLASS, UserActivation.Attributes.ACTIVATION_KEY_ATTR, first)
+        .validateValue(USERACTIVATIONCLASS, ACTIVATION_KEY_ATTR, first)
 
     fun Pair<String, ApplicationContext>.isEmail(): Boolean = second
         .getBean<Validator>()

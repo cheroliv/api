@@ -11,6 +11,7 @@ import app.database.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
 import app.database.EntityModel.Members.withId
+import app.http.HttpUtils.validator
 import app.utils.AppUtils.lsWorkingDir
 import app.utils.AppUtils.lsWorkingDirProcess
 import app.utils.AppUtils.toJson
@@ -24,6 +25,8 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.validation.Validator
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
 import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -59,6 +62,12 @@ import users.UserDao.findOneWithAuths
 import users.UserDao.save
 import users.UserDao.signupAvailability
 import users.UserDao.signupDao
+import users.UserServiceImpl.Companion.SIGNUP_AVAILABLE
+import users.UserServiceImpl.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
+import users.UserServiceImpl.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
+import users.UserServiceImpl.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
+import users.UserServiceImpl.Companion.validate
+import users.Utils.Data.DEFAULT_USER_JSON
 import users.Utils.Data.OFFICIAL_SITE
 import users.Utils.Data.signup
 import users.Utils.Data.user
@@ -75,11 +84,6 @@ import users.security.UserRole
 import users.security.UserRoleDao.countUserAuthority
 import users.signup.Signup
 import users.signup.Signup.Companion.objectName
-import users.UserServiceImpl.Companion.SIGNUP_AVAILABLE
-import users.UserServiceImpl.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
-import users.UserServiceImpl.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
-import users.UserServiceImpl.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
-import users.UserServiceImpl.Companion.validate
 import users.signup.UserActivation
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
@@ -117,6 +121,16 @@ class ServiceTests {
     @AfterTest
     fun cleanUp(context: ApplicationContext) = runBlocking { context.deleteAllUsersOnly() }
 
+    @Test
+    fun `DataTestsChecks - display some json`(): Unit = run {
+        assertDoesNotThrow {
+            context.getBean<ObjectMapper>().run {
+                writeValueAsString(users).run(::i)
+                writeValueAsString(user).run(::i)
+            }
+            DEFAULT_USER_JSON.run(::i)
+        }
+    }
 
     @Test
     fun `ConfigurationsTests - MessageSource test email_activation_greeting message fr`(): Unit =
@@ -856,7 +870,7 @@ class ServiceTests {
             )).run {
             "UserActivation : ${toString()}".run(::i)
             assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
-            validate(mock() as ServerWebExchange).run {
+            validate(mock<ServerWebExchange>()).run {
                 assertTrue(isNotEmpty())
                 assertTrue(size == 1)
                 first().run {
@@ -877,7 +891,7 @@ class ServiceTests {
             }
             context.getBean<UserServiceImpl>().activateRequest(
                 activationKey,
-                mock() as ServerWebExchange
+                mock<ServerWebExchange>()
             ).toString().run(::i)
         }
 
@@ -947,4 +961,35 @@ class ServiceTests {
             }
         }
     }
+
+    @Test
+    fun `test signup validator with an invalid login`(): Unit = mock<ServerWebExchange>()
+        .validator
+        .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
+        .run {
+            assertTrue(isNotEmpty())
+            first().run {
+                assertEquals(
+                    "{${Pattern::class.java.name}.message}",
+                    messageTemplate
+                )
+            }
+        }
+
+    @Test
+    fun `test signup validator with an invalid password`() {
+        val wrongPassword = "123"
+        context.getBean<Validator>()
+            .validateProperty(signup.copy(password = wrongPassword), PASSWORD_ATTR)
+            .run {
+                assertTrue(isNotEmpty())
+                first().run {
+                    assertEquals(
+                        "{${Size::class.java.name}.message}",
+                        messageTemplate
+                    )
+                }
+            }
+    }
+
 }

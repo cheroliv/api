@@ -3,16 +3,9 @@
 package users
 
 import app.Application
-import app.http.HttpUtils.validator
 import arrow.core.Either.Left
 import arrow.core.Either.Right
-import com.fasterxml.jackson.databind.ObjectMapper
-import jakarta.validation.Validator
-import jakarta.validation.constraints.Pattern
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.assertDoesNotThrow
-import org.mockito.kotlin.mock
-import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
@@ -24,20 +17,15 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
-import org.springframework.web.server.ServerWebExchange
 import users.Tools.logBody
 import users.Tools.requestToString
-import users.User.Attributes.LOGIN_ATTR
 import users.UserController.UserRestApiRoutes.API_SIGNUP_PATH
 import users.UserDao.countUsers
 import users.UserDao.deleteAllUsersOnly
 import users.UserDao.findOneByEmail
-import users.Utils.Data.DEFAULT_USER_JSON
 import users.Utils.Data.signup
 import users.Utils.Data.user
-import users.Utils.Data.users
 import users.security.UserRoleDao.countUserAuthority
-import workspace.Log.i
 import java.util.Locale.FRENCH
 import javax.inject.Inject
 import kotlin.test.*
@@ -61,16 +49,6 @@ class WebClientTests {
     @AfterTest
     fun cleanUp(context: ApplicationContext) = runBlocking { context.deleteAllUsersOnly() }
 
-    @Test
-    fun `DataTestsChecks - display some json`() = run {
-        assertDoesNotThrow {
-            context.getBean<ObjectMapper>().run {
-                writeValueAsString(users).run(::i)
-                writeValueAsString(user).run(::i)
-            }
-            DEFAULT_USER_JSON.run(::i)
-        }
-    }
 
     @Test
     fun `Verify that the request contains consistent data`() {
@@ -154,20 +132,6 @@ class WebClientTests {
         assertEquals(countUserAuthBefore + 1, context.countUserAuthority())
     }
 
-    @Test
-    fun `test signup validator with an invalid login`() {
-        (mock() as ServerWebExchange).validator
-            .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
-            .run {
-                assertTrue(isNotEmpty())
-                first().run {
-                    assertEquals(
-                        "{${Pattern::class.java.name}.message}",
-                        messageTemplate
-                    )
-                }
-            }
-    }
 
     @Test
     fun `test signup request with an invalid login`() = runBlocking {
@@ -208,21 +172,6 @@ class WebClientTests {
         assertEquals(0, countBefore)
     }
 
-    @Test
-    fun `test signup validator with an invalid password`() {
-        val wrongPassword = "123"
-        context.getBean<Validator>()
-//            .validateProperty(AccountCredentials(password = wrongPassword), PASSWORD_FIELD)
-//            .run {
-//                assertTrue(isNotEmpty())
-//                first().run {
-//                    assertEquals(
-//                        "{${Size::class.java.name}.message}",
-//                        messageTemplate
-//                    )
-//                }
-//            }
-    }
 
 //    @Test
 //    fun `UserController - test signup account avec un password invalid`() {
