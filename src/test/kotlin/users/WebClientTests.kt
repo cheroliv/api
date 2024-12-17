@@ -173,25 +173,25 @@ class WebClientTests {
     }
 
 
-//    @Test
-//    fun `UserController - test signup account avec un password invalid`() {
-//        assertEquals(0, countAccount(dao))
-//        client
-//            .post()
-//            .uri(SIGNUP_API_PATH)
-//            .contentType(APPLICATION_JSON)
-//            .bodyValue(defaultAccount.copy(password = "123"))
-//            .exchange()
-//            .expectStatus()
-//            .isBadRequest
-//            .returnResult<Unit>()
-//            .responseBodyContent!!
-//            .logBody()
-//            .isNotEmpty()
-//            .run { assertTrue(this) }
-//        assertEquals(0, countAccount(dao))
-//    }
-//
+    @Test
+    fun `UserController - test signup account avec un password invalid`():Unit= runBlocking {
+        assertEquals(0, context.countUsers())
+        client
+            .post()
+            .uri(API_SIGNUP_PATH)
+            .contentType(APPLICATION_JSON)
+            .bodyValue(user.copy(password = "123"))
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+            .returnResult<ResponseEntity<ProblemDetail>>()
+            .responseBodyContent!!
+            .logBody()
+            .isNotEmpty()
+            .run { assertTrue(this) }
+        assertEquals(0, context.countUsers())
+    }
+
 //    @Test
 //    fun `UserController - test signup account avec un password null`() {
 //        assertEquals(0, countAccount(dao))
