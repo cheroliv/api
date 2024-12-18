@@ -172,9 +172,8 @@ class WebClientTests {
         assertEquals(0, countBefore)
     }
 
-
     @Test
-    fun `UserController - test signup account avec un password invalid`():Unit= runBlocking {
+    fun `test signup request with an invalid password`(): Unit = runBlocking {
         assertEquals(0, context.countUsers())
         client
             .post()
@@ -191,7 +190,8 @@ class WebClientTests {
             .run { assertTrue(this) }
         assertEquals(0, context.countUsers())
     }
-
+//TODO: Continue here...
+//
 //    @Test
 //    fun `UserController - test signup account avec un password null`() {
 //        assertEquals(0, countAccount(dao))

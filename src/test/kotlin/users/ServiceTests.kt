@@ -549,7 +549,7 @@ class ServiceTests {
     }
 
     @Test
-    fun `check findOneByEmail with non-existent email`(): Unit = runBlocking {
+    fun `check findOneByEmail with non-existing email`(): Unit = runBlocking {
         assertEquals(
             0,
             context.countUsers(),
@@ -562,7 +562,7 @@ class ServiceTests {
     }
 
     @Test
-    fun `check findOneByEmail with existant email`(): Unit = runBlocking {
+    fun `check findOneByEmail with existing email`(): Unit = runBlocking {
         assertEquals(
             0,
             context.countUsers(),

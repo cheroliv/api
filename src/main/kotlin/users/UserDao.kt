@@ -7,6 +7,7 @@ import app.utils.Constants.ROLE_USER
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import jakarta.validation.ConstraintViolation
 import jakarta.validation.Validator
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
@@ -56,7 +57,9 @@ import java.util.UUID.fromString
 
 
 object UserDao {
-    fun Pair<String, ApplicationContext>.isActivationKeySizeValid()= second
+
+    fun Pair<String, ApplicationContext>.isActivationKeySizeValid()
+            : Set<ConstraintViolation<UserActivation>> = second
         .getBean<Validator>()
         .validateValue(USERACTIVATIONCLASS, ACTIVATION_KEY_ATTR, first)
 
