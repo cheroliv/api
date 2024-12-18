@@ -3,9 +3,13 @@
 package users
 
 import app.Application
+import app.utils.Constants.VIRGULE
 import arrow.core.Either.Left
 import arrow.core.Either.Right
+import jakarta.validation.Validator
+import jakarta.validation.constraints.Size
 import kotlinx.coroutines.runBlocking
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
@@ -23,9 +27,13 @@ import users.UserController.UserRestApiRoutes.API_SIGNUP_PATH
 import users.UserDao.countUsers
 import users.UserDao.deleteAllUsersOnly
 import users.UserDao.findOneByEmail
+import users.Utils.Data.admin
 import users.Utils.Data.signup
 import users.Utils.Data.user
+import users.Utils.tripleCounts
 import users.security.UserRoleDao.countUserAuthority
+import users.signup.Signup
+import users.signup.UserActivationDao.countUserActivation
 import java.util.Locale.FRENCH
 import javax.inject.Inject
 import kotlin.test.*
@@ -141,7 +149,7 @@ class WebClientTests {
             .uri(API_SIGNUP_PATH)
             .contentType(APPLICATION_PROBLEM_JSON)
             .header(ACCEPT_LANGUAGE, FRENCH.language)
-            .bodyValue(user.copy(login = "funky-log(n"))
+            .bodyValue(signup.copy(login = "funky-log(n"))
             .exchange()
             .expectStatus()
             .isBadRequest
@@ -161,7 +169,7 @@ class WebClientTests {
             .post()
             .uri(API_SIGNUP_PATH)
             .contentType(APPLICATION_PROBLEM_JSON)
-            .bodyValue(user.copy(password = "inv"))
+            .bodyValue(signup.copy(password = "inv"))
             .exchange()
             .expectStatus()
             .isBadRequest
@@ -178,65 +186,68 @@ class WebClientTests {
         client
             .post()
             .uri(API_SIGNUP_PATH)
-            .contentType(APPLICATION_JSON)
-            .bodyValue(user.copy(password = "123"))
+            .contentType(APPLICATION_PROBLEM_JSON)
+            .bodyValue(signup.copy(password = "123"))
             .exchange()
             .expectStatus()
             .isBadRequest
             .returnResult<ResponseEntity<ProblemDetail>>()
             .responseBodyContent!!
-            .logBody()
+            .apply {
+                map { it.toInt().toChar().toString() }
+                    .reduce { request, s ->
+                        request + buildString {
+                            append(s)
+                            if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                        }
+                    }.replace("{\"", "\n{\n\t\"")
+                    .replace("\"}", "\"\n}")
+                    .replace("\",\"", "\",\n\t\"")
+                    .contains(
+                        context.getBean<Validator>().validateProperty(
+                            signup.copy(password = "123"),
+                            "password"
+                        ).first().message
+                    )
+            }.logBody()
             .isNotEmpty()
-            .run { assertTrue(this) }
+            .run(::assertTrue)
         assertEquals(0, context.countUsers())
     }
-//TODO: Continue here...
-//
-//    @Test
-//    fun `UserController - test signup account avec un password null`() {
-//        assertEquals(0, countAccount(dao))
-//        client
-//            .post()
-//            .uri(SIGNUP_API_PATH)
-//            .contentType(APPLICATION_JSON)
-//            .bodyValue(defaultAccount.copy(password = null))
-//            .exchange()
-//            .expectStatus()
-//            .isBadRequest
-//            .returnResult<Unit>()
-//            .responseBodyContent!!
-//            .isNotEmpty()
-//            .run { assertTrue(this) }
-//        assertEquals(0, countAccount(dao))
-//    }
-//
-//    @Test
-//    fun `UserController - test signup account activé avec un email existant`() {
-//        assertEquals(0, countAccount(dao))
-//        assertEquals(0, countAccountAuthority(dao))
-//        //activation de l'account
-//        createActivatedDataAccounts(setOf(defaultAccount), dao)
-//        assertEquals(1, countAccount(dao))
-//        assertEquals(1, countAccountAuthority(dao))
-//        findOneByEmail(defaultAccount.email!!, dao).run {
-//            assertNotNull(this)
-//            assertTrue(activated)
-//            assertNull(activationKey)
-//        }
-//
-//        client
-//            .post()
-//            .uri(SIGNUP_API_PATH)
-//            .contentType(APPLICATION_JSON)
-//            .bodyValue(defaultAccount.copy(login = "foo"))
-//            .exchange()
-//            .expectStatus()
-//            .isBadRequest
-//            .returnResult<Unit>()
-//            .responseBodyContent!!
-//            .isNotEmpty()
-//            .run { assertTrue(this) }
-//    }
+
+    @Test
+    fun `test signup with an existing email`(): Unit = runBlocking {
+        context.tripleCounts().run counts@{
+            context.getBean<UserService>().signupService(signup)
+            assertEquals(this@counts.first + 1, context.countUsers())
+            assertEquals(this@counts.second + 1, context.countUserAuthority())
+            assertEquals(third + 1, context.countUserActivation())
+        }
+        client
+            .post()
+            .uri(API_SIGNUP_PATH)
+            .contentType(APPLICATION_PROBLEM_JSON)
+            .bodyValue(signup.copy(login = admin.login))
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+            .returnResult<ResponseEntity<ProblemDetail>>()
+            .responseBodyContent!!
+            .apply {
+                map { it.toInt().toChar().toString() }
+                    .reduce { request, s ->
+                        request + buildString {
+                            append(s)
+                            if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                        }
+                    }.replace("{\"", "\n{\n\t\"")
+                    .replace("\"}", "\"\n}")
+                    .replace("\",\"", "\",\n\t\"")
+                    .contains("Email is already in use!")
+            }.logBody()
+            .isNotEmpty()
+            .run(::assertTrue)
+    }
 //
 //
 //    @Test

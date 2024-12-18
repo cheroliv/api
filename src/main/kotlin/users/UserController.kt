@@ -1,6 +1,8 @@
 package users
 
 import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE
+import org.springframework.http.ProblemDetail
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ServerWebExchange
 import users.UserController.UserRestApiRoutes.API_ACTIVATE
@@ -39,15 +41,9 @@ class UserController(private val service: UserServiceImpl) {
      * @param exchange The server web exchange instance, which provides access to the
      *                 request and response context during the signup process.
      */
-    @PostMapping(
-        API_SIGNUP,
-        produces = [APPLICATION_PROBLEM_JSON_VALUE]
-    )
-    suspend fun signup(
-        @RequestBody
-        signup: Signup,
-        exchange: ServerWebExchange
-    ) = service.signupRequest(signup, exchange)
+    @PostMapping(API_SIGNUP, produces = [APPLICATION_PROBLEM_JSON_VALUE])
+    suspend fun signup(@RequestBody signup: Signup, exchange: ServerWebExchange)
+            : ResponseEntity<ProblemDetail> = service.signupRequest(signup, exchange)
 
     /**
      * Activates a user account using a provided activation key. This method processes

@@ -60,25 +60,25 @@ class UserServiceImpl(private val context: ApplicationContext) : UserService {
         ex.left()
     }
 
-    suspend fun signupRequest(
-        signup: Signup,
-        exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = signup.validate(exchange).run {
-        "signup attempt: ${this@run} ${signup.login} ${signup.email}".run(::i)
-        if (isNotEmpty()) return signupProblems.badResponse(this)
-    }.run {
-        signupAvailability(signup).map {
-            return when (it) {
-                SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseLoginAndEmailIsNotAvailable
-                SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
-                SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
-                else -> {
-                    signupService(signup).run { CREATED.run(::ResponseEntity) }
+    suspend fun signupRequest(signup: Signup, exchange: ServerWebExchange)
+            : ResponseEntity<ProblemDetail> = signup
+        .validate(exchange)
+        .run {
+            "signup attempt: ${this@run} ${signup.login} ${signup.email}".run(::i)
+            if (isNotEmpty()) return signupProblems.badResponse(this)
+        }.run {
+            signupAvailability(signup).map {
+                return when (it) {
+                    SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseLoginAndEmailIsNotAvailable
+                    SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
+                    SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
+                    else -> {
+                        signupService(signup).run { CREATED.run(::ResponseEntity) }
+                    }
                 }
             }
+            SERVICE_UNAVAILABLE.run(::ResponseEntity)
         }
-        SERVICE_UNAVAILABLE.run(::ResponseEntity)
-    }
 
     suspend fun activateRequest(
         key: String,
@@ -154,7 +154,7 @@ class UserServiceImpl(private val context: ApplicationContext) : UserService {
                 .flatMap { violatedField: Pair<String, MutableSet<ConstraintViolation<Signup>>> ->
                     violatedField.second.map {
                         mapOf<String, String?>(
-                            MODEL_FIELD_OBJECTNAME to User.objectName,
+                            MODEL_FIELD_OBJECTNAME to Signup.objectName,
                             MODEL_FIELD_FIELD to violatedField.first,
                             MODEL_FIELD_MESSAGE to it.message
                         )
@@ -182,7 +182,7 @@ class UserServiceImpl(private val context: ApplicationContext) : UserService {
         }
 
         @JvmStatic
-        val signupProblems = defaultProblems.copy(path = "$API_USERS$API_SIGNUP")
+        val signupProblems: ProblemsModel = defaultProblems.copy(path = "$API_USERS$API_SIGNUP")
 
         @JvmStatic
         fun ProblemsModel.exceptionProblem(
@@ -239,7 +239,7 @@ class UserServiceImpl(private val context: ApplicationContext) : UserService {
             get() = badResponse(
                 setOf(
                     mapOf(
-                        MODEL_FIELD_OBJECTNAME to User.objectName,
+                        MODEL_FIELD_OBJECTNAME to Signup.objectName,
                         MODEL_FIELD_FIELD to User.Fields.EMAIL_FIELD,
                         MODEL_FIELD_MESSAGE to "Email is already in use!"
                     )
