@@ -27,6 +27,7 @@ import arrow.core.Either.Left
 import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.validation.Validation.byProvider
 import jakarta.validation.Validator
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
@@ -35,6 +36,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.RandomStringUtils.random
+import org.hibernate.validator.HibernateValidator
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
@@ -63,6 +65,7 @@ import users.Tools.requestToString
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
+import users.User.Fields.LOGIN_FIELD
 import users.User.Relations.FIND_ALL_USERS
 import users.User.Relations.FIND_USER_BY_LOGIN
 import users.UserController.UserRestApiRoutes.API_SIGNUP_PATH
@@ -115,8 +118,7 @@ import java.security.SecureRandom
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
 import java.util.*
-import java.util.Locale.FRENCH
-import java.util.Locale.getDefault
+import java.util.Locale.*
 import java.util.UUID.fromString
 import java.util.UUID.randomUUID
 import javax.inject.Inject
@@ -281,7 +283,7 @@ class UserTests {
                 val expectedUserResult = User(
                     id = fromString(get(User.Fields.ID_FIELD).toString()),
                     email = get(User.Fields.EMAIL_FIELD).toString(),
-                    login = get(User.Fields.LOGIN_FIELD).toString(),
+                    login = get(LOGIN_FIELD).toString(),
                     roles = get(User.Members.ROLES_MEMBER)
                         .toString()
                         .split(",")
@@ -1027,7 +1029,7 @@ class UserTests {
             .run {
                 user.run {
                     mapOf(
-                        User.Fields.LOGIN_FIELD to login,
+                        LOGIN_FIELD to login,
                         User.Fields.PASSWORD_FIELD to password,
                         User.Fields.EMAIL_FIELD to email,
                         //FIRST_NAME_FIELD to firstName,
@@ -1207,7 +1209,7 @@ class UserTests {
 
 
     @Test
-    fun `test signup with an existing login`():Unit= runBlocking {
+    fun `test signup with an existing login`(): Unit = runBlocking {
         context.tripleCounts().run counts@{
             context.getBean<UserService>().signupService(signup)
             assertEquals(this@counts.first + 1, context.countUsers())
@@ -1240,62 +1242,62 @@ class UserTests {
             .run(::assertTrue)
     }
 
-//    @Test
-//    fun `UserController - vérifie l'internationalisation des validations par validator factory avec mauvais login en italien`() {
-//        byProvider(HibernateValidator::class.java)
-//            .configure()
-//            .defaultLocale(ENGLISH)
-//            .locales(FRANCE, ITALY, US)
-//            .localeResolver {
-//                // get the locales supported by the client from the Accept-Language header
-//                val acceptLanguageHeader = "it-IT;q=0.9,en-US;q=0.7"
-//                val acceptedLanguages = LanguageRange.parse(acceptLanguageHeader)
-//                val resolvedLocales = filter(acceptedLanguages, it.supportedLocales)
-//                if (resolvedLocales.size > 0) resolvedLocales[0]
-//                else it.defaultLocale
-//            }
-//            .buildValidatorFactory()
-//            .validator
-//            .validateProperty(defaultAccount.copy(login = "funky-log(n"), LOGIN_FIELD)
-//            .run viol@{
-//                assertTrue(isNotEmpty())
-//                first().run {
-//                    assertEquals(
-//                        "{${Pattern::class.java.name}.message}",
-//                        messageTemplate
-//                    )
-//                    assertEquals(false, message.contains("doit correspondre à"))
-//                    assertContains(
-//                        "deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"",
-//                        message
-//                    )
-//                }
-//            }
-//    }
-//
-//    @Test
-//    fun `UserController - vérifie l'internationalisation des validations par REST avec mot de passe non conforme en francais`() {
-//        assertEquals(0, countAccount(dao))
-//        client
-//            .post()
-//            .uri(SIGNUP_API_PATH)
-//            .contentType(APPLICATION_JSON)
-//            .header(ACCEPT_LANGUAGE, FRENCH.language)
-//            .bodyValue(defaultAccount.copy(password = "123"))
-//            .exchange()
-//            .expectStatus()
-//            .isBadRequest
-//            .returnResult<ResponseEntity<ProblemDetail>>()
-//            .responseBodyContent!!
-//            .run {
-//                assertTrue(isNotEmpty())
-//                assertContains(requestToString(), "la taille doit")
-//            }
-//        assertEquals(0, countAccount(dao))
-//
-//    }
-//
-//
+    @Test
+    fun `Verifies the internationalization of validations by validator factory with a bad login in Italian`(): Unit {
+        byProvider(HibernateValidator::class.java)
+            .configure()
+            .defaultLocale(ENGLISH)
+            .locales(FRANCE, ITALY, US)
+            .localeResolver {
+                // get the locales supported by the client from the Accept-Language header
+                val acceptLanguageHeader = "it-IT;q=0.9,en-US;q=0.7"
+                val acceptedLanguages = LanguageRange.parse(acceptLanguageHeader)
+                val resolvedLocales = filter(acceptedLanguages, it.supportedLocales)
+                if (resolvedLocales.size > 0) resolvedLocales[0]
+                else it.defaultLocale
+            }
+            .buildValidatorFactory()
+            .validator
+            .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_FIELD)
+            .run viol@{
+                assertTrue(isNotEmpty())
+                first().run {
+                    assertEquals(
+                        "{${Pattern::class.java.name}.message}",
+                        messageTemplate
+                    )
+                    assertEquals(false, message.contains("doit correspondre à"))
+                    assertContains(
+                        "deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"",
+                        message
+                    )
+                }
+            }
+    }
+
+    @Test
+    fun `Verifies the internationalization of validations through REST with a non-conforming password in French`(): Unit =
+        runBlocking {
+            assertEquals(0, context.countUsers())
+            client
+                .post()
+                .uri(API_SIGNUP_PATH)
+                .contentType(APPLICATION_JSON)
+                .header(ACCEPT_LANGUAGE, FRENCH.language)
+                .bodyValue(signup.copy(password = "123"))
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+                .returnResult<ResponseEntity<ProblemDetail>>()
+                .responseBodyContent!!
+                .run {
+                    assertTrue(isNotEmpty())
+                    assertContains(requestToString(), "la taille doit")
+                }
+            assertEquals(0, context.countUsers())
+        }
+
+
 //    @Test
 //    fun `UserController - test activate avec une mauvaise clé`() {
 //        client
