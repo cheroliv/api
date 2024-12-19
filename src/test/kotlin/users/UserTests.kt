@@ -1306,11 +1306,11 @@ class UserTests {
         //user does not exist
         //user_activation does not exist
         //TODO: is wrong valid key?
-        "wrongActivationKey".run key@{
-            client.get().uri(
-                "${API_ACTIVATE_PATH}${API_ACTIVATE_PARAM}",
-                this
-            ).exchange()
+        (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
+            client
+                .get()
+                .uri(first, second)
+                .exchange()
                 .expectStatus()
                 .is4xxClientError
                 .returnResult<ResponseEntity<ProblemDetail>>()
@@ -1325,7 +1325,7 @@ class UserTests {
                         }.replace("{\"", "\n{\n\t\"")
                         .replace("\"}", "\"\n}")
                         .replace("\",\"", "\",\n\t\"")
-                        .contains("Activation failed: No user was activated for key: ${this@key}")
+                        .contains("Activation failed: No user was activated for key: $second")
                         .run(::assertTrue)
                 }.logBody()
         }

@@ -203,11 +203,11 @@ object Tools {
     //TODO : change that ugly json formating
     fun ByteArray.logBody(): ByteArray = apply {
         if (isNotEmpty()) map { it.toInt().toChar().toString() }.reduce { request, s ->
-                request + buildString {
-                    append(s)
-                    if (s == VIRGULE && request.last().isDigit()) append("\n\t")
-                }
-            }.replace("{\"", "\n{\n\t\"").replace("\"}", "\"\n}").replace("\",\"", "\",\n\t\"")
+            request + buildString {
+                append(s)
+                if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+            }
+        }.replace("{\"", "\n{\n\t\"").replace("\"}", "\"\n}").replace("\",\"", "\",\n\t\"")
             .run { i("\nbody:$this") }
     }
 

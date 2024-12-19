@@ -3,6 +3,8 @@ package ai.translator
 import ai.translator.AiTranslatorController.AssistantManager.PromptManager.userMessageEn
 import ai.translator.AiTranslatorController.AssistantManager.PromptManager.userMessageFr
 import arrow.core.Either
+import arrow.core.Either.Left
+import arrow.core.Either.Right
 import arrow.core.getOrElse
 import dev.langchain4j.data.message.AiMessage
 import dev.langchain4j.model.StreamingResponseHandler
@@ -103,7 +105,7 @@ class AiTranslatorController(service: ChatModelService) {
                         continuation.resume(response)
 
                     override fun onError(error: Throwable) =
-                        continuation.resume(Either.Left(error).getOrElse { throw it })
+                        continuation.resume(Left(error).getOrElse { throw it })
                 })
             }
         }
@@ -117,11 +119,11 @@ class AiTranslatorController(service: ChatModelService) {
             runBlocking {
                 createOllamaStreamingChatModel(model).run {
                     when (val answer = generateStreamingResponse(this, userMessageFr)) {
-                        is Either.Right -> "Complete response received:\n${
+                        is Right -> "Complete response received:\n${
                             answer.value.content().text()
                         }".run(::println)
 
-                        is Either.Left -> "Error during response generation:\n${answer.value}".run(::println)
+                        is Left -> "Error during response generation:\n${answer.value}".run(::println)
                     }
                 }
             }
