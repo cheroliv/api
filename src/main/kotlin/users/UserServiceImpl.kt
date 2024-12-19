@@ -227,7 +227,7 @@ class UserServiceImpl(private val context: ApplicationContext) : UserService {
             get() = badResponse(
                 setOf(
                     mapOf(
-                        MODEL_FIELD_OBJECTNAME to User.objectName,
+                        MODEL_FIELD_OBJECTNAME to Signup.objectName,
                         MODEL_FIELD_FIELD to User.Fields.LOGIN_FIELD,
                         MODEL_FIELD_MESSAGE to "Login name already used!"
                     )

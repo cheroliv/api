@@ -10,9 +10,9 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.badRequest
 import org.springframework.http.ResponseEntity.internalServerError
 import org.springframework.web.server.ServerWebExchange
-import users.UserServiceImpl.Companion.signupProblems
 import users.security.SecurityConfiguration.Companion.spaNegated
 import workspace.Log.i
 import java.net.URI
@@ -57,13 +57,11 @@ object HttpUtils {
             setProperty("path", path)
             setProperty("message", message)
             setProperty("error", error)
-        })
-
+        }).also { "fieldErrors: $fieldErrors".run(::i) }
 
     fun ProblemsModel.badResponse(
         fieldErrors: Set<Map<String, String?>>
-    ): ResponseEntity<ProblemDetail> = ResponseEntity
-        .status(BAD_REQUEST)
+    ): ResponseEntity<ProblemDetail> = badRequest()
         .body(forStatus(BAD_REQUEST).apply {
             type = URI(defaultProblems.type)
             title = defaultProblems.title
@@ -73,4 +71,3 @@ object HttpUtils {
             setProperty("fieldErrors", fieldErrors)
         }).also { "fieldErrors: $fieldErrors".run(::i) }
 }
-
