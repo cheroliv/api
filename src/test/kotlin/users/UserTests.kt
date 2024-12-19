@@ -61,13 +61,15 @@ import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
 import org.springframework.web.server.ServerWebExchange
 import users.Tools.logBody
-import users.Tools.requestToString
+import users.Tools.responseToString
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.User.Attributes.PASSWORD_ATTR
 import users.User.Fields.LOGIN_FIELD
 import users.User.Relations.FIND_ALL_USERS
 import users.User.Relations.FIND_USER_BY_LOGIN
+import users.UserController.UserRestApiRoutes.API_ACTIVATE_PARAM
+import users.UserController.UserRestApiRoutes.API_ACTIVATE_PATH
 import users.UserController.UserRestApiRoutes.API_SIGNUP_PATH
 import users.UserDao.countUsers
 import users.UserDao.delete
@@ -765,226 +767,6 @@ class UserTests {
     }
 
     @Test
-    fun `test create userActivation inside signup`(): Unit = runBlocking {
-        context.tripleCounts().run {
-            (user to context).signupDao().apply {
-                assertTrue(isRight())
-                assertFalse(isLeft())
-            }
-            assertEquals(first + 1, context.countUsers())
-            assertEquals(second + 1, context.countUserActivation())
-            assertEquals(third + 1, context.countUserAuthority())
-        }
-    }
-
-    @Test
-    fun `test find userActivation by key`(): Unit = runBlocking {
-        context.tripleCounts().run counts@{
-            (user to context).signupDao()
-                .getOrNull()!!
-                .run {
-                    assertEquals(this@counts.first + 1, context.countUsers())
-                    assertEquals(this@counts.second + 1, context.countUserAuthority())
-                    assertEquals(third + 1, context.countUserActivation())
-                    second.apply(::i)
-                        .isBlank()
-                        .run(::assertFalse)
-                    assertEquals(
-                        first,
-                        context.findUserActivationByKey(second).getOrNull()!!.id
-                    )
-                    context.findUserActivationByKey(second).getOrNull().toString().run(::i)
-                    // BabyStepping to find an implementation and debugging
-                    assertDoesNotThrow {
-                        first.toString().run(::i)
-                        second.run(::i)
-                        context.getBean<TransactionalOperator>().executeAndAwait {
-                            FIND_BY_ACTIVATION_KEY
-                                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                                .bind(ACTIVATION_KEY_ATTR, second)
-                                .fetch()
-                                .awaitSingle()
-                                .apply(::assertNotNull)
-                                .apply { toString().run(::i) }
-                                .let {
-                                    UserActivation(
-                                        id = UserActivation.Fields.ID_FIELD
-                                            .run(it::get)
-                                            .toString()
-                                            .run(UUID::fromString),
-                                        activationKey = ACTIVATION_KEY_FIELD
-                                            .run(it::get)
-                                            .toString(),
-                                        createdDate = CREATED_DATE_FIELD
-                                            .run(it::get)
-                                            .toString()
-                                            .run(LocalDateTime::parse)
-                                            .toInstant(UTC),
-                                        activationDate = ACTIVATION_DATE_FIELD
-                                            .run(it::get)
-                                            .run {
-                                                when {
-                                                    this == null || toString().lowercase() == "null" -> null
-                                                    else -> toString().run(LocalDateTime::parse).toInstant(UTC)
-                                                }
-                                            },
-                                    )
-                                }.toString().run(::i)
-                        }
-                    }
-                }
-        }
-    }
-
-    @Test
-    fun `test activate user by key`(): Unit = runBlocking {
-        context.tripleCounts().run counts@{
-            (user to context).signupDao().getOrNull()!!.run {
-                assertEquals(
-                    "null",
-                    FIND_ALL_USERACTIVATION
-                        .trimIndent()
-                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                        .fetch()
-                        .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
-                        .toString()
-                        .lowercase()
-                )
-                assertEquals(this@counts.first + 1, context.countUsers())
-                assertEquals(this@counts.second + 1, context.countUserAuthority())
-                assertEquals(third + 1, context.countUserActivation())
-                "user.id : $first".run(::i)
-                "activation key : $second".run(::i)
-                assertEquals(
-                    1,
-                    context.activateDao(second).getOrNull()!!
-                )
-                assertEquals(this@counts.first + 1, context.countUsers())
-                assertEquals(this@counts.second + 1, context.countUserAuthority())
-                assertEquals(third + 1, context.countUserActivation())
-                assertNotEquals(
-                    "null",
-                    FIND_ALL_USERACTIVATION
-                        .trimIndent()
-                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                        .fetch()
-                        .awaitSingleOrNull()!!
-                        .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
-                        .toString()
-                        .lowercase()
-                )
-            }
-        }
-    }
-
-    @Test
-    fun `test activate with key out of bound`(): Unit = runBlocking {
-        UserActivation(
-            id = randomUUID(),
-            activationKey = random(
-                ACTIVATION_KEY_SIZE * 2,
-                0,
-                0,
-                true,
-                true,
-                null,
-                SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
-            )).run {
-            "UserActivation : ${toString()}".run(::i)
-            assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
-            validate(mock<ServerWebExchange>()).run {
-                assertTrue(isNotEmpty())
-                assertTrue(size == 1)
-                first().run {
-                    assertTrue(keys.contains("objectName"))
-                    assertTrue(values.contains(UserActivation.objectName))
-                    assertTrue(keys.contains("field"))
-                    assertTrue(values.contains(ACTIVATION_KEY_ATTR))
-                    assertTrue(keys.contains("message"))
-                    assertTrue(values.contains("size must be between 0 and 20"))
-                }
-            }
-            context.activateDao(activationKey).run {
-                isRight().run(::assertTrue)
-                assertEquals(0, getOrNull()!!)
-            }
-            assertThrows<IllegalArgumentException>("Activation failed: No user was activated for key: $activationKey") {
-                context.getBean<UserServiceImpl>().activateService(activationKey)
-            }
-            context.getBean<UserServiceImpl>().activateRequest(
-                activationKey,
-                mock<ServerWebExchange>()
-            ).toString().run(::i)
-        }
-
-    }
-
-    @Test
-    fun `test signupService signup saves user and role_user and user_activation`(): Unit = runBlocking {
-        Signup(
-            login = "jdoe",
-            email = "jdoe@acme.com",
-            password = "secr3t",
-            repassword = "secr3t"
-        ).run signup@{
-            Triple(
-                context.countUsers(),
-                context.countUserAuthority(),
-                context.countUserActivation()
-            ).run {
-                assertEquals(0, first)
-                assertEquals(0, second)
-                assertEquals(0, third)
-                context.getBean<UserServiceImpl>().signupService(this@signup)
-                assertEquals(first + 1, context.countUsers())
-                assertEquals(second + 1, context.countUserAuthority())
-                assertEquals(third + 1, context.countUserActivation())
-            }
-        }
-    }
-
-    @Test
-    fun `test activateService with a valid key`(): Unit = runBlocking {
-        context.tripleCounts().run counts@{
-            (user to context).signupDao().getOrNull()!!.run {
-                assertEquals(
-                    "null",
-                    FIND_ALL_USERACTIVATION
-                        .trimIndent()
-                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                        .fetch()
-                        .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
-                        .toString()
-                        .lowercase()
-                )
-                assertEquals(this@counts.first + 1, context.countUsers())
-                assertEquals(this@counts.second + 1, context.countUserAuthority())
-                assertEquals(third + 1, context.countUserActivation())
-                "user.id : $first".run(::i)
-                "activation key : $second".run(::i)
-                assertEquals(
-                    1,
-                    context.getBean<UserServiceImpl>().activateService(second)
-                )
-                assertEquals(this@counts.first + 1, context.countUsers())
-                assertEquals(this@counts.second + 1, context.countUserAuthority())
-                assertEquals(third + 1, context.countUserActivation())
-                assertNotEquals(
-                    "null",
-                    FIND_ALL_USERACTIVATION
-                        .trimIndent()
-                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                        .fetch()
-                        .awaitSingleOrNull()!!
-                        .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
-                        .toString()
-                        .lowercase()
-                )
-            }
-        }
-    }
-
-    @Test
     fun `test signup validator with an invalid login`(): Unit = mock<ServerWebExchange>()
         .validator
         .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
@@ -1025,7 +807,7 @@ class UserTests {
             .returnResult<Any>()
             .requestBodyContent!!
             .logBody()
-            .requestToString()
+            .responseToString()
             .run {
                 user.run {
                     mapOf(
@@ -1243,6 +1025,30 @@ class UserTests {
     }
 
     @Test
+    fun `test signupService signup saves user and role_user and user_activation`(): Unit = runBlocking {
+        Signup(
+            login = "jdoe",
+            email = "jdoe@acme.com",
+            password = "secr3t",
+            repassword = "secr3t"
+        ).run signup@{
+            Triple(
+                context.countUsers(),
+                context.countUserAuthority(),
+                context.countUserActivation()
+            ).run {
+                assertEquals(0, first)
+                assertEquals(0, second)
+                assertEquals(0, third)
+                context.getBean<UserServiceImpl>().signupService(this@signup)
+                assertEquals(first + 1, context.countUsers())
+                assertEquals(second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+            }
+        }
+    }
+
+    @Test
     fun `Verifies the internationalization of validations by validator factory with a bad login in Italian`(): Unit {
         byProvider(HibernateValidator::class.java)
             .configure()
@@ -1282,7 +1088,7 @@ class UserTests {
             client
                 .post()
                 .uri(API_SIGNUP_PATH)
-                .contentType(APPLICATION_JSON)
+                .contentType(APPLICATION_PROBLEM_JSON)
                 .header(ACCEPT_LANGUAGE, FRENCH.language)
                 .bodyValue(signup.copy(password = "123"))
                 .exchange()
@@ -1292,25 +1098,241 @@ class UserTests {
                 .responseBodyContent!!
                 .run {
                     assertTrue(isNotEmpty())
-                    assertContains(requestToString(), "la taille doit")
+                    assertContains(responseToString(), "la taille doit")
                 }
             assertEquals(0, context.countUsers())
         }
 
+    @Test
+    fun `test create userActivation inside signup`(): Unit = runBlocking {
+        context.tripleCounts().run {
+            (user to context).signupDao().apply {
+                assertTrue(isRight())
+                assertFalse(isLeft())
+            }
+            assertEquals(first + 1, context.countUsers())
+            assertEquals(second + 1, context.countUserActivation())
+            assertEquals(third + 1, context.countUserAuthority())
+        }
+    }
 
-//    @Test
-//    fun `UserController - test activate avec une mauvaise clé`() {
-//        client
-//            .get()
-//            .uri("$ACTIVATE_API_PATH$ACTIVATE_API_PARAM", "wrongActivationKey")
-//            .exchange()
-//            .expectStatus()
-//            .is5xxServerError
-//            .returnResult<Unit>()
-//    }
-//
-//    @Test
-//    fun `UserController - test activate avec une clé valide`() {
+    @Test
+    fun `test find userActivation by key`(): Unit = runBlocking {
+        context.tripleCounts().run counts@{
+            (user to context).signupDao()
+                .getOrNull()!!
+                .run {
+                    assertEquals(this@counts.first + 1, context.countUsers())
+                    assertEquals(this@counts.second + 1, context.countUserAuthority())
+                    assertEquals(third + 1, context.countUserActivation())
+                    second.apply(::i)
+                        .isBlank()
+                        .run(::assertFalse)
+                    assertEquals(
+                        first,
+                        context.findUserActivationByKey(second).getOrNull()!!.id
+                    )
+                    context.findUserActivationByKey(second).getOrNull().toString().run(::i)
+                    // BabyStepping to find an implementation and debugging
+                    assertDoesNotThrow {
+                        first.toString().run(::i)
+                        second.run(::i)
+                        context.getBean<TransactionalOperator>().executeAndAwait {
+                            FIND_BY_ACTIVATION_KEY
+                                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                .bind(ACTIVATION_KEY_ATTR, second)
+                                .fetch()
+                                .awaitSingle()
+                                .apply(::assertNotNull)
+                                .apply { toString().run(::i) }
+                                .let {
+                                    UserActivation(
+                                        id = UserActivation.Fields.ID_FIELD
+                                            .run(it::get)
+                                            .toString()
+                                            .run(UUID::fromString),
+                                        activationKey = ACTIVATION_KEY_FIELD
+                                            .run(it::get)
+                                            .toString(),
+                                        createdDate = CREATED_DATE_FIELD
+                                            .run(it::get)
+                                            .toString()
+                                            .run(LocalDateTime::parse)
+                                            .toInstant(UTC),
+                                        activationDate = ACTIVATION_DATE_FIELD
+                                            .run(it::get)
+                                            .run {
+                                                when {
+                                                    this == null || toString().lowercase() == "null" -> null
+                                                    else -> toString().run(LocalDateTime::parse).toInstant(UTC)
+                                                }
+                                            },
+                                    )
+                                }.toString().run(::i)
+                        }
+                    }
+                }
+        }
+    }
+
+    @Test
+    fun `test activate user by key`(): Unit = runBlocking {
+        context.tripleCounts().run counts@{
+            (user to context).signupDao().getOrNull()!!.run {
+                assertEquals(
+                    "null",
+                    FIND_ALL_USERACTIVATION
+                        .trimIndent()
+                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+                        .toString()
+                        .lowercase()
+                )
+                assertEquals(this@counts.first + 1, context.countUsers())
+                assertEquals(this@counts.second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+                "user.id : $first".run(::i)
+                "activation key : $second".run(::i)
+                assertEquals(
+                    1,
+                    context.activateDao(second).getOrNull()!!
+                )
+                assertEquals(this@counts.first + 1, context.countUsers())
+                assertEquals(this@counts.second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+                assertNotEquals(
+                    "null",
+                    FIND_ALL_USERACTIVATION
+                        .trimIndent()
+                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!!
+                        .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
+                        .toString()
+                        .lowercase()
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `test activate with key out of bound`(): Unit = runBlocking {
+        UserActivation(
+            id = randomUUID(),
+            activationKey = random(
+                ACTIVATION_KEY_SIZE * 2,
+                0,
+                0,
+                true,
+                true,
+                null,
+                SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
+            )).run {
+            "UserActivation : ${toString()}".run(::i)
+            assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
+            validate(mock<ServerWebExchange>()).run {
+                assertTrue(isNotEmpty())
+                assertTrue(size == 1)
+                first().run {
+                    assertTrue(keys.contains("objectName"))
+                    assertTrue(values.contains(UserActivation.objectName))
+                    assertTrue(keys.contains("field"))
+                    assertTrue(values.contains(ACTIVATION_KEY_ATTR))
+                    assertTrue(keys.contains("message"))
+                    assertTrue(values.contains("size must be between 0 and 20"))
+                }
+            }
+            context.activateDao(activationKey).run {
+                isRight().run(::assertTrue)
+                assertEquals(0, getOrNull()!!)
+            }
+            assertThrows<IllegalArgumentException>("Activation failed: No user was activated for key: $activationKey") {
+                context.getBean<UserServiceImpl>().activateService(activationKey)
+            }
+            context.getBean<UserServiceImpl>().activateRequest(
+                activationKey,
+                mock<ServerWebExchange>()
+            ).toString().run(::i)
+        }
+
+    }
+
+
+    @Test
+    fun `test activateService with a valid key`(): Unit = runBlocking {
+        context.tripleCounts().run counts@{
+            (user to context).signupDao().getOrNull()!!.run {
+                assertEquals(
+                    "null",
+                    FIND_ALL_USERACTIVATION
+                        .trimIndent()
+                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+                        .toString()
+                        .lowercase()
+                )
+                assertEquals(this@counts.first + 1, context.countUsers())
+                assertEquals(this@counts.second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+                "user.id : $first".run(::i)
+                "activation key : $second".run(::i)
+                assertEquals(
+                    1,
+                    context.getBean<UserServiceImpl>().activateService(second)
+                )
+                assertEquals(this@counts.first + 1, context.countUsers())
+                assertEquals(this@counts.second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+                assertNotEquals(
+                    "null",
+                    FIND_ALL_USERACTIVATION
+                        .trimIndent()
+                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!!
+                        .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
+                        .toString()
+                        .lowercase()
+                )
+            }
+        }
+    }
+
+
+    @Test
+    fun `test activate request with a wrong key producing a 412 PRECONDITION_FAILED`(): Unit {
+        //user does not exist
+        //user_activation does not exist
+        //TODO: is wrong valid key?
+        "wrongActivationKey".run key@{
+            client.get().uri(
+                "${API_ACTIVATE_PATH}${API_ACTIVATE_PARAM}",
+                this
+            ).exchange()
+                .expectStatus()
+                .is4xxClientError
+                .returnResult<ResponseEntity<ProblemDetail>>()
+                .responseBodyContent!!.apply {
+                    isNotEmpty().apply(::assertTrue)
+                    map { it.toInt().toChar().toString() }
+                        .reduce { request, s ->
+                            request + buildString {
+                                append(s)
+                                if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                            }
+                        }.replace("{\"", "\n{\n\t\"")
+                        .replace("\"}", "\"\n}")
+                        .replace("\",\"", "\",\n\t\"")
+                        .contains("Activation failed: No user was activated for key: ${this@key}")
+                        .run(::assertTrue)
+                }.logBody()
+        }
+    }
+
+    @Test
+    fun `test activate request with a valid key`() {
 //        assertEquals(0, countAccount(dao))
 //        assertEquals(0, countAccountAuthority(dao))
 //        createDataAccounts(setOf(defaultAccount), dao)
@@ -1334,8 +1356,8 @@ class UserTests {
 //            assertNull(activationKey)
 //            assertTrue(activated)
 //        }
-//    }
-//
+    }
+
 //    @Test
 //    fun `UserController - vérifie que la requête avec mauvaise URI renvoi la bonne URL erreur`() {
 //        generateActivationKey.run {

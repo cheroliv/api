@@ -35,6 +35,7 @@ import users.signup.UserActivation
 import users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import users.signup.UserActivationDao.activateDao
 import workspace.Log.i
+import java.net.URI
 import java.nio.channels.AlreadyBoundException
 import java.util.UUID.randomUUID
 
@@ -88,7 +89,7 @@ class UserServiceImpl(private val context: ApplicationContext) : UserService {
         activationKey = key
     ).validate(exchange).run {
         "User activation attempt with key: $this".run(::i)
-        if (isNotEmpty()) return signupProblems
+        if (isNotEmpty()) return activateProblems
             .copy(path = "$API_USERS$API_ACTIVATE")
             .badResponse(this)
     }.run {
@@ -185,12 +186,16 @@ class UserServiceImpl(private val context: ApplicationContext) : UserService {
         val signupProblems: ProblemsModel = defaultProblems.copy(path = "$API_USERS$API_SIGNUP")
 
         @JvmStatic
+        val activateProblems: ProblemsModel = defaultProblems.copy(path = "$API_USERS$API_ACTIVATE")
+
+        @JvmStatic
         fun ProblemsModel.exceptionProblem(
             ex: Throwable,
             status: HttpStatus,
             obj: Class<*>
         ): ResponseEntity<ProblemDetail> =
             forStatus(status).apply {
+                type = URI(activateProblems.type)
                 setProperty("path", path)
                 setProperty("message", message)
                 setProperty(

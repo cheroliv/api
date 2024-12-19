@@ -196,7 +196,7 @@ object Tools {
 
 //}
 
-    fun ByteArray.requestToString(): String = map {
+    fun ByteArray.responseToString(): String = map {
         it.toInt().toChar().toString()
     }.reduce { acc: String, s: String -> acc + s }
 
