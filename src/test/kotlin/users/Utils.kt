@@ -20,10 +20,10 @@ import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingleOrNull
-import users.Utils.Data.displayInsertUserScript
 import users.User.Attributes.EMAIL_ATTR
 import users.User.Attributes.LOGIN_ATTR
 import users.UserDao.countUsers
+import users.Utils.Data.displayInsertUserScript
 import users.security.Role
 import users.security.UserRoleDao.countUserAuthority
 import users.signup.Signup
@@ -129,6 +129,17 @@ object Utils {
         assertEquals(value, let(environment::getProperty))
         assertEquals(injectedValue, let(environment::getProperty))
     }
+
+//    suspend fun ApplicationContext.findAllUsers()
+//            : Either<Throwable, List<User>> = FIND_ALL_USERS
+//        .trimIndent()
+//        .run(getBean<DatabaseClient>()::sql)
+//        .fetch()
+//        .all()
+//        .collect {
+//            it.
+//        }
+
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun ApplicationContext.findUserActivationByKey(key: String)
@@ -254,5 +265,4 @@ object Utils {
             )
         }
     )
-
 }

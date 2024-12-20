@@ -1307,8 +1307,7 @@ class UserTests {
         //user_activation does not exist
         //TODO: is wrong valid key?
         (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
-            client
-                .get()
+            client.get()
                 .uri(first, second)
                 .exchange()
                 .expectStatus()
@@ -1332,7 +1331,27 @@ class UserTests {
     }
 
     @Test
-    fun `test activate request with a valid key`() {
+    fun `test activate request with a valid key`(): Unit = runBlocking {
+        context.tripleCounts().run counts@{
+            (user to context).signupDao().getOrNull()!!.run {
+                assertEquals(
+                    "null",
+                    FIND_ALL_USERACTIVATION
+                        .trimIndent()
+                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+                        .toString()
+                        .lowercase()
+                )
+                assertEquals(this@counts.first + 1, context.countUsers())
+                assertEquals(this@counts.second + 1, context.countUserAuthority())
+                assertEquals(third + 1, context.countUserActivation())
+                "user.id : $first".run(::i)
+                "activation key : $second".run(::i)
+            }
+        }
+        UserDao
 //        assertEquals(0, countAccount(dao))
 //        assertEquals(0, countAccountAuthority(dao))
 //        createDataAccounts(setOf(defaultAccount), dao)
