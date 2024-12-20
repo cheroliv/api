@@ -6,6 +6,12 @@
     "VulnerableLibrariesLocal",
 )
 
+import Build_gradle.Constants.arrowKtVersion
+import Build_gradle.Constants.commonsIoVersion
+import Build_gradle.Constants.jacksonVersion
+import Build_gradle.Constants.jgitVersion
+import Build_gradle.Constants.langchain4jVersion
+import Build_gradle.Constants.testcontainersVersion
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -33,6 +39,8 @@ plugins {
     kotlin("plugin.serialization")
     id("org.springframework.boot")
     id("io.spring.dependency-management")
+//    alias(libs.plugins.kotlin.jvm)
+    `java-library`
 }
 
 extra["springShellVersion"] = "3.3.3"
@@ -41,6 +49,7 @@ version = "0.0.1"
 //version = ("artifact.version" to "artifact.version.key").artifactVersion
 idea.module.excludeDirs.plusAssign(files("node_modules"))
 springBoot.mainClass.set("app.Application")
+application.mainClass.set("workspace.Installer")
 val USER_HOME_KEY = "user.home"
 val BLANK = ""
 val sep: String get() = FileSystems.getDefault().separator
@@ -67,20 +76,83 @@ val Pair<String, String>.artifactVersion
 
 repositories {
     mavenCentral()
-    maven(url = "https://maven.repository.redhat.com/ga/")
-    maven(url = "https://repo.spring.io/milestone")
-    maven(url = "https://repo.spring.io/snapshot")
-    maven(url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
+    maven("https://maven.repository.redhat.com/ga/")
+    maven("https://repo.spring.io/milestone")
+    maven("https://repo.spring.io/snapshot")
+    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
+    maven("https://archiva-repository.apache.org/archiva/repository/public/")
 }
 
 dependencyManagement {
     imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") }
 }
 
+object Constants {
+    const val langchain4jVersion = "0.36.2"
+    const val testcontainersVersion = "1.20.1"
+    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
+    const val commonsIoVersion = "2.13.0"
+    const val jacksonVersion = "2.17.2"//2.18.0
+    const val arrowKtVersion = "1.2.4"
+    const val jgitVersion = "6.10.0.202406032230-r"
+    const val apiVersion = "0.0.1"
+}
+
+
 dependencies {
-    files("../workspace-model/lib/build/libs/lib.jar".run(::File).path).run(::implementation)
+    setOf(
+        "commons-io:commons-io:$commonsIoVersion",
+        "jakarta.xml.bind:jakarta.xml.bind-api:4.0.2",
+        "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion",
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion",
+        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion",
+        "com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion",
+        "org.eclipse.jgit:org.eclipse.jgit:$jgitVersion",
+        "org.eclipse.jgit:org.eclipse.jgit.archive:$jgitVersion",
+        "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion",
+        "org.tukaani:xz:1.9",
+        "io.arrow-kt:arrow-core:$arrowKtVersion",
+        "io.arrow-kt:arrow-fx-coroutines:$arrowKtVersion",
+        "io.arrow-kt:arrow-integrations-jackson-module:0.14.1",
+        "org.apache.poi:poi-ooxml:5.2.5",
+//        "org.slf4j:slf4j-simple:2.0.16",
+        "org.asciidoctor:asciidoctorj-diagram:2.3.1",
+        "io.github.rburgst:okhttp-digest:3.1.1",
+        "org.ysb33r.gradle:grolifant:0.12.1",
+        "dev.langchain4j:langchain4j:$langchain4jVersion",
+        "dev.langchain4j:langchain4j-ollama:$langchain4jVersion",
+        "org.testcontainers:testcontainers:$testcontainersVersion",
+        "org.testcontainers:ollama:$testcontainersVersion",
+    ).forEach(::implementation)
+
+    setOf(
+        "org.jetbrains.kotlin:kotlin-test-junit5",
+//        libs.junit.jupiter.engine,
+        "org.assertj:assertj-swing:3.17.1",
+        "org.jetbrains.kotlin:kotlin-test",
+        "org.jetbrains.kotlin:kotlin-test-junit5",
+        "io.projectreactor:reactor-test",
+        "org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}",
+        "org.mockito:mockito-junit-jupiter:${properties["mockito_jupiter.version"]}",
+        "io.mockk:mockk:${properties["mockk.version"]}",
+    ).forEach(::testImplementation)
+
+    testImplementation("org.wiremock:wiremock:${properties["wiremock.version"]}") {
+        exclude(module = "commons-fileupload")
+    }
+
+    setOf("org.junit.platform:junit-platform-launcher").forEach(::testRuntimeOnly)
+//    setOf("com.sun.xml.bind:jaxb-impl:4.0.5").forEach(::runtimeOnly)
+
+    setOf(
+        "commons-beanutils:commons-beanutils:1.9.4",
+        "com.google.apis:google-api-services-forms:v1-rev20220908-2.0.0",
+        "com.google.apis:google-api-services-drive:v3-rev197-1.25.0",
+        "com.google.api-client:google-api-client-jackson2:2.3.0",
+        "com.google.auth:google-auth-library-oauth2-http:1.23.0"
+    ).forEach(::implementation)
+
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -144,7 +216,6 @@ dependencies {
     implementation("io.arrow-kt:arrow-fx-coroutines:${properties["arrow-kt.version"]}")
     implementation("io.arrow-kt:arrow-integrations-jackson-module:${properties["arrow-kt_jackson.version"]}")
 
-
     // Langchain4j
     implementation("dev.langchain4j:langchain4j-easy-rag:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-pgvector:${properties["langchain4j.version"]}")
@@ -158,7 +229,6 @@ dependencies {
 //    implementation("dev.langchain4j:langchain4j-vertex-ai:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-google-ai-gemini:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini:${properties["langchain4j.version"]}")
-
 
     // misc
     implementation("org.apache.commons:commons-lang3")
@@ -174,21 +244,12 @@ configurations {
             "org.apache.tomcat" to null
         ).forEach {
             when {
-                it.first.isNotBlank() && it.second?.isNotBlank() == true -> exclude(it.first, it.second)
+                it.first.isNotBlank() && it.second?.isNotBlank() == true ->
+                    exclude(it.first, it.second)
             }
         }
     }
 }
-
-val buildWorkspaceModel: TaskProvider<GradleBuild> by tasks.registering(GradleBuild::class) {
-    group = "api"
-    dir = "../workspace-model/lib".run(::File)
-    tasks = listOf("build") // Or whatever tasks produce the lib.jar
-}
-
-// Add a dependency on the buildWorkspaceModel task
-tasks.named("compileKotlin") { dependsOn(buildWorkspaceModel) }
-
 
 tasks.register("cli") {
     group = "api"
