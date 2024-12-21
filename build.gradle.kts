@@ -6,7 +6,6 @@
     "VulnerableLibrariesLocal",
 )
 
-import Build_gradle.Constants.arrowKtVersion
 import Build_gradle.Constants.commonsIoVersion
 import Build_gradle.Constants.jacksonVersion
 import Build_gradle.Constants.jgitVersion
@@ -100,57 +99,47 @@ object Constants {
 
 
 dependencies {
-    setOf(
-        "commons-io:commons-io:$commonsIoVersion",
-        "jakarta.xml.bind:jakarta.xml.bind-api:4.0.2",
-        "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion",
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion",
-        "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion",
-        "com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion",
-        "org.eclipse.jgit:org.eclipse.jgit:$jgitVersion",
-        "org.eclipse.jgit:org.eclipse.jgit.archive:$jgitVersion",
-        "org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion",
-        "org.tukaani:xz:1.9",
-        "io.arrow-kt:arrow-core:$arrowKtVersion",
-        "io.arrow-kt:arrow-fx-coroutines:$arrowKtVersion",
-        "io.arrow-kt:arrow-integrations-jackson-module:0.14.1",
-        "org.apache.poi:poi-ooxml:5.2.5",
-//        "org.slf4j:slf4j-simple:2.0.16",
-        "org.asciidoctor:asciidoctorj-diagram:2.3.1",
-        "io.github.rburgst:okhttp-digest:3.1.1",
-        "org.ysb33r.gradle:grolifant:0.12.1",
-        "dev.langchain4j:langchain4j:$langchain4jVersion",
-        "dev.langchain4j:langchain4j-ollama:$langchain4jVersion",
-        "org.testcontainers:testcontainers:$testcontainersVersion",
-        "org.testcontainers:ollama:$testcontainersVersion",
-    ).forEach(::implementation)
-
-    setOf(
-        "org.jetbrains.kotlin:kotlin-test-junit5",
-//        libs.junit.jupiter.engine,
-        "org.assertj:assertj-swing:3.17.1",
-        "org.jetbrains.kotlin:kotlin-test",
-        "org.jetbrains.kotlin:kotlin-test-junit5",
-        "io.projectreactor:reactor-test",
-        "org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}",
-        "org.mockito:mockito-junit-jupiter:${properties["mockito_jupiter.version"]}",
-        "io.mockk:mockk:${properties["mockk.version"]}",
-    ).forEach(::testImplementation)
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("org.assertj:assertj-swing:3.17.1")
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}")
+    testImplementation("org.mockito:mockito-junit-jupiter:${properties["mockito_jupiter.version"]}")
+    testImplementation("io.mockk:mockk:${properties["mockk.version"]}")
 
     testImplementation("org.wiremock:wiremock:${properties["wiremock.version"]}") {
         exclude(module = "commons-fileupload")
     }
 
-    setOf("org.junit.platform:junit-platform-launcher").forEach(::testRuntimeOnly)
-//    setOf("com.sun.xml.bind:jaxb-impl:4.0.5").forEach(::runtimeOnly)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.5")
 
-    setOf(
-        "commons-beanutils:commons-beanutils:1.9.4",
-        "com.google.apis:google-api-services-forms:v1-rev20220908-2.0.0",
-        "com.google.apis:google-api-services-drive:v3-rev197-1.25.0",
-        "com.google.api-client:google-api-client-jackson2:2.3.0",
-        "com.google.auth:google-auth-library-oauth2-http:1.23.0"
-    ).forEach(::implementation)
+    implementation("commons-beanutils:commons-beanutils:1.9.4")
+    implementation("com.google.apis:google-api-services-forms:v1-rev20220908-2.0.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev197-1.25.0")
+    implementation("com.google.api-client:google-api-client-jackson2:2.3.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
+
+    implementation("org.tukaani:xz:1.9")
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
+    implementation("org.asciidoctor:asciidoctorj-diagram:2.3.1")
+    implementation("io.github.rburgst:okhttp-digest:3.1.1")
+    implementation("org.ysb33r.gradle:grolifant:0.12.1")
+    implementation("dev.langchain4j:langchain4j:$langchain4jVersion")
+    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+    implementation("org.testcontainers:ollama:$testcontainersVersion")
+
+    implementation("commons-io:commons-io:$commonsIoVersion")
+    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
+    implementation("com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion")
+
+    // JGit
+    implementation("org.eclipse.jgit:org.eclipse.jgit:$jgitVersion")
+    implementation("org.eclipse.jgit:org.eclipse.jgit.archive:$jgitVersion")
+    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion")
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -160,13 +149,16 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${properties["kotlinx-serialization-json.version"]}")
+
     // Jackson marshaller
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
     // Spring tools
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     runtimeOnly("org.springframework.boot:spring-boot-properties-migrator")
     //developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+
     // Springboot
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-mail")
@@ -175,30 +167,38 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     implementation("org.springframework.shell:spring-shell-starter")
+
     // Spring security
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.security:spring-security-data")
+
     // Spring cloud
     @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:${properties["spring_cloud_starter.version"]}") {
         exclude(module = "commons-collections")
     }
+
     // Spring tests
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(module = "mockito-core")
     }
     testImplementation("org.springframework.shell:spring-shell-starter-test")
+
     // JWT
     implementation("io.jsonwebtoken:jjwt-impl:${properties["jsonwebtoken.version"]}")
     implementation("io.jsonwebtoken:jjwt-jackson:${properties["jsonwebtoken.version"]}")
+
     // SSL
     implementation("io.netty:netty-tcnative-boringssl-static:${properties["boring_ssl.version"]}")
+
     // Database
     runtimeOnly("org.postgresql:r2dbc-postgresql:${properties["r2dbc-postgresql.version"]}")
+
     // Kotlin-JUnit5
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("io.projectreactor:reactor-test")
+
     // Mock
     testImplementation("org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}")
     testImplementation("org.mockito:mockito-junit-jupiter:${properties["mockito_jupiter.version"]}")
