@@ -1,24 +1,24 @@
 = kotlin-springboot
 
-== *springboot codebase*
-
-.stack:
-* webflux
-* r2dbc spring-data h2
-* rest api
-* spring security jwt
-* coroutines
-* Http problem details RFC7807
-* junit5
-* gradle
-* gradle-kotlin-dsl
-* google-jib
-* google-appengine
-* mailSlurp-api
-* gmail-api
-* task scheduling
-* cli: command line interface
-* github-action(todo)
+// == *springboot codebase*
+//
+// .stack:
+// * webflux
+// * r2dbc spring-data h2
+// * rest api
+// * spring security jwt
+// * coroutines
+// * Http problem details RFC7807
+// * junit5
+// * gradle
+// * gradle-kotlin-dsl
+// * google-jib
+// * google-appengine
+// * mailSlurp-api
+// * gmail-api
+// * task scheduling
+// * cli: command line interface
+// * github-action(todo)
 
 .features:
 * Signup account
