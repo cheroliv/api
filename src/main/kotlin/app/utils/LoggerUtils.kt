@@ -18,9 +18,9 @@ import app.utils.Constants.SERVER_SSL_KEY_STORE
 import app.utils.Constants.SPRING_APPLICATION_NAME
 import app.utils.Constants.STARTUP_HOST_WARN_LOG_MSG
 import app.utils.Constants.STARTUP_LOG_MSG_KEY
-import workspace.Log.e
-import workspace.Log.i
-import workspace.Log.w
+import app.workspace.Log.e
+import app.workspace.Log.i
+import app.workspace.Log.w
 import java.net.InetAddress.getLocalHost
 import java.net.UnknownHostException
 import java.util.Locale.getDefault

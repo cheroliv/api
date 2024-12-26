@@ -13,8 +13,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.ResponseEntity.badRequest
 import org.springframework.http.ResponseEntity.internalServerError
 import org.springframework.web.server.ServerWebExchange
-import users.security.SecurityConfiguration.Companion.spaNegated
-import workspace.Log.i
+import app.users.security.SecurityConfiguration.Companion.spaNegated
+import app.workspace.Log.i
 import java.net.URI
 import java.util.Locale.ENGLISH
 import java.util.Locale.forLanguageTag

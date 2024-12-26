@@ -31,6 +31,7 @@ plugins {
     idea
     jacoco
     application
+//    `java-library`
     kotlin("jvm")
     kotlin("plugin.spring")
     kotlin("plugin.allopen")
@@ -38,8 +39,6 @@ plugins {
     kotlin("plugin.serialization")
     id("org.springframework.boot")
     id("io.spring.dependency-management")
-//    alias(libs.plugins.kotlin.jvm)
-    `java-library`
 }
 
 extra["springShellVersion"] = "3.3.3"
@@ -48,7 +47,7 @@ version = "0.0.1"
 //version = ("artifact.version" to "artifact.version.key").artifactVersion
 idea.module.excludeDirs.plusAssign(files("node_modules"))
 springBoot.mainClass.set("app.Application")
-application.mainClass.set("workspace.Installer")
+application.mainClass.set("app.workspace.Installer")
 val USER_HOME_KEY = "user.home"
 val BLANK = ""
 val sep: String get() = FileSystems.getDefault().separator
@@ -79,7 +78,7 @@ repositories {
     maven("https://repo.spring.io/milestone")
     maven("https://repo.spring.io/snapshot")
     maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
-    maven("https://archiva-repository.apache.org/archiva/repository/public/")
+//    maven("https://archiva-repository.apache.org/archiva/repository/public/")
 }
 
 dependencyManagement {
@@ -99,18 +98,9 @@ object Constants {
 
 
 dependencies {
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.assertj:assertj-swing:3.17.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("io.projectreactor:reactor-test")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}")
-    testImplementation("org.mockito:mockito-junit-jupiter:${properties["mockito_jupiter.version"]}")
-    testImplementation("io.mockk:mockk:${properties["mockk.version"]}")
-
-    testImplementation("org.wiremock:wiremock:${properties["wiremock.version"]}") {
-        exclude(module = "commons-fileupload")
-    }
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.5")
@@ -127,14 +117,14 @@ dependencies {
     implementation("io.github.rburgst:okhttp-digest:3.1.1")
     implementation("org.ysb33r.gradle:grolifant:0.12.1")
     implementation("dev.langchain4j:langchain4j:$langchain4jVersion")
-    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
-    implementation("org.testcontainers:ollama:$testcontainersVersion")
-
     implementation("commons-io:commons-io:$commonsIoVersion")
-    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
+
+    // Jackson marshaller
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-    implementation("com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion")
+    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
 
     // JGit
     implementation("org.eclipse.jgit:org.eclipse.jgit:$jgitVersion")
@@ -145,13 +135,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${properties["kotlinx-serialization-json.version"]}")
-
-    // Jackson marshaller
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     // Spring tools
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -197,7 +182,6 @@ dependencies {
     // Kotlin-JUnit5
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("io.projectreactor:reactor-test")
 
     // Mock
     testImplementation("org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}")
@@ -206,15 +190,12 @@ dependencies {
     testImplementation("org.wiremock:wiremock:${properties["wiremock.version"]}") {
         exclude(module = "commons-fileupload")
     }
-    testImplementation("commons-fileupload:commons-fileupload:1.5.0.redhat-00001")
     testImplementation("com.ninja-squad:springmockk:${properties["springmockk.version"]}")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
+    testImplementation("commons-fileupload:commons-fileupload:1.5.0.redhat-00001")
+
+    // Archunit
     testImplementation("com.tngtech.archunit:archunit-junit5-api:${properties["archunit_junit5.version"]}")
     testRuntimeOnly("com.tngtech.archunit:archunit-junit5-engine:${properties["archunit_junit5.version"]}")
-    implementation("io.arrow-kt:arrow-core:${properties["arrow-kt.version"]}")
-    implementation("io.arrow-kt:arrow-fx-coroutines:${properties["arrow-kt.version"]}")
-    implementation("io.arrow-kt:arrow-integrations-jackson-module:${properties["arrow-kt_jackson.version"]}")
 
     // Langchain4j
     implementation("dev.langchain4j:langchain4j-easy-rag:${properties["langchain4j.version"]}")
@@ -229,6 +210,23 @@ dependencies {
 //    implementation("dev.langchain4j:langchain4j-vertex-ai:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-google-ai-gemini:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini:${properties["langchain4j.version"]}")
+
+    // Arrow-kt
+    implementation("io.arrow-kt:arrow-core:${properties["arrow-kt.version"]}")
+    implementation("io.arrow-kt:arrow-fx-coroutines:${properties["arrow-kt.version"]}")
+    implementation("io.arrow-kt:arrow-integrations-jackson-module:${properties["arrow-kt_jackson.version"]}")
+
+
+    // Testcontainers
+//    testImplementation("org.testcontainers:junit-jupiter")
+//    testImplementation("org.testcontainers:postgresql")
+//    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+//    implementation("org.testcontainers:ollama:$testcontainersVersion")
+
+    // Reactor
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
+    testImplementation("io.projectreactor:reactor-test")
 
     // misc
     implementation("org.apache.commons:commons-lang3")
