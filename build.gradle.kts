@@ -315,7 +315,7 @@ tasks.register<TestReport>("testReport") {
     reportOn("test")
 }
 
-tasks.register<Exec>("springbootCheckOpenFirefox") {
+tasks.register<Exec>("apiCheckFirefox") {
     group = "verification"
     description = "Check springboot project then show report in firefox"
     dependsOn("check")
