@@ -4,16 +4,18 @@
     "DEPRECATION",
     "UnstableApiUsage",
     "VulnerableLibrariesLocal",
+    "UnusedImport",
 )
 
 import Build_gradle.Constants.commonsIoVersion
 import Build_gradle.Constants.jacksonVersion
 import Build_gradle.Constants.jgitVersion
 import Build_gradle.Constants.langchain4jVersion
-//import Build_gradle.Constants.testcontainersVersion
+import Build_gradle.Constants.testcontainersVersion
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.springframework.boot.gradle.tasks.run.BootRun
 import java.nio.file.FileSystems
 import java.util.*
 
@@ -31,7 +33,7 @@ plugins {
     idea
     jacoco
     application
-//    `java-library`
+    `java-library`
     kotlin("jvm")
     kotlin("plugin.spring")
     kotlin("plugin.allopen")
@@ -46,8 +48,6 @@ group = properties["artifact.group"].toString()
 version = "0.0.1"
 //version = ("artifact.version" to "artifact.version.key").artifactVersion
 idea.module.excludeDirs.plusAssign(files("node_modules"))
-springBoot.mainClass.set("app.Application")
-application.mainClass.set("app.workspace.Installer")
 val USER_HOME_KEY = "user.home"
 val BLANK = ""
 val sep: String get() = FileSystems.getDefault().separator
@@ -78,7 +78,6 @@ repositories {
     maven("https://repo.spring.io/milestone")
     maven("https://repo.spring.io/snapshot")
     maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
-//    maven("https://archiva-repository.apache.org/archiva/repository/public/")
 }
 
 dependencyManagement {
@@ -103,7 +102,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.5")
 
     implementation("commons-beanutils:commons-beanutils:1.9.4")
     implementation("com.google.apis:google-api-services-forms:v1-rev20220908-2.0.0")
@@ -125,6 +123,7 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
     implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
+    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.5")
 
     // JGit
     implementation("org.eclipse.jgit:org.eclipse.jgit:$jgitVersion")
@@ -218,10 +217,10 @@ dependencies {
 
 
     // Testcontainers
-//    testImplementation("org.testcontainers:junit-jupiter")
-//    testImplementation("org.testcontainers:postgresql")
-//    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
-//    implementation("org.testcontainers:ollama:$testcontainersVersion")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:postgresql")
+    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+    implementation("org.testcontainers:ollama:$testcontainersVersion")
 
     // Reactor
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
@@ -249,30 +248,43 @@ configurations {
     }
 }
 
-tasks.register("cli") {
-    group = "api"
-    description = "Run school cli : ./gradlew -p api :cli -Pargs=--gui"
-    doFirst {
-        with(springBoot) {
-            tasks.bootRun.configure {
-                args = (project.findProperty("args") as String?)
-                    ?.trim()
-                    ?.split(" ")
-                    ?.filter(String::isNotEmpty)
-                    ?.also { println("Passing args to Spring Boot: $it") }
-                    ?: emptyList()
-            }
-            mainClass.set("app.cli.CommandLine")
-        }
-    }
-    finalizedBy(tasks.bootRun)
+
+application.mainClass.set("app.workspace.Installer")
+
+
+// Configuration pour Spring Boot
+springBoot.mainClass.set("app.Application")
+
+
+// Tâche personnalisée pour lancer l'application Swing
+tasks.register<JavaExec>("runWorkspaceInstaller") {
+    group = "application"
+    description = "Runs the Swing application"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("app.workspace.Installer")
 }
 
-tasks.register("api") {
-    group = "api"
-    description = "Run school api"
-    doFirst { springBoot.mainClass.set("app.Application") }
-    finalizedBy("bootRun")
+// Configuration spécifique pour bootRun
+tasks.named<BootRun>("bootRun") {
+    mainClass.set("app.Application")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+tasks.register<JavaExec>("cli") {
+    group = "application"
+    description = "Run CLI application: ./gradlew cli -Pargs=--gui"
+
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("app.cli.CommandLine")
+
+    // Gestion des arguments de ligne de commande
+    if (project.hasProperty("args")) {
+        args = (project.property("args") as String)
+            .trim()
+            .split(" ")
+            .filter(String::isNotEmpty)
+            .also { println("Passing args to CLI: $it") }
+    }
 }
 
 tasks.withType<KotlinCompile> {

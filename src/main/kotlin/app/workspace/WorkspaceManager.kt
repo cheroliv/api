@@ -38,7 +38,9 @@ object WorkspaceManager {
     }
 
 
-    fun createWorkspace(config: WorkspaceConfig): WorkspaceConfig = config.createConfigFiles("config.yaml").run {
+    fun createWorkspace(
+        config: WorkspaceConfig
+    ): WorkspaceConfig = config.createConfigFiles("config.yaml").run {
         if (config.type == ALL_IN_ONE) {
             config.createAllInOneFolder(config.basePath)
         }
@@ -47,10 +49,10 @@ object WorkspaceManager {
 
     fun WorkspaceConfig.createAllInOneFolder(basePath: Path)
             : WorkspaceConfig = entries.forEach { dir ->
-            basePath
-                .resolve(dir)
-                .run(WorkspaceManager::createDirectory)
-        }
+        basePath
+            .resolve(dir)
+            .run(WorkspaceManager::createDirectory)
+    }
         .let { this@createAllInOneFolder }
 
     fun createDirectory(path: Path) = path

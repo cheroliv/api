@@ -148,11 +148,12 @@ class WorkspaceTest {
                 .run(::File)
                 .exists()
                 .run(::assertTrue)
-//            deleteRecursively().run(::assertTrue)
+            deleteRecursively().run(::assertTrue)
         }
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     fun `test create workspace with SEPARATED_FOLDERS config`(): Unit {
         val workspacePath = "build/workspace"
         val configFileName = "config.yaml"
