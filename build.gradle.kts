@@ -11,6 +11,7 @@ import Build_gradle.Constants.commonsIoVersion
 import Build_gradle.Constants.jacksonVersion
 import Build_gradle.Constants.jgitVersion
 import Build_gradle.Constants.langchain4jVersion
+import Build_gradle.Constants.sep
 import Build_gradle.Constants.testcontainersVersion
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
@@ -44,16 +45,29 @@ plugins {
 }
 
 extra["springShellVersion"] = "3.3.3"
+
 group = properties["artifact.group"].toString()
 version = "0.0.1"
+
 application.mainClass.set("app.workspace.Installer")
 springBoot.mainClass.set("app.Application")
 
-//version = ("artifact.version" to "artifact.version.key").artifactVersion
 idea.module.excludeDirs.plusAssign(files("node_modules"))
-val USER_HOME_KEY = "user.home"
-val BLANK = ""
-val sep: String get() = FileSystems.getDefault().separator
+
+
+object Constants {
+    const val langchain4jVersion = "0.36.2"
+    const val testcontainersVersion = "1.20.1"
+    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
+    const val commonsIoVersion = "2.13.0"
+    const val jacksonVersion = "2.17.2"//2.18.0
+    const val arrowKtVersion = "1.2.4"
+    const val jgitVersion = "6.10.0.202406032230-r"
+    const val apiVersion = "0.0.1"
+    const val USER_HOME_KEY = "user.home"
+    const val BLANK = ""
+    val sep: String get() = FileSystems.getDefault().separator
+}
 
 data class DockerHub(
     val username: String = properties["docker_hub_login"].toString(),
@@ -62,18 +76,6 @@ data class DockerHub(
     val email: String = properties["docker_hub_email"].toString(),
     val image: String = "cheroliv/e3po"
 )
-
-
-val Pair<String, String>.artifactVersion
-    get() = first.run(Properties().apply {
-        second.run(properties::get).let {
-            USER_HOME_KEY
-                .run(System::getProperty)
-                .run { "$this$it" }
-        }.run(::File)
-            .inputStream()
-            .use(::load)
-    }::get).toString()
 
 repositories {
     mavenCentral()
@@ -87,16 +89,6 @@ dependencyManagement {
     imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") }
 }
 
-object Constants {
-    const val langchain4jVersion = "0.36.2"
-    const val testcontainersVersion = "1.20.1"
-    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
-    const val commonsIoVersion = "2.13.0"
-    const val jacksonVersion = "2.17.2"//2.18.0
-    const val arrowKtVersion = "1.2.4"
-    const val jgitVersion = "6.10.0.202406032230-r"
-    const val apiVersion = "0.0.1"
-}
 
 
 dependencies {
