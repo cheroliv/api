@@ -49,9 +49,6 @@ extra["springShellVersion"] = "3.3.3"
 group = properties["artifact.group"].toString()
 version = "0.0.1"
 
-application.mainClass.set("app.workspace.Installer")
-springBoot.mainClass.set("app.Application")
-
 idea.module.excludeDirs.plusAssign(files("node_modules"))
 
 
@@ -243,35 +240,6 @@ configurations {
     }
 }
 
-tasks.register<JavaExec>("runWorkspaceInstaller") {
-    group = "application"
-    description = "Runs the Swing application"
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("app.workspace.Installer")
-}
-
-tasks.named<BootRun>("bootRun") {
-    mainClass.set("app.Application")
-    classpath = sourceSets["main"].runtimeClasspath
-}
-
-tasks.register<JavaExec>("cli") {
-    group = "application"
-    description = "Run CLI application: ./gradlew cli -Pargs=--gui"
-
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("app.cli.CommandLine")
-
-    // Gestion des arguments de ligne de commande
-    if (project.hasProperty("args")) {
-        args = (project.property("args") as String)
-            .trim()
-            .split(" ")
-            .filter(String::isNotEmpty)
-            .also { println("Passing args to CLI: $it") }
-    }
-}
-
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs = listOf("-Xjsr305=strict")
@@ -313,6 +281,38 @@ tasks.register<TestReport>("testReport") {
         append("tests")
     }))
     reportOn("test")
+}
+
+application.mainClass.set("app.workspace.Installer")
+springBoot.mainClass.set("app.Application")
+
+tasks.register<JavaExec>("runWorkspaceInstaller") {
+    group = "application"
+    description = "Runs the Swing application"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("app.workspace.Installer")
+}
+
+tasks.named<BootRun>("bootRun") {
+    mainClass.set("app.Application")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+tasks.register<JavaExec>("cli") {
+    group = "application"
+    description = "Run CLI application: ./gradlew cli -Pargs=--gui"
+
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("app.cli.CommandLine")
+
+    // Gestion des arguments de ligne de commande
+    if (project.hasProperty("args")) {
+        args = (project.property("args") as String)
+            .trim()
+            .split(" ")
+            .filter(String::isNotEmpty)
+            .also { println("Passing args to CLI: $it") }
+    }
 }
 
 tasks.register<Exec>("apiCheckFirefox") {
