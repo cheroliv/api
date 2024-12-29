@@ -46,6 +46,9 @@ plugins {
 extra["springShellVersion"] = "3.3.3"
 group = properties["artifact.group"].toString()
 version = "0.0.1"
+application.mainClass.set("app.workspace.Installer")
+springBoot.mainClass.set("app.Application")
+
 //version = ("artifact.version" to "artifact.version.key").artifactVersion
 idea.module.excludeDirs.plusAssign(files("node_modules"))
 val USER_HOME_KEY = "user.home"
@@ -248,15 +251,6 @@ configurations {
     }
 }
 
-
-application.mainClass.set("app.workspace.Installer")
-
-
-// Configuration pour Spring Boot
-springBoot.mainClass.set("app.Application")
-
-
-// Tâche personnalisée pour lancer l'application Swing
 tasks.register<JavaExec>("runWorkspaceInstaller") {
     group = "application"
     description = "Runs the Swing application"
@@ -264,7 +258,6 @@ tasks.register<JavaExec>("runWorkspaceInstaller") {
     mainClass.set("app.workspace.Installer")
 }
 
-// Configuration spécifique pour bootRun
 tasks.named<BootRun>("bootRun") {
     mainClass.set("app.Application")
     classpath = sourceSets["main"].runtimeClasspath
