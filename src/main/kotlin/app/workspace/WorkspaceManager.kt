@@ -49,11 +49,8 @@ object WorkspaceManager {
 
     fun WorkspaceConfig.createAllInOneFolder(basePath: Path)
             : WorkspaceConfig = entries.forEach { dir ->
-        basePath
-            .resolve(dir)
-            .run(WorkspaceManager::createDirectory)
-    }
-        .let { this@createAllInOneFolder }
+        basePath.resolve(dir).run(WorkspaceManager::createDirectory)
+    }.let { this@createAllInOneFolder }
 
     fun createDirectory(path: Path) = path
         .toFile()
@@ -72,7 +69,9 @@ object WorkspaceManager {
             exists() -> delete()
         }
         createNewFile()
-        workspace.toYaml.trimIndent().run(::writeText)
+        workspace.toYaml
+            .trimIndent()
+            .run(::writeText)
     }
 
     val WorkspaceConfig.workspace: Workspace

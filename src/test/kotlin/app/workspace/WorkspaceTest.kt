@@ -3,8 +3,8 @@
 package app.workspace
 
 import app.workspace.Log.i
-import app.workspace.Workspace.*
-import app.workspace.Workspace.InstallationType.*
+import app.workspace.Workspace.InstallationType.ALL_IN_ONE
+import app.workspace.Workspace.WorkspaceEntry
 import app.workspace.Workspace.WorkspaceEntry.CollaborationEntry.Collaboration
 import app.workspace.Workspace.WorkspaceEntry.CommunicationEntry.Communication
 import app.workspace.Workspace.WorkspaceEntry.ConfigurationEntry.Configuration
@@ -13,15 +13,17 @@ import app.workspace.Workspace.WorkspaceEntry.CoreEntry.Education.EducationEntry
 import app.workspace.Workspace.WorkspaceEntry.DashboardEntry.Dashboard
 import app.workspace.Workspace.WorkspaceEntry.JobEntry.Job
 import app.workspace.Workspace.WorkspaceEntry.JobEntry.Job.HumanResourcesEntry.Position
+import app.workspace.Workspace.WorkspaceEntry.JobEntry.Job.HumanResourcesEntry.Resume
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.*
 import app.workspace.Workspace.WorkspaceEntry.OrganisationEntry.Organisation
 import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio
 import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject
 import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject.ProjectBuild
+import app.workspace.WorkspaceManager.WorkspaceConstants.entries
 import app.workspace.WorkspaceManager.workspace
+import org.apache.commons.lang3.SystemUtils.USER_HOME_KEY
 import java.io.File
-import java.lang.System.getProperty
 import java.nio.file.Path
 import kotlin.io.path.pathString
 import kotlin.test.*
@@ -65,7 +67,7 @@ class WorkspaceTest {
     private val workspace = Workspace(
         workspace = WorkspaceEntry(
             name = "fonderie",
-            path = "${getProperty("user.home")}/workspace/school",
+            path = "${System.getProperty(USER_HOME_KEY)}/workspace/school",
             office = Office(
                 books = Books(name = "books-collection"),
                 datas = Datas(name = "datas"),
@@ -74,7 +76,11 @@ class WorkspaceTest {
                 notebooks = Notebooks(notebooks = "notebooks"),
                 pilotage = Pilotage(name = "pilotage"),
                 schemas = Schemas(name = "schemas"),
-                slides = Slides(path = "${getProperty("user.home")}/workspace/office/slides"),
+                slides = Slides(
+                    path = "${
+                        System.getProperty("user.home")
+                    }/workspace/office/slides"
+                ),
                 sites = Sites(name = "sites"),
                 path = "office"
             ),
@@ -88,7 +94,7 @@ class WorkspaceTest {
             ),
             job = Job(
                 position = Position("Teacher"),
-                resume = Job.HumanResourcesEntry.Resume(name = "CV")
+                resume = Resume(name = "CV")
             ),
             configuration = Configuration(configuration = "school-configuration"),
             communication = Communication(site = "static-website"),
@@ -100,7 +106,11 @@ class WorkspaceTest {
                     "school" to PortfolioProject(
                         name = "name",
                         cred = "credential",
-                        builds = mutableMapOf("training" to ProjectBuild(name = "training"))
+                        builds = mutableMapOf(
+                            "training" to ProjectBuild(
+                                name = "training"
+                            )
+                        )
                     )
                 )
             ),
@@ -115,7 +125,7 @@ class WorkspaceTest {
 
     @Test
     fun `install workspace`(): Unit {
-        Workspace.install(path = "${getProperty("user.home")}/workspace/school")
+        Workspace.install(path = "${System.getProperty("user.home")}/workspace/school")
         // default type : AllInOneWorkspace
         // ExplodedWorkspace
     }
@@ -131,29 +141,17 @@ class WorkspaceTest {
         }.run {
             exists().run(::assertTrue)
             isDirectory.run(::assertTrue)
-            WorkspaceConfig(
+            Workspace.WorkspaceConfig(
                 basePath = toPath(),
                 type = ALL_IN_ONE,
             ).run(WorkspaceManager::createWorkspace)
-            entries
-                .forEach {
-                "$this/$it"
-                    .apply(::i)
-                    .run(::File)
-                    .exists()
-//                    .run(::assertTrue)
-            }
-            "$path/$configFileName"
-                .apply(::i)
-                .run(::File)
-                .exists()
-                .run(::assertTrue)
+            entries.forEach { "$this/$it".run(::File).exists().run(::assertTrue) }
+            "$path/$configFileName".run(::File).exists().run(::assertTrue)
             deleteRecursively().run(::assertTrue)
         }
     }
 
     @Test
-    @Ignore
     fun `test create workspace with SEPARATED_FOLDERS config`(): Unit {
         val workspacePath = "build/workspace"
         val configFileName = "config.yaml"
@@ -163,11 +161,11 @@ class WorkspaceTest {
             (workspaceEntryPath to (workspacePath.run(::File)
                 .parentFile
                 .listFiles()?.get(index) ?: "build".run(::File)))
-        }.forEach { it: Pair<InstallationType, File> ->
+        }.forEach { it: Pair<String, File> ->
             "${it.second}/${it.first}"
                 .run(::File)
                 .apply {
-                    subPaths[it.first.name] = toPath()
+                    subPaths[it.first] = toPath()
                     mkdir()
                 }.isDirectory().run(::assertTrue)
         }
@@ -178,9 +176,9 @@ class WorkspaceTest {
                 exists().run(::assertTrue)
                 isDirectory.run(::assertTrue)
 
-                val config = WorkspaceConfig(
+                val config = Workspace.WorkspaceConfig(
                     basePath = toPath(),
-                    type = SEPARATED_FOLDERS,
+                    type = Workspace.InstallationType.SEPARATED_FOLDERS,
                     subPaths = subPaths,
                     configFileName = configFileName
                 ).run(WorkspaceManager::createWorkspace)
