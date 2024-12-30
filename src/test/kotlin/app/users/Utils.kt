@@ -21,7 +21,9 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import app.users.User.Attributes.EMAIL_ATTR
+import app.users.User.Attributes.LANG_KEY_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
+import app.users.User.Relations.FIND_ALL_USERS
 import app.users.UserDao.countUsers
 import app.users.Utils.Data.displayInsertUserScript
 import app.users.security.Role
@@ -35,6 +37,8 @@ import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ID_FIELD
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.countUserActivation
+import io.mockk.InternalPlatformDsl.toArray
+import reactor.kotlin.core.publisher.toMono
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneOffset.UTC
@@ -137,9 +141,29 @@ object Utils {
 //        .fetch()
 //        .all()
 //        .collect {
-//            it.
+//            it.run {
+//                User(
+//                    id = get(ID_FIELD).toString().run(UUID::fromString),
+//                    login = get(LOGIN_ATTR).toString(),
+//                    email = get(EMAIL_ATTR).toString(),
+//                    langKey = get(LANG_KEY_ATTR).toString(),
+//                    roles = mutableSetOf<Role>().apply {
+//                        """
+//                        SELECT ua."role"
+//                        FROM "user" u
+//                        JOIN user_authority ua
+//                        ON u.id = ua.user_id
+//                        WHERE u.id = :userId;"""
+//                            .trimIndent()
+//                            .run(getBean<DatabaseClient>()::sql)
+//                            .bind("userId", get(ID_FIELD))
+//                            .fetch()
+//                            .all()
+//                            .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
+//                    }.toSet()
+//                )
+//            }
 //        }
-
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun ApplicationContext.findUserActivationByKey(key: String)

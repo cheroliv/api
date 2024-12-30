@@ -15,8 +15,8 @@ import dev.langchain4j.model.output.Response
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.springframework.context.ApplicationContext
-import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
+import org.springframework.http.HttpStatus.OK
+import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -30,11 +30,11 @@ import kotlin.coroutines.resume
 @RequestMapping("api/ai/translator")
 class AiTranslatorController(service: ChatModelService) {
 
-    @PostMapping(produces = [MediaType.APPLICATION_PROBLEM_JSON_VALUE])
+    @PostMapping(produces = [APPLICATION_PROBLEM_JSON_VALUE])
     suspend fun translate(
         message: String,
         exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = HttpStatus.OK.run(::ResponseEntity)
+    ): ResponseEntity<ProblemDetail> = OK.run(::ResponseEntity)
 
     @Service
     class ChatModelService(context: ApplicationContext) {
