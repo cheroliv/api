@@ -1373,91 +1373,58 @@ class UserTests {
     }
 
     @Test
-    fun `Verify that the request with a bad or wrong URI returns the correct error URL`() {
-//        generateActivationKey.run {
-//            client
-//                .get()
-//                .uri("$ACTIVATE_API_PATH$ACTIVATE_API_PARAM", this)
-//                .exchange()
-//                .returnResult<Unit>()
-//                .url
-//                //when test is ran against localhost:8080
-//                .let { assertEquals(URI("$BASE_URL_DEV$ACTIVATE_API_PATH$this"), it) }
-////                .let { assertEquals(URI("$ACTIVATE_API_PATH$this"), it) }
-//        }
-    }
-
-
-    @Test
-    fun `test signup account with a null password`() {
-//        assertEquals(0, countAccount(dao))
-//        client
-//            .post()
-//            .uri(SIGNUP_API_PATH)
-//            .contentType(APPLICATION_JSON)
-//            .bodyValue(defaultAccount.copy(password = null))
-//            .exchange()
-//            .expectStatus()
-//            .isBadRequest
-//            .returnResult<Unit>()
-//            .responseBodyContent!!
-//            .isNotEmpty()
-//            .run { assertTrue(this) }
-//        assertEquals(0, countAccount(dao))
-    }
-
-    @Test
     fun `Verify the internationalization of validations by validator factory with a bad login in Italian`() {
-//        byProvider(HibernateValidator::class.java)
-//            .configure()
-//            .defaultLocale(ENGLISH)
-//            .locales(FRANCE, ITALY, US)
-//            .localeResolver {
-//                // get the locales supported by the client from the Accept-Language header
-//                val acceptLanguageHeader = "it-IT;q=0.9,en-US;q=0.7"
-//                val acceptedLanguages = LanguageRange.parse(acceptLanguageHeader)
-//                val resolvedLocales = filter(acceptedLanguages, it.supportedLocales)
-//                if (resolvedLocales.size > 0) resolvedLocales[0]
-//                else it.defaultLocale
-//            }
-//            .buildValidatorFactory()
-//            .validator
-//            .validateProperty(defaultAccount.copy(login = "funky-log(n"), LOGIN_FIELD)
-//            .run viol@{
-//                assertTrue(isNotEmpty())
-//                first().run {
-//                    assertEquals(
-//                        "{${Pattern::class.java.name}.message}",
-//                        messageTemplate
-//                    )
-//                    assertEquals(false, message.contains("doit correspondre à"))
-//                    assertContains(
-//                        "deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"",
-//                        message
-//                    )
-//                }
-//            }
+        byProvider(HibernateValidator::class.java)
+            .configure()
+            .defaultLocale(ENGLISH)
+            .locales(FRANCE, ITALY, US)
+            .localeResolver {
+                // get the locales supported by the client from the Accept-Language header
+                val acceptLanguageHeader = "it-IT;q=0.9,en-US;q=0.7"
+                val acceptedLanguages = LanguageRange.parse(acceptLanguageHeader)
+                val resolvedLocales = filter(acceptedLanguages, it.supportedLocales)
+                if (resolvedLocales.size > 0) resolvedLocales[0]
+                else it.defaultLocale
+            }
+            .buildValidatorFactory()
+            .validator
+            .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_FIELD)
+            .run viol@{
+                assertTrue(isNotEmpty())
+                first().run {
+                    assertEquals(
+                        "{${Pattern::class.java.name}.message}",
+                        messageTemplate
+                    )
+                    assertEquals(false, message.contains("doit correspondre à"))
+                    assertContains(
+                        "deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"",
+                        message
+                    )
+                }
+            }
     }
 
     @Test
-    fun `Verify the internationalization of validations through REST with a non-conforming password in French`() {
-//        assertEquals(0, countAccount(dao))
-//        client
-//            .post()
-//            .uri(SIGNUP_API_PATH)
-//            .contentType(APPLICATION_JSON)
-//            .header(ACCEPT_LANGUAGE, FRENCH.language)
-//            .bodyValue(defaultAccount.copy(password = "123"))
-//            .exchange()
-//            .expectStatus()
-//            .isBadRequest
-//            .returnResult<ResponseEntity<ProblemDetail>>()
-//            .responseBodyContent!!
-//            .run {
-//                assertTrue(isNotEmpty())
-//                assertContains(requestToString(), "la taille doit")
-//            }
-//        assertEquals(0, countAccount(dao))
-//
+    fun `Verify the internationalization of validations through REST with a non-conforming password in French`() =
+        runBlocking{
+        assertEquals(0, context.countUsers())
+        client
+            .post()
+            .uri(API_SIGNUP_PATH)
+            .contentType(APPLICATION_PROBLEM_JSON)
+            .header(ACCEPT_LANGUAGE, FRENCH.language)
+            .bodyValue(signup.copy(password = "123"))
+            .exchange()
+            .expectStatus()
+            .isBadRequest
+            .returnResult<ResponseEntity<ProblemDetail>>()
+            .responseBodyContent!!
+            .run {
+                assertTrue(isNotEmpty())
+                assertContains(responseToString(), "la taille doit")
+            }
+        assertEquals(0, context.countUsers())
+
     }
 }

@@ -186,7 +186,4 @@ object Constants {
         path = "",
         status = BAD_REQUEST.value(),
     )
-
-
-
 }
