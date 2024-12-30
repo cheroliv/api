@@ -1,12 +1,3 @@
-@file:Suppress(
-    "GradlePackageUpdate",
-    "PropertyName",
-    "DEPRECATION",
-    "UnstableApiUsage",
-    "VulnerableLibrariesLocal",
-    "UnusedImport",
-)
-
 import Build_gradle.Constants.commonsIoVersion
 import Build_gradle.Constants.jacksonVersion
 import Build_gradle.Constants.jgitVersion
@@ -82,9 +73,9 @@ repositories {
     maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
 }
 
-dependencyManagement {
-    imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") }
-}
+//dependencyManagement {
+//    imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") }
+//}
 
 
 
@@ -114,8 +105,8 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
-    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.5")
+//    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
+//    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.2")
 
     // JGit
     implementation("org.eclipse.jgit:org.eclipse.jgit:$jgitVersion")
@@ -142,7 +133,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-    implementation("org.springframework.shell:spring-shell-starter")
+
+    // Spring-Shell
+//    implementation("org.springframework.shell:spring-shell-starter")
+//    testImplementation("org.springframework.shell:spring-shell-starter-test")
 
     // Spring security
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -158,7 +152,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(module = "mockito-core")
     }
-    testImplementation("org.springframework.shell:spring-shell-starter-test")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-impl:${properties["jsonwebtoken.version"]}")
@@ -189,18 +182,18 @@ dependencies {
     testRuntimeOnly("com.tngtech.archunit:archunit-junit5-engine:${properties["archunit_junit5.version"]}")
 
     // Langchain4j
-    implementation("dev.langchain4j:langchain4j-easy-rag:${properties["langchain4j.version"]}")
-    implementation("dev.langchain4j:langchain4j-pgvector:${properties["langchain4j.version"]}")
-    implementation("dev.langchain4j:langchain4j-document-parser-apache-pdfbox:${properties["langchain4j.version"]}")
-    implementation("dev.langchain4j:langchain4j-web-search-engine-google-custom:${properties["langchain4j.version"]}")
-    implementation("dev.langchain4j:langchain4j-hugging-face:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-spring-boot-starter:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-ollama-spring-boot-starter:${properties["langchain4j.version"]}")
-    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini-spring-boot-starter:${properties["langchain4j.version"]}")
-    testImplementation("dev.langchain4j:langchain4j-spring-boot-tests:${properties["langchain4j.version"]}")
+    implementation("dev.langchain4j:langchain4j-hugging-face:${properties["langchain4j.version"]}")
+    implementation("dev.langchain4j:langchain4j-google-ai-gemini:${properties["langchain4j.version"]}")
+    implementation("dev.langchain4j:langchain4j-pgvector:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-document-parser-apache-pdfbox:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-web-search-engine-google-custom:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-easy-rag:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini-spring-boot-starter:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai:${properties["langchain4j.version"]}")
-//    implementation("dev.langchain4j:langchain4j-google-ai-gemini:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini:${properties["langchain4j.version"]}")
+    testImplementation("dev.langchain4j:langchain4j-spring-boot-tests:${properties["langchain4j.version"]}")
 
     // Arrow-kt
     implementation("io.arrow-kt:arrow-core:${properties["arrow-kt.version"]}")
@@ -209,10 +202,10 @@ dependencies {
 
 
     // Testcontainers
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:postgresql")
-    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
-    implementation("org.testcontainers:ollama:$testcontainersVersion")
+//    testImplementation("org.testcontainers:junit-jupiter")
+//    testImplementation("org.testcontainers:postgresql")
+//    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+//    implementation("org.testcontainers:ollama:$testcontainersVersion")
 
     // Reactor
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
