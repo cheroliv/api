@@ -12,54 +12,6 @@ import app.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
 import app.database.EntityModel.Members.withId
 import app.http.HttpUtils.validator
-import app.utils.AppUtils.lsWorkingDir
-import app.utils.AppUtils.lsWorkingDirProcess
-import app.utils.AppUtils.toJson
-import app.utils.Constants.DEVELOPMENT
-import app.utils.Constants.EMPTY_STRING
-import app.utils.Constants.PRODUCTION
-import app.utils.Constants.ROLE_USER
-import app.utils.Constants.STARTUP_LOG_MSG_KEY
-import app.utils.Constants.VIRGULE
-import app.utils.Properties
-import arrow.core.Either
-import arrow.core.Either.Left
-import arrow.core.Either.Right
-import arrow.core.getOrElse
-import com.fasterxml.jackson.databind.ObjectMapper
-import jakarta.validation.Validation.byProvider
-import jakarta.validation.Validator
-import jakarta.validation.constraints.Pattern
-import jakarta.validation.constraints.Size
-import kotlinx.coroutines.reactive.collect
-import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.runBlocking
-import org.apache.commons.lang3.RandomStringUtils.random
-import org.hibernate.validator.HibernateValidator
-import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.mock
-import org.springframework.beans.factory.getBean
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.ApplicationContext
-import org.springframework.context.MessageSource
-import org.springframework.dao.EmptyResultDataAccessException
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
-import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
-import org.springframework.http.MediaType.APPLICATION_JSON
-import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON
-import org.springframework.http.ProblemDetail
-import org.springframework.http.ResponseEntity
-import org.springframework.r2dbc.core.DatabaseClient
-import org.springframework.r2dbc.core.awaitSingle
-import org.springframework.r2dbc.core.awaitSingleOrNull
-import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.test.web.reactive.server.returnResult
-import org.springframework.transaction.reactive.TransactionalOperator
-import org.springframework.transaction.reactive.executeAndAwait
-import org.springframework.web.server.ServerWebExchange
 import app.users.Tools.logBody
 import app.users.Tools.responseToString
 import app.users.User.Attributes.EMAIL_ATTR
@@ -113,7 +65,55 @@ import app.users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.activateDao
 import app.users.signup.UserActivationDao.countUserActivation
+import app.utils.AppUtils.lsWorkingDir
+import app.utils.AppUtils.lsWorkingDirProcess
+import app.utils.AppUtils.toJson
+import app.utils.Constants.DEVELOPMENT
+import app.utils.Constants.EMPTY_STRING
+import app.utils.Constants.PRODUCTION
+import app.utils.Constants.ROLE_USER
+import app.utils.Constants.STARTUP_LOG_MSG_KEY
+import app.utils.Constants.VIRGULE
+import app.utils.Properties
 import app.workspace.Log.i
+import arrow.core.Either
+import arrow.core.Either.Left
+import arrow.core.Either.Right
+import arrow.core.getOrElse
+import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.validation.Validation.byProvider
+import jakarta.validation.Validator
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
+import kotlinx.coroutines.reactive.collect
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.runBlocking
+import org.apache.commons.lang3.RandomStringUtils.random
+import org.hibernate.validator.HibernateValidator
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.mock
+import org.springframework.beans.factory.getBean
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.ApplicationContext
+import org.springframework.context.MessageSource
+import org.springframework.dao.EmptyResultDataAccessException
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
+import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
+import org.springframework.http.MediaType.APPLICATION_JSON
+import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON
+import org.springframework.http.ProblemDetail
+import org.springframework.http.ResponseEntity
+import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.r2dbc.core.awaitSingle
+import org.springframework.r2dbc.core.awaitSingleOrNull
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.returnResult
+import org.springframework.transaction.reactive.TransactionalOperator
+import org.springframework.transaction.reactive.executeAndAwait
+import org.springframework.web.server.ServerWebExchange
 import java.io.File
 import java.nio.file.Paths
 import java.security.SecureRandom
@@ -1255,7 +1255,6 @@ class UserTests {
                 mock<ServerWebExchange>()
             ).toString().run(::i)
         }
-
     }
 
 
@@ -1349,32 +1348,28 @@ class UserTests {
                 assertEquals(third + 1, context.countUserActivation())
                 "user.id : $first".run(::i)
                 "activation key : $second".run(::i)
+
+                context.findUserActivationByKey(second)
+                    .getOrNull()!!
+                    .activationDate
+                    .run(::assertNull)
+
+                client.get().uri(
+                    API_ACTIVATE_PATH + API_ACTIVATE_PARAM,
+                    second
+                ).exchange()
+                    .expectStatus()
+                    .isOk
+                    .returnResult<ResponseEntity<ProblemDetail>>()
+                    .responseBodyContent!!
+                    .logBody()
+
+                context.findUserActivationByKey(second)
+                    .getOrNull()!!
+                    .activationDate
+                    .run(::assertNotNull)
             }
         }
-        UserDao
-//        assertEquals(0, countAccount(dao))
-//        assertEquals(0, countAccountAuthority(dao))
-//        createDataAccounts(setOf(defaultAccount), dao)
-//        assertEquals(1, countAccount(dao))
-//        assertEquals(1, countAccountAuthority(dao))
-//
-//        client
-//            .get()
-//            .uri(
-//                "$ACTIVATE_API_PATH$ACTIVATE_API_PARAM",
-//                findOneByLogin(defaultAccount.login!!, dao)!!.apply {
-//                    assertTrue(activationKey!!.isNotBlank())
-//                    assertFalse(activated)
-//                }.activationKey
-//            ).exchange()
-//            .expectStatus()
-//            .isOk
-//            .returnResult<Unit>()
-//
-//        findOneByLogin(defaultAccount.login!!, dao)!!.run {
-//            assertNull(activationKey)
-//            assertTrue(activated)
-//        }
     }
 
 //    @Test
