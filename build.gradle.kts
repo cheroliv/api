@@ -257,8 +257,8 @@ tasks.jacocoTestReport {
 }
 
 tasks.register<TestReport>("testReport") {
-    "Generates an HTML test report from the results of testReport task.".run(::setDescription)
-    "report".run(::setGroup)
+    description = "Generates an HTML test report from the results of testReport task."
+    group = "report"
     "${layout.buildDirectory}${sep}reports${sep}tests"
         .run(::file)
         .run(destinationDirectory::set)
@@ -272,8 +272,8 @@ tasks.register<TestReport>("testReport") {
 "app.Application".run(springBoot.mainClass::set)
 
 tasks.register<JavaExec>("runWorkspaceInstaller") {
-    "application".run(::setGroup)
-    "Runs the Swing application".run(::setDescription)
+    group = "application"
+    description = "Runs the Swing application"
     "app.workspace.Installer".run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
@@ -288,8 +288,8 @@ tasks.named<BootRun>("bootRun") {
 }
 
 tasks.register<JavaExec>("cli") {
-    "application".run(::setGroup)
-    "Run CLI application: ./gradlew cli -Pargs=--gui".run(::setDescription)
+    group = "application"
+    description = "Run CLI application: ./gradlew cli -Pargs=--gui"
     "app.cli.CommandLine".run(mainClass::set)
     "main".run(sourceSets::get).runtimeClasspath.run(::setClasspath)
     when {
@@ -306,8 +306,8 @@ tasks.register<JavaExec>("cli") {
 }
 
 tasks.register<Exec>("apiCheckFirefox") {
-    "verification".run(::setGroup)
-    "Check spring boot project then show report in firefox".run(::setDescription)
+    group = "verification"
+    description = "Check spring boot project then show report in firefox"
     dependsOn("check")
     commandLine(
         "firefox",
