@@ -1,15 +1,19 @@
+@file:Suppress(
+    "UnstableApiUsage",
+    "ConstPropertyName",
+    "VulnerableLibrariesLocal",
+    "RedundantSuppression"
+)
+
 import Build_gradle.Constants.commonsIoVersion
 import Build_gradle.Constants.jacksonVersion
 import Build_gradle.Constants.jgitVersion
 import Build_gradle.Constants.langchain4jVersion
-import Build_gradle.Constants.sep
-import Build_gradle.Constants.testcontainersVersion
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
 import java.nio.file.FileSystems
-import java.util.*
 
 buildscript {
     repositories {
@@ -54,8 +58,10 @@ object Constants {
     const val apiVersion = "0.0.1"
     const val USER_HOME_KEY = "user.home"
     const val BLANK = ""
-    val sep: String get() = FileSystems.getDefault().separator
 }
+
+val Project.sep: String get() = FileSystems.getDefault().separator
+
 
 data class DockerHub(
     val username: String = properties["docker_hub_login"].toString(),
@@ -76,7 +82,6 @@ repositories {
 //dependencyManagement {
 //    imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") }
 //}
-
 
 
 dependencies {
@@ -105,8 +110,6 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
-//    implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.2")
-//    runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.2")
 
     // JGit
     implementation("org.eclipse.jgit:org.eclipse.jgit:$jgitVersion")
@@ -143,7 +146,6 @@ dependencies {
     implementation("org.springframework.security:spring-security-data")
 
     // Spring cloud
-    @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:${properties["spring_cloud_starter.version"]}") {
         exclude(module = "commons-collections")
     }
@@ -233,17 +235,13 @@ configurations {
     }
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict")
-    }
-}
+tasks.withType<KotlinCompile> { kotlinOptions { freeCompilerArgs = listOf("-Xjsr305=strict") } }
 
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging { events(FAILED, SKIPPED) }
     reports {
-        html.required.set(true)
+        html.required = true
         ignoreFailures = true
     }
 }
@@ -251,75 +249,74 @@ tasks.withType<Test> {
 tasks.register<Delete>("cleanResources") {
     description = "Delete directory build/resources"
     group = "build"
-    delete(buildString {
-        append("build")
-        append(sep)
-        append("resources")
-    })
+    delete("build${sep}resources")
 }
 
 tasks.jacocoTestReport {
-    executionData(files("$buildDir/jacoco/test.exec"))
+    executionData(files("${layout.buildDirectory}${sep}jacoco${sep}test.exec"))
     reports { xml.required.set(true) }
 }
 
 tasks.register<TestReport>("testReport") {
     description = "Generates an HTML test report from the results of testReport task."
     group = "report"
-    destinationDirectory.set(file(buildString {
-        append(buildDir)
-        append(sep)
-        append("reports")
-        append(sep)
-        append("tests")
-    }))
-    reportOn("test")
+
+    "${layout.buildDirectory}${sep}reports${sep}tests"
+        .run(::file)
+        .run(destinationDirectory::set)
+
+    "test".run(tasks::get)
+        .outputs
+        .files
+        .run(testResults::setFrom)
 }
 
-application.mainClass.set("app.workspace.Installer")
-springBoot.mainClass.set("app.Application")
+"app.workspace.Installer".run(application.mainClass::set)
+"app.Application".run(springBoot.mainClass::set)
 
 tasks.register<JavaExec>("runWorkspaceInstaller") {
-    group = "application"
-    description = "Runs the Swing application"
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("app.workspace.Installer")
+    "application".run(::setGroup)
+    "Runs the Swing application".run(::setDescription)
+    "app.workspace.Installer".run(mainClass::set)
+    "main".run(sourceSets::get)
+        .runtimeClasspath
+        .run(::setClasspath)
 }
 
 tasks.named<BootRun>("bootRun") {
-    mainClass.set("app.Application")
-    classpath = sourceSets["main"].runtimeClasspath
+    "app.Application".run(mainClass::set)
+    "main".run(sourceSets::get)
+        .runtimeClasspath
+        .run(::setClasspath)
 }
 
 tasks.register<JavaExec>("cli") {
-    group = "application"
-    description = "Run CLI application: ./gradlew cli -Pargs=--gui"
-
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("app.cli.CommandLine")
-
-    // Gestion des arguments de ligne de commande
-    if (project.hasProperty("args")) {
-        args = (project.property("args") as String)
-            .trim()
-            .split(" ")
-            .filter(String::isNotEmpty)
-            .also { println("Passing args to CLI: $it") }
+    "application".run(::setGroup)
+    "Run CLI application: ./gradlew cli -Pargs=--gui".run(::setDescription)
+    "app.cli.CommandLine".run(mainClass::set)
+    "main".run(sourceSets::get).runtimeClasspath.run(::setClasspath)
+    when {
+        "args".run(project::hasProperty) -> {
+            args = "args"
+                .run(project::property)
+                .toString()
+                .trim()
+                .split(" ")
+                .filter(String::isNotEmpty)
+                .also { "Passing args to CLI: $it".run(logger::info) }
+        }
     }
 }
 
 tasks.register<Exec>("apiCheckFirefox") {
-    group = "verification"
-    description = "Check springboot project then show report in firefox"
+    "verification".run(::setGroup)
+    "Check spring boot project then show report in firefox".run(::setDescription)
     dependsOn("check")
     commandLine(
         "firefox",
         "--new-tab",
-        layout
-            .projectDirectory
-            .asFile
-            .toPath()
-            .resolve("build/reports/tests/test/index.html")
+        "build${sep}reports${sep}tests${sep}test${sep}index.html"
+            .run(layout.projectDirectory.asFile.toPath()::resolve)
             .toAbsolutePath()
     )
 }
