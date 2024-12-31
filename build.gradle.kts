@@ -44,9 +44,6 @@ extra["springShellVersion"] = "3.3.3"
 group = properties["artifact.group"].toString()
 version = "0.0.1"
 
-idea.module.excludeDirs.plusAssign(files("node_modules"))
-
-
 object Constants {
     const val langchain4jVersion = "0.36.2"
     const val testcontainersVersion = "1.20.1"
@@ -219,6 +216,8 @@ dependencies {
     testImplementation("org.apache.commons:commons-collections4:4.5.0-M1")
 }
 
+files("node_modules").run(idea.module.excludeDirs::plusAssign)
+
 configurations {
     compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
     implementation.configure {
@@ -254,17 +253,15 @@ tasks.register<Delete>("cleanResources") {
 
 tasks.jacocoTestReport {
     executionData(files("${layout.buildDirectory}${sep}jacoco${sep}test.exec"))
-    reports { xml.required.set(true) }
+    reports.xml.required = true
 }
 
 tasks.register<TestReport>("testReport") {
-    description = "Generates an HTML test report from the results of testReport task."
-    group = "report"
-
+    "Generates an HTML test report from the results of testReport task.".run(::setDescription)
+    "report".run(::setGroup)
     "${layout.buildDirectory}${sep}reports${sep}tests"
         .run(::file)
         .run(destinationDirectory::set)
-
     "test".run(tasks::get)
         .outputs
         .files
