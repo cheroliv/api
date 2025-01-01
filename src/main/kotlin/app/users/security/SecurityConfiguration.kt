@@ -1,5 +1,12 @@
 package app.users.security
 
+import app.Constants
+import app.Loggers
+import app.Loggers.d
+import app.Properties
+import app.http.Web
+import app.users.User
+import app.users.UserDao.findOneWithAuths
 import jakarta.validation.Validator
 import kotlinx.coroutines.reactor.mono
 import org.springframework.beans.factory.getBean
@@ -32,12 +39,6 @@ import org.springframework.web.cors.reactive.CorsWebFilter
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import org.springframework.web.server.WebFilter
 import reactor.core.publisher.Mono
-import app.http.Web
-import app.Constants
-import app.Properties
-import app.users.User
-import app.users.UserDao.findOneWithAuths
-import app.workspace.Log
 
 @Configuration
 @EnableWebFluxSecurity
@@ -166,7 +167,7 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         context.getBean<Properties>().cors.apply config@{
             when {
                 allowedOrigins != null && allowedOrigins!!.isNotEmpty() -> this@source.apply {
-                    Log.d("Registering CORS filter")
+                    d("Registering CORS filter")
                     setOf(
                         "/api/**",
                         "/management/**",

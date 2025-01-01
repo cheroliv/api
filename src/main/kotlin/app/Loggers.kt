@@ -18,14 +18,24 @@ import app.Constants.SERVER_SSL_KEY_STORE
 import app.Constants.SPRING_APPLICATION_NAME
 import app.Constants.STARTUP_HOST_WARN_LOG_MSG
 import app.Constants.STARTUP_LOG_MSG_KEY
-import app.workspace.Log.e
-import app.workspace.Log.i
-import app.workspace.Log.w
+import app.workspace.Workspace
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.net.InetAddress.getLocalHost
 import java.net.UnknownHostException
 import java.util.Locale.getDefault
 
 object Loggers {
+    private val log: Logger by lazy { LoggerFactory.getLogger(Workspace::class.java) }
+
+    fun i(message: String): Unit = log.info(message)
+    fun d(message: String): Unit = log.debug(message)
+    fun w(message: String): Unit = log.warn(message)
+    fun t(message: String): Unit = log.trace(message)
+    fun e(message: String): Unit = log.error(message)
+    fun e(message: String, defaultMessage: String?): Unit = log.error(message, defaultMessage)
+    fun e(message: String, e: Exception?): Unit = log.error(message, e)
+    fun w(message: String, e: Exception?): Unit = log.warn(message, e)
 
     @JvmStatic
     fun ApplicationContext.startupLog() = logProfiles.run {

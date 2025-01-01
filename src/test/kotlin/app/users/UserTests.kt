@@ -116,7 +116,7 @@ import app.Constants.ROLE_USER
 import app.Constants.STARTUP_LOG_MSG_KEY
 import app.Constants.VIRGULE
 import app.Properties
-import app.workspace.Log.i
+import app.Loggers.i
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right

@@ -27,7 +27,7 @@ import app.users.security.UserRole
 import app.users.security.UserRole.Fields.ROLE_FIELD
 import app.users.security.UserRole.Fields.USER_ID_FIELD
 import app.users.signup.UserActivation
-import app.workspace.Log.i
+import app.Loggers.i
 import java.util.*
 import java.util.Locale.ENGLISH
 

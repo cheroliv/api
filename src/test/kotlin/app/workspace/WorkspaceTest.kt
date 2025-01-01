@@ -2,7 +2,7 @@
 
 package app.workspace
 
-import app.workspace.Log.i
+import app.Loggers.i
 import app.workspace.Workspace.InstallationType.ALL_IN_ONE
 import app.workspace.Workspace.WorkspaceEntry
 import app.workspace.Workspace.WorkspaceEntry.CollaborationEntry.Collaboration

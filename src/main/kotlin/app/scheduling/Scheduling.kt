@@ -1,5 +1,8 @@
 package app.scheduling
 
+import app.Loggers
+import app.Loggers.d
+import app.Loggers.e
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler
 import org.springframework.aop.interceptor.SimpleAsyncUncaughtExceptionHandler
 import org.springframework.beans.factory.DisposableBean
@@ -12,7 +15,6 @@ import org.springframework.scheduling.annotation.AsyncConfigurer
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import app.workspace.Log
 import java.util.concurrent.Callable
 import java.util.concurrent.Executor
 
@@ -31,7 +33,7 @@ class Scheduling(
         setThreadNamePrefix(taskExecutionProperties.threadNamePrefix)
         corePoolSize = taskExecutionProperties.pool.coreSize
         maxPoolSize = taskExecutionProperties.pool.maxSize
-    }).also { Log.d("Creating Async Task Executor") }
+    }).also { d("Creating Async Task Executor") }
 
     override fun getAsyncUncaughtExceptionHandler(): AsyncUncaughtExceptionHandler =
         SimpleAsyncUncaughtExceptionHandler()
@@ -67,7 +69,7 @@ class Scheduling(
             }
         }
 
-        private fun handle(e: Exception?) = Log.e(EXCEPTION_MESSAGE, e)
+        private fun handle(e: Exception?) = e(EXCEPTION_MESSAGE, e)
 
         override fun submit(task: Runnable) = executor.submit(createWrappedRunnable(task))
 

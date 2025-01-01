@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
-import app.workspace.Log.i
+import app.Loggers.i
 import kotlin.system.exitProcess
 
 @Component

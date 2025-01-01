@@ -34,7 +34,7 @@ import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivationDao.activateDao
-import app.workspace.Log.i
+import app.Loggers.i
 import java.net.URI
 import java.nio.channels.AlreadyBoundException
 import java.util.UUID.randomUUID

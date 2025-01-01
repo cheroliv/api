@@ -13,7 +13,7 @@ import org.hamcrest.TypeSafeDiagnosingMatcher
 import org.springframework.boot.runApplication
 import org.springframework.boot.web.reactive.context.StandardReactiveWebEnvironment
 import org.springframework.context.ConfigurableApplicationContext
-import app.workspace.Log.i
+import app.Loggers.i
 import java.io.IOException
 import java.lang.Byte
 import java.time.ZonedDateTime

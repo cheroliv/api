@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity.badRequest
 import org.springframework.http.ResponseEntity.internalServerError
 import org.springframework.web.server.ServerWebExchange
 import app.users.security.SecurityConfiguration.Companion.spaNegated
-import app.workspace.Log.i
+import app.Loggers.i
 import java.net.URI
 import java.util.Locale.ENGLISH
 import java.util.Locale.forLanguageTag

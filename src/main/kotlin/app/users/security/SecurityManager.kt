@@ -3,6 +3,10 @@ package app.users.security
 import app.Constants.AUTHORITIES_KEY
 import app.Constants.INVALID_TOKEN
 import app.Constants.VALID_TOKEN
+import app.Loggers
+import app.Loggers.d
+import app.Loggers.i
+import app.Loggers.t
 import app.Properties
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts.builder
@@ -20,10 +24,6 @@ import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.User
 import org.springframework.stereotype.Component
-import app.workspace.Log
-import app.workspace.Log.d
-import app.workspace.Log.i
-import app.workspace.Log.t
 import java.security.Key
 import java.time.ZonedDateTime.now
 import java.util.*
@@ -55,7 +55,7 @@ class SecurityManager(
                                     append("We recommend using the `school.security.authentication.jwt.base64-secret`")
                                     append(" key for optimum security.")
                                 }
-                                ).run(Log::w)
+                                ).run(Loggers::w)
                             .run { toByteArray() }
 
                         else -> d("Using a Base64-encoded Jwt secret key").run {

@@ -1,6 +1,7 @@
 package app.workspace
 
-import app.workspace.Log.i
+import app.Loggers
+import app.Loggers.i
 import app.workspace.Workspace.*
 import app.workspace.Workspace.InstallationType.ALL_IN_ONE
 import app.workspace.Workspace.InstallationType.SEPARATED_FOLDERS
@@ -56,7 +57,7 @@ class SetupSwingFrame(
     },
 ) : JFrame("School Project SetupSwingFrame") {
     init {
-        initUI().let { "Init, currentInstallationType : $currentInstallationType".run(Log::i) }
+        initUI().let { "Init, currentInstallationType : $currentInstallationType".run(Loggers::i) }
     }
 
     private fun SetupSwingFrame.clearSpecificPaths() {
@@ -135,7 +136,7 @@ class SetupSwingFrame(
     }
 
     private fun SetupSwingFrame.handleInstallationTypeChange(type: InstallationType) {
-        "currentInstallationType : $currentInstallationType".run(Log::i)
+        "currentInstallationType : $currentInstallationType".run(Loggers::i)
         currentInstallationType = type
         "Installation type changed to $type".run(::i)
         setWorkspaceEntriesVisibility(type == SEPARATED_FOLDERS)
