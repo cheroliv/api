@@ -21,3 +21,13 @@ package app.mail//package school.base.mail
 //    fun sendActivationEmail(account: AccountCredentials)
 //    fun sendCreationEmail(account: AccountCredentials)
 //}
+
+data class GoogleWrapper(
+    val client_id: String,
+    val project_id: String,
+    val auth_uri: String,
+    val token_uri: String,
+    val auth_provider_x509_cert_url: String,
+    val client_secret: String,
+    val redirect_uris: List<String>
+)

@@ -1,4 +1,5 @@
-package app.mail//@file:Suppress("CanBeParameter")
+package app.mail
+//@file:Suppress("CanBeParameter")
 //
 //package school.base.mail
 //

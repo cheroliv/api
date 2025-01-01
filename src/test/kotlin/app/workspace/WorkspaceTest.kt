@@ -215,6 +215,4 @@ class WorkspaceTest {
             }
         subPaths.map { it.value.toAbsolutePath().toFile().deleteRecursively().run(::assertTrue) }
     }
-
-
 }

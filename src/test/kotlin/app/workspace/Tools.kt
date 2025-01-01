@@ -1,4 +1,4 @@
-package app.users
+package app.workspace
 
 import app.Application
 import app.utils.Constants

@@ -15,6 +15,16 @@ import app.utils.Properties
 
 @Configuration
 class MailConfiguration(private val properties: Properties) {
+    data class GoogleAuthConfig(
+        val clientId: String,
+        val projectId: String,
+        val authUri: String,
+        val tokenUri: String,
+        val authProviderX509CertUrl: String,
+        val clientSecret: String,
+        val redirectUris: List<String>
+    )
+
     @Bean
     @Profile("!$MAILSLURP & !$GMAIL")
     fun javaMailSender(): JavaMailSender = JavaMailSenderImpl().apply {
@@ -33,6 +43,4 @@ class MailConfiguration(private val properties: Properties) {
             "mail.auth_api_key" to "",
         ).forEach { javaMailProperties[it.key] = it.value }
     }
-
-
 }

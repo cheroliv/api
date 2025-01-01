@@ -1,4 +1,4 @@
-package app.mail//package school.base.mail
+package app.mail
 //
 //import org.springframework.context.MessageSource
 //import org.springframework.context.annotation.Profile
