@@ -1,7 +1,7 @@
 package app.users.security
 
-import app.utils.Constants.AUTHORIZATION_HEADER
-import app.utils.Constants.BEARER_START_WITH
+import app.Constants.AUTHORIZATION_HEADER
+import app.Constants.BEARER_START_WITH
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.http.server.reactive.ServerHttpRequest

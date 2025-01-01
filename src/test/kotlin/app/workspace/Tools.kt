@@ -1,8 +1,8 @@
 package app.workspace
 
-import app.Application
-import app.utils.Constants
-import app.utils.Constants.VIRGULE
+import app.API
+import app.Constants
+import app.Constants.VIRGULE
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -63,7 +63,7 @@ object Tools {
 
     fun launcher(
         vararg profiles: String, userAuths: Set<Pair<String, String>> = emptySet()
-    ): ConfigurableApplicationContext = runApplication<Application> {
+    ): ConfigurableApplicationContext = runApplication<API> {
         /** before launching: configuration */
         setEnvironment(StandardReactiveWebEnvironment().apply {
             setDefaultProfiles(Constants.TEST)

@@ -1,4 +1,4 @@
-package app.utils
+package app
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.bind.ConstructorBinding

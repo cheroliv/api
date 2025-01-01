@@ -1,8 +1,8 @@
-package app.cli
+package app
 
-import app.utils.Constants.CLI
-import app.utils.Constants.CLI_PROPS
-import app.utils.Constants.NORMAL_TERMINATION
+import app.Constants.CLI
+import app.Constants.CLI_PROPS
+import app.Constants.NORMAL_TERMINATION
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -15,11 +15,11 @@ import kotlin.system.exitProcess
 @Component
 @Profile(CLI)
 @SpringBootApplication
-class CommandLine : CommandLineRunner {
+class CLI : CommandLineRunner {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            runApplication<CommandLine>(*args) {
+            runApplication<CLI>(*args) {
                 setAdditionalProfiles(CLI)
                 setDefaultProperties(CLI_PROPS)
                 //before loading config

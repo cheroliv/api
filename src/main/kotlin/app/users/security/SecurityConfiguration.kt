@@ -33,8 +33,8 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import org.springframework.web.server.WebFilter
 import reactor.core.publisher.Mono
 import app.http.Web
-import app.utils.Constants
-import app.utils.Properties
+import app.Constants
+import app.Properties
 import app.users.User
 import app.users.UserDao.findOneWithAuths
 import app.workspace.Log

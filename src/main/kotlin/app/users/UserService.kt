@@ -7,7 +7,7 @@ import app.database.EntityModel.Members.withId
 import app.http.HttpUtils.badResponse
 import app.http.HttpUtils.validator
 import app.http.ProblemsModel
-import app.utils.Constants.defaultProblems
+import app.Constants.defaultProblems
 import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.left

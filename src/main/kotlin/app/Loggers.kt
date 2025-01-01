@@ -1,23 +1,23 @@
-package app.utils
+package app
 
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
-import app.utils.Constants.CLOUD
-import app.utils.Constants.DEVELOPMENT
-import app.utils.Constants.DEV_HOST
-import app.utils.Constants.EMPTY_CONTEXT_PATH
-import app.utils.Constants.EMPTY_STRING
-import app.utils.Constants.HTTP
-import app.utils.Constants.HTTPS
-import app.utils.Constants.LINE
-import app.utils.Constants.PRODUCTION
-import app.utils.Constants.SERVER_PORT
-import app.utils.Constants.SERVER_SERVLET_CONTEXT_PATH
-import app.utils.Constants.SERVER_SSL_KEY_STORE
-import app.utils.Constants.SPRING_APPLICATION_NAME
-import app.utils.Constants.STARTUP_HOST_WARN_LOG_MSG
-import app.utils.Constants.STARTUP_LOG_MSG_KEY
+import app.Constants.CLOUD
+import app.Constants.DEVELOPMENT
+import app.Constants.DEV_HOST
+import app.Constants.EMPTY_CONTEXT_PATH
+import app.Constants.EMPTY_STRING
+import app.Constants.HTTP
+import app.Constants.HTTPS
+import app.Constants.LINE
+import app.Constants.PRODUCTION
+import app.Constants.SERVER_PORT
+import app.Constants.SERVER_SERVLET_CONTEXT_PATH
+import app.Constants.SERVER_SSL_KEY_STORE
+import app.Constants.SPRING_APPLICATION_NAME
+import app.Constants.STARTUP_HOST_WARN_LOG_MSG
+import app.Constants.STARTUP_LOG_MSG_KEY
 import app.workspace.Log.e
 import app.workspace.Log.i
 import app.workspace.Log.w
@@ -25,7 +25,7 @@ import java.net.InetAddress.getLocalHost
 import java.net.UnknownHostException
 import java.util.Locale.getDefault
 
-object LoggerUtils {
+object Loggers {
 
     @JvmStatic
     fun ApplicationContext.startupLog() = logProfiles.run {
@@ -54,7 +54,7 @@ object LoggerUtils {
 
                 else -> EMPTY_STRING
             },
-        ).run(LoggerUtils::startupLogMessage)
+        ).run(Loggers::startupLogMessage)
             .run(::i)
     }
 

@@ -1,9 +1,9 @@
 package app.users.security
 
-import app.utils.Constants.AUTHORITIES_KEY
-import app.utils.Constants.INVALID_TOKEN
-import app.utils.Constants.VALID_TOKEN
-import app.utils.Properties
+import app.Constants.AUTHORITIES_KEY
+import app.Constants.INVALID_TOKEN
+import app.Constants.VALID_TOKEN
+import app.Properties
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts.builder
 import io.jsonwebtoken.Jwts.parserBuilder

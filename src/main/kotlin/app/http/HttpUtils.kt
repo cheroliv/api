@@ -1,7 +1,7 @@
 package app.http
 
-import app.utils.Constants.SPA_NEGATED_REGEX
-import app.utils.Constants.defaultProblems
+import app.Constants.SPA_NEGATED_REGEX
+import app.Constants.defaultProblems
 import jakarta.validation.Validation.byProvider
 import jakarta.validation.Validator
 import org.hibernate.validator.HibernateValidator

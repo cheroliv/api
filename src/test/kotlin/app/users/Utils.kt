@@ -3,13 +3,13 @@
 package app.users
 
 import app.database.EntityModel.Members.withId
-import app.utils.Constants.ADMIN
-import app.utils.Constants.DOMAIN_DEV_URL
-import app.utils.Constants.EMPTY_STRING
-import app.utils.Constants.ROLE_ADMIN
-import app.utils.Constants.ROLE_ANONYMOUS
-import app.utils.Constants.ROLE_USER
-import app.utils.Constants.USER
+import app.Constants.ADMIN
+import app.Constants.DOMAIN_DEV_URL
+import app.Constants.EMPTY_STRING
+import app.Constants.ROLE_ADMIN
+import app.Constants.ROLE_ANONYMOUS
+import app.Constants.ROLE_USER
+import app.Constants.USER
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -21,9 +21,7 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import app.users.User.Attributes.EMAIL_ATTR
-import app.users.User.Attributes.LANG_KEY_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
-import app.users.User.Relations.FIND_ALL_USERS
 import app.users.UserDao.countUsers
 import app.users.Utils.Data.displayInsertUserScript
 import app.users.security.Role
@@ -37,8 +35,6 @@ import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ID_FIELD
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.countUserActivation
-import io.mockk.InternalPlatformDsl.toArray
-import reactor.kotlin.core.publisher.toMono
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneOffset.UTC

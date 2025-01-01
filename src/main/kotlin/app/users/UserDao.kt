@@ -3,7 +3,7 @@
 package app.users
 
 import app.database.EntityModel
-import app.utils.Constants.ROLE_USER
+import app.Constants.ROLE_USER
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right

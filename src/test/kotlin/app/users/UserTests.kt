@@ -47,7 +47,7 @@ package app.users
 //import kotlin.test.Test
 //import kotlin.test.assertNotNull
 
-import app.Application
+import app.API
 import app.database.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
@@ -106,16 +106,16 @@ import app.users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.activateDao
 import app.users.signup.UserActivationDao.countUserActivation
-import app.utils.AppUtils.lsWorkingDir
-import app.utils.AppUtils.lsWorkingDirProcess
-import app.utils.AppUtils.toJson
-import app.utils.Constants.DEVELOPMENT
-import app.utils.Constants.EMPTY_STRING
-import app.utils.Constants.PRODUCTION
-import app.utils.Constants.ROLE_USER
-import app.utils.Constants.STARTUP_LOG_MSG_KEY
-import app.utils.Constants.VIRGULE
-import app.utils.Properties
+import app.Utils.lsWorkingDir
+import app.Utils.lsWorkingDirProcess
+import app.Utils.toJson
+import app.Constants.DEVELOPMENT
+import app.Constants.EMPTY_STRING
+import app.Constants.PRODUCTION
+import app.Constants.ROLE_USER
+import app.Constants.STARTUP_LOG_MSG_KEY
+import app.Constants.VIRGULE
+import app.Properties
 import app.workspace.Log.i
 import arrow.core.Either
 import arrow.core.Either.Left
@@ -170,7 +170,7 @@ import app.mail.MailConfiguration.GoogleAuthConfig
 
 @ActiveProfiles("test")
 @SpringBootTest(
-    classes = [Application::class],
+    classes = [API::class],
     properties = ["spring.main.web-application-type=reactive"]
 )
 class UserTests {

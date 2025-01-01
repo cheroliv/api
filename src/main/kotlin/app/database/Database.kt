@@ -1,6 +1,6 @@
 package app.database
 
-import app.utils.Properties
+import app.Properties
 import io.r2dbc.spi.ConnectionFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean

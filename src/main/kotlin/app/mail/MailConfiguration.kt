@@ -5,13 +5,13 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.JavaMailSenderImpl
-import app.utils.Constants.GMAIL
-import app.utils.Constants.MAILSLURP
-import app.utils.Constants.MAIL_DEBUG
-import app.utils.Constants.MAIL_SMTP_AUTH
-import app.utils.Constants.MAIL_TRANSPORT_PROTOCOL
-import app.utils.Constants.MAIL_TRANSPORT_STARTTLS_ENABLE
-import app.utils.Properties
+import app.Constants.GMAIL
+import app.Constants.MAILSLURP
+import app.Constants.MAIL_DEBUG
+import app.Constants.MAIL_SMTP_AUTH
+import app.Constants.MAIL_TRANSPORT_PROTOCOL
+import app.Constants.MAIL_TRANSPORT_STARTTLS_ENABLE
+import app.Properties
 
 @Configuration
 class MailConfiguration(private val properties: Properties) {

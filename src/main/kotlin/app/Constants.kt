@@ -1,4 +1,4 @@
-package app.utils
+package app
 
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE

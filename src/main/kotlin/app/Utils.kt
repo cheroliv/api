@@ -1,4 +1,4 @@
-package app.utils
+package app
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils.stripAccents
@@ -14,7 +14,7 @@ import java.nio.file.Paths
 import kotlin.reflect.KClass
 import kotlin.streams.asSequence
 
-object AppUtils {
+object Utils {
     val Pair<Any, ApplicationContext>.toJson: String
         get() = first.run(second.getBean<ObjectMapper>()::writeValueAsString)
 

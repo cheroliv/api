@@ -1,6 +1,6 @@
 package app.workspace
 
-import app.utils.Constants.EMPTY_STRING
+import app.Constants.EMPTY_STRING
 import app.workspace.Log.w
 import java.awt.EventQueue.invokeLater
 import javax.swing.UIManager.getInstalledLookAndFeels

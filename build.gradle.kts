@@ -269,7 +269,7 @@ tasks.register<TestReport>("testReport") {
 }
 
 "app.workspace.Installer".run(application.mainClass::set)
-"app.Application".run(springBoot.mainClass::set)
+"app.API".run(springBoot.mainClass::set)
 
 tasks.register<JavaExec>("runWorkspaceInstaller") {
     group = "application"
@@ -281,7 +281,7 @@ tasks.register<JavaExec>("runWorkspaceInstaller") {
 }
 
 tasks.named<BootRun>("bootRun") {
-    "app.Application".run(mainClass::set)
+    "app.API".run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
         .run(::setClasspath)
@@ -290,7 +290,7 @@ tasks.named<BootRun>("bootRun") {
 tasks.register<JavaExec>("cli") {
     group = "application"
     description = "Run CLI application: ./gradlew cli -Pargs=--gui"
-    "app.cli.CommandLine".run(mainClass::set)
+    "app.CLI".run(mainClass::set)
     "main".run(sourceSets::get).runtimeClasspath.run(::setClasspath)
     when {
         "args".run(project::hasProperty) -> {

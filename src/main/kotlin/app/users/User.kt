@@ -1,6 +1,6 @@
 package app.users
 
-import app.utils.Constants.EMPTY_STRING
+import app.Constants.EMPTY_STRING
 import app.database.EntityModel
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Email
