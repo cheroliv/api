@@ -1,4 +1,4 @@
-@file:Suppress("unused")
+@file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
 package app.workspace
 
@@ -42,23 +42,21 @@ object WorkspaceManager {
         config: WorkspaceConfig
     ): WorkspaceConfig = config.createConfigFiles("config.yaml").run {
         if (config.type == ALL_IN_ONE) {
-            config.createAllInOneFolder(config.basePath)
+            config.allInOneDirectory(config.basePath)
         }
         return config
     }
 
-    fun WorkspaceConfig.createAllInOneFolder(basePath: Path)
-            : WorkspaceConfig = entries.forEach { dir ->
-        basePath.resolve(dir).run(WorkspaceManager::createDirectory)
-    }.let { this@createAllInOneFolder }
+    fun WorkspaceConfig.allInOneDirectory(basePath: Path)
+            : WorkspaceConfig = entries.forEach {
+        it.run(basePath::resolve).run(WorkspaceManager::createDirectory)
+    }.let { this@allInOneDirectory }
 
-    fun createDirectory(path: Path) = path
-        .toFile()
-        .apply {
-            when {
-                !exists() -> mkdirs()
-            }
+    fun createDirectory(path: Path): File = path.toFile().apply {
+        when {
+            !exists() -> mkdirs()
         }
+    }
 
 
     fun WorkspaceConfig.createConfigFiles(configFileName: String) = File(
@@ -69,9 +67,7 @@ object WorkspaceManager {
             exists() -> delete()
         }
         createNewFile()
-        workspace.toYaml
-            .trimIndent()
-            .run(::writeText)
+        workspace.toYaml.trimIndent().run(::writeText)
     }
 
     val WorkspaceConfig.workspace: Workspace
@@ -87,11 +83,7 @@ object WorkspaceManager {
                     notebooks = Notebooks(notebooks = "notebooks"),
                     pilotage = Pilotage(name = "pilotage"),
                     schemas = Schemas(name = "schemas"),
-                    slides = Slides(
-                        path = "${
-                            System.getProperty("user.home")
-                        }/app.workspace/bibliotheque/slides"
-                    ),
+                    slides = Slides(path = "slides"),
                     sites = Sites(name = "sites"),
                     path = subPaths["office"]?.pathString ?: "office"
                 ),

@@ -104,8 +104,7 @@ data class User(
     object Relations {
         @JvmStatic
         val CREATE_TABLES: String
-            get() = @Suppress("RemoveRedundantQualifierName")
-            listOf(
+            get() = listOf(
                 SQL_SCRIPT,
                 Role.Relations.SQL_SCRIPT,
                 UserRole.Relations.SQL_SCRIPT,

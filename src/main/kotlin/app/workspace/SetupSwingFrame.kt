@@ -136,7 +136,7 @@ class SetupSwingFrame(
     }
 
     private fun SetupSwingFrame.handleInstallationTypeChange(type: InstallationType) {
-        "currentInstallationType : $currentInstallationType".run(Loggers::i)
+        "currentInstallationType : $currentInstallationType".run(::i)
         currentInstallationType = type
         "Installation type changed to $type".run(::i)
         setWorkspaceEntriesVisibility(type == SEPARATED_FOLDERS)

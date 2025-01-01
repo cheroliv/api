@@ -2,6 +2,7 @@ package app
 
 import app.ai.translator.AiTranslatorController.AssistantManager
 import app.Loggers.startupLog
+import app.users.User
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
@@ -9,7 +10,7 @@ import org.springframework.boot.runApplication
 @SpringBootApplication(
     scanBasePackageClasses = [
         API::class,
-        app.users.User::class,
+        User::class,
         AssistantManager::class,
     ]
 )

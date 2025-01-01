@@ -11,8 +11,8 @@ object Installer {
     @JvmStatic
     fun main(args: Array<String>) = try {
         getInstalledLookAndFeels()
-            .find { it.name == "Nimbus" }
-            ?.let { setLookAndFeel(it.className) }
+            .find { it.name == "Nimbus" }?.className
+            ?.run(::setLookAndFeel)
     } catch (ex: Exception) {
         when (ex) {
             is ClassNotFoundException,
@@ -22,7 +22,5 @@ object Installer {
             // Rethrow unknown exceptions
             else -> throw ex
         }
-    }.run {
-        invokeLater { run(::SetupSwingFrame).run { isVisible = true } }
-    }
+    }.run { invokeLater { run(::SetupSwingFrame).run { isVisible = true } } }
 }
