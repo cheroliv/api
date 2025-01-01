@@ -18,7 +18,7 @@ import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
 import kotlin.Short.Companion.MAX_VALUE
 
-class SetupSwingFrame(
+class InstallerUI(
     private val selectedPaths: MutableMap<String, Path?> = HashMap(),
     private var currentInstallationType: InstallationType = ALL_IN_ONE,
     private val communicationPathLabel: JLabel = JLabel("Communication").apply { toolTipText = "" },
@@ -55,12 +55,12 @@ class SetupSwingFrame(
         add(allInOneWorkspaceRadioButton)
         add(splitWorkspaceRadioButton)
     },
-) : JFrame("School Project SetupSwingFrame") {
+) : JFrame("School Project Installer") {
     init {
         initUI().let { "Init, currentInstallationType : $currentInstallationType".run(Loggers::i) }
     }
 
-    private fun SetupSwingFrame.clearSpecificPaths() {
+    private fun InstallerUI.clearSpecificPaths() {
         officePathTextField.text = ""
         educationPathTextField.text = ""
         communicationPathTextField.text = ""
@@ -74,7 +74,7 @@ class SetupSwingFrame(
         selectedPaths.remove("job")
     }
 
-    private fun SetupSwingFrame.handleCreateWorkspace() {
+    private fun InstallerUI.handleCreateWorkspace() {
         when {
             workspacePathTextField.text.isEmpty() -> {
                 showMessageDialog(
@@ -121,7 +121,7 @@ class SetupSwingFrame(
         }
     }
 
-    private fun SetupSwingFrame.selectDirectory(
+    private fun InstallerUI.selectDirectory(
         pathKey: String,
         textField: JTextField
     ) = JFileChooser().run {
@@ -135,7 +135,7 @@ class SetupSwingFrame(
         }
     }
 
-    private fun SetupSwingFrame.handleInstallationTypeChange(type: InstallationType) {
+    private fun InstallerUI.handleInstallationTypeChange(type: InstallationType) {
         "currentInstallationType : $currentInstallationType".run(::i)
         currentInstallationType = type
         "Installation type changed to $type".run(::i)
@@ -144,7 +144,7 @@ class SetupSwingFrame(
     }
 
 
-    private fun SetupSwingFrame.addListeners(): SetupSwingFrame {
+    private fun InstallerUI.addListeners(): InstallerUI {
         splitWorkspaceRadioButton.addActionListener { handleInstallationTypeChange(SEPARATED_FOLDERS) }
         allInOneWorkspaceRadioButton.addActionListener { handleInstallationTypeChange(ALL_IN_ONE) }
         browseCommunicationPathButton.addActionListener {
@@ -157,18 +157,15 @@ class SetupSwingFrame(
         browseOfficePathButton.addActionListener { selectDirectory("office", officePathTextField) }
         browseWorkspacePathButton.addActionListener { selectDirectory("workspace", workspacePathTextField) }
         browseJobPathButton.addActionListener { selectDirectory("job", jobPathTextField) }
-        /*
-            action sur bouton create app.workspace
-         */
         createWorkspaceButton.addActionListener { handleCreateWorkspace() }
         installationTypeGroup.selection.addActionListener {
         }
         return this
     }
 
-    private fun SetupSwingFrame.setWorkspaceEntriesVisibility(
+    private fun InstallerUI.setWorkspaceEntriesVisibility(
         visible: Boolean
-    ): SetupSwingFrame = setOf(
+    ): InstallerUI = setOf(
         officePathLabel,
         officePathTextField,
         browseOfficePathButton,
@@ -187,7 +184,7 @@ class SetupSwingFrame(
     ).map { it.isVisible = visible }
         .run { this@setWorkspaceEntriesVisibility }
 
-    internal fun SetupSwingFrame.initUI() {
+    internal fun InstallerUI.initUI() {
         name = "setupFrame" // NOI18N
         defaultCloseOperation = EXIT_ON_CLOSE
         setWorkspaceEntriesVisibility(false)

@@ -31,7 +31,7 @@ import java.time.ZoneOffset.UTC
 
 @Configuration
 @EnableTransactionManagement
-@EnableR2dbcRepositories("app", "ai", "users")
+@EnableR2dbcRepositories("app")
 class Database(private val properties: Properties) {
 
     //TODO: https://reflectoring.io/spring-bean-lifecycle/

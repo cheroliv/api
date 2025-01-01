@@ -6,14 +6,14 @@ import kotlin.test.BeforeTest
 import org.assertj.swing.fixture.FrameFixture
 
 //@org.junit.jupiter.api.extension.ExtendWith
-class SetupSwingFrameTest {
+class InstallerUITest {
     private lateinit var window: FrameFixture
 
     @BeforeTest
     fun setUp() = execute {
         window =
 //            context.
-            run(::SetupSwingFrame)
+            run(::InstallerUI)
                 .run(::FrameFixture)
                 .apply(FrameFixture::show)
     }

@@ -22,5 +22,5 @@ object Installer {
             // Rethrow unknown exceptions
             else -> throw ex
         }
-    }.run { invokeLater { run(::SetupSwingFrame).run { isVisible = true } } }
+    }.run { invokeLater { run(::InstallerUI).run { isVisible = true } } }
 }
