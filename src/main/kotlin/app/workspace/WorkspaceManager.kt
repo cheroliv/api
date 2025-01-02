@@ -1,4 +1,7 @@
-@file:Suppress("unused", "MemberVisibilityCanBePrivate")
+@file:Suppress(
+    "unused",
+    "MemberVisibilityCanBePrivate"
+)
 
 package app.workspace
 
@@ -37,7 +40,6 @@ object WorkspaceManager {
         )
     }
 
-
     fun createWorkspace(
         config: WorkspaceConfig
     ): WorkspaceConfig = config.createConfigFiles("config.yaml").run {
@@ -72,7 +74,7 @@ object WorkspaceManager {
 
     val WorkspaceConfig.workspace: Workspace
         get() = Workspace(
-            workspace = WorkspaceEntry(
+            entries = WorkspaceEntry(
                 name = "workspace",
                 path = basePath.pathString,
                 office = Office(

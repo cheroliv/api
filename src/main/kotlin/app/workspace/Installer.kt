@@ -1,8 +1,8 @@
 package app.workspace
 
-import app.Constants.EMPTY_STRING
-import app.Loggers
-import app.Loggers.w
+import app.core.Constants.EMPTY_STRING
+import app.core.Loggers
+import app.core.Loggers.w
 import java.awt.EventQueue.invokeLater
 import java.nio.file.Path
 import javax.swing.*

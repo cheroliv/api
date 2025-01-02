@@ -1,7 +1,7 @@
 package app.users
 
-import app.Constants.EMPTY_STRING
-import app.database.EntityModel
+import app.core.Constants.EMPTY_STRING
+import app.core.database.EntityModel
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
@@ -27,7 +27,7 @@ import app.users.security.UserRole
 import app.users.security.UserRole.Fields.ROLE_FIELD
 import app.users.security.UserRole.Fields.USER_ID_FIELD
 import app.users.signup.UserActivation
-import app.Loggers.i
+import app.core.Loggers.i
 import java.util.*
 import java.util.Locale.ENGLISH
 

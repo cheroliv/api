@@ -1,6 +1,6 @@
-package app.database
+package app.core.database
 
-import app.Properties
+import app.core.Properties
 import io.r2dbc.spi.ConnectionFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.TransactionalOperator.create
 import app.users.User.Relations.CREATE_TABLES
-import app.Loggers.i
+import app.core.Loggers.i
 import java.io.File.createTempFile
 import java.time.Instant
 import java.time.LocalDateTime

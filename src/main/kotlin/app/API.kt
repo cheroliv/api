@@ -1,7 +1,8 @@
 package app
 
 import app.ai.translator.AiTranslatorController.AssistantManager
-import app.Loggers.startupLog
+import app.core.Loggers.startupLog
+import app.core.Properties
 import app.users.User
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties

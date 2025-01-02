@@ -1,6 +1,6 @@
 package app.users.profile
 
-import app.Constants
+import app.core.Constants
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import app.users.User

@@ -38,6 +38,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class WorkspaceService(context:ApplicationContext) {
+
     fun initializeWorkspace() {
         println("Initializing workspace")
     }

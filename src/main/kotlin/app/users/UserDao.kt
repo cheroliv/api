@@ -2,8 +2,8 @@
 
 package app.users
 
-import app.database.EntityModel
-import app.Constants.ROLE_USER
+import app.core.database.EntityModel
+import app.core.Constants.ROLE_USER
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right

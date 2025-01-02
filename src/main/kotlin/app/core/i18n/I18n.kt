@@ -1,6 +1,6 @@
-package app.i18n
+package app.core.i18n
 
-import app.Constants
+import app.core.Constants
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.i18n.LocaleContext
 import org.springframework.context.i18n.SimpleLocaleContext

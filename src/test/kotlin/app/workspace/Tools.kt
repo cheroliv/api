@@ -1,8 +1,8 @@
 package app.workspace
 
 import app.API
-import app.Constants
-import app.Constants.VIRGULE
+import app.core.Constants
+import app.core.Constants.VIRGULE
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -13,7 +13,7 @@ import org.hamcrest.TypeSafeDiagnosingMatcher
 import org.springframework.boot.runApplication
 import org.springframework.boot.web.reactive.context.StandardReactiveWebEnvironment
 import org.springframework.context.ConfigurableApplicationContext
-import app.Loggers.i
+import app.core.Loggers.i
 import java.io.IOException
 import java.lang.Byte
 import java.time.ZonedDateTime

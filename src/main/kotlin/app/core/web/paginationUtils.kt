@@ -1,4 +1,4 @@
-package app.http
+package app.core.web
 
 import org.springframework.data.domain.Page
 import org.springframework.http.HttpHeaders

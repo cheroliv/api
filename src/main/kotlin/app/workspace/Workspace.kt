@@ -3,12 +3,12 @@
 package app.workspace
 
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import app.Loggers.i
+import app.core.Loggers.i
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Slides
 import java.nio.file.Path
 
-data class Workspace(val workspace: WorkspaceEntry) {
+data class Workspace(val entries: WorkspaceEntry) {
     data class WorkspaceEntry(
         val name: String,
         val path: String,

@@ -1,10 +1,9 @@
 package app.users.security
 
-import app.Constants
-import app.Loggers
-import app.Loggers.d
-import app.Properties
-import app.http.Web
+import app.core.Constants
+import app.core.Loggers.d
+import app.core.Properties
+import app.core.web.Web
 import app.users.User
 import app.users.UserDao.findOneWithAuths
 import jakarta.validation.Validator

@@ -2,14 +2,14 @@
 
 package app.users
 
-import app.database.EntityModel.Members.withId
-import app.Constants.ADMIN
-import app.Constants.DOMAIN_DEV_URL
-import app.Constants.EMPTY_STRING
-import app.Constants.ROLE_ADMIN
-import app.Constants.ROLE_ANONYMOUS
-import app.Constants.ROLE_USER
-import app.Constants.USER
+import app.core.database.EntityModel.Members.withId
+import app.core.Constants.ADMIN
+import app.core.Constants.DOMAIN_DEV_URL
+import app.core.Constants.EMPTY_STRING
+import app.core.Constants.ROLE_ADMIN
+import app.core.Constants.ROLE_ANONYMOUS
+import app.core.Constants.ROLE_USER
+import app.core.Constants.USER
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right

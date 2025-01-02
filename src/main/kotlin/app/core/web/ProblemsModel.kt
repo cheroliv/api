@@ -1,4 +1,4 @@
-package app.http
+package app.core.web
 
 
 data class ProblemsModel(

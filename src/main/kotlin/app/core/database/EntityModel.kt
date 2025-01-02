@@ -1,4 +1,4 @@
-package app.database
+package app.core.database
 
 // Abstract entity model with Generic ID, which can be of any type
 abstract class EntityModel<T>(

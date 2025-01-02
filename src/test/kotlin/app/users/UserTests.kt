@@ -48,11 +48,11 @@ package app.users
 //import kotlin.test.assertNotNull
 
 import app.API
-import app.database.EntityModel.Companion.MODEL_FIELD_FIELD
-import app.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
-import app.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.database.EntityModel.Members.withId
-import app.http.HttpUtils.validator
+import app.core.database.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.core.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.core.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.core.database.EntityModel.Members.withId
+import app.core.web.HttpUtils.validator
 import app.workspace.Tools.logBody
 import app.workspace.Tools.responseToString
 import app.users.User.Attributes.EMAIL_ATTR
@@ -106,17 +106,17 @@ import app.users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.activateDao
 import app.users.signup.UserActivationDao.countUserActivation
-import app.Utils.lsWorkingDir
-import app.Utils.lsWorkingDirProcess
-import app.Utils.toJson
-import app.Constants.DEVELOPMENT
-import app.Constants.EMPTY_STRING
-import app.Constants.PRODUCTION
-import app.Constants.ROLE_USER
-import app.Constants.STARTUP_LOG_MSG_KEY
-import app.Constants.VIRGULE
-import app.Properties
-import app.Loggers.i
+import app.core.Utils.lsWorkingDir
+import app.core.Utils.lsWorkingDirProcess
+import app.core.Utils.toJson
+import app.core.Constants.DEVELOPMENT
+import app.core.Constants.EMPTY_STRING
+import app.core.Constants.PRODUCTION
+import app.core.Constants.ROLE_USER
+import app.core.Constants.STARTUP_LOG_MSG_KEY
+import app.core.Constants.VIRGULE
+import app.core.Properties
+import app.core.Loggers.i
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
@@ -166,7 +166,7 @@ import java.util.UUID.fromString
 import java.util.UUID.randomUUID
 import javax.inject.Inject
 import kotlin.test.*
-import app.mail.MailConfiguration.GoogleAuthConfig
+import app.core.mail.MailConfiguration.GoogleAuthConfig
 
 @ActiveProfiles("test")
 @SpringBootTest(

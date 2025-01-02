@@ -1,7 +1,7 @@
-package app.http
+package app.core.web
 
-import app.Constants.SPA_NEGATED_REGEX
-import app.Constants.defaultProblems
+import app.core.Constants.SPA_NEGATED_REGEX
+import app.core.Constants.defaultProblems
 import jakarta.validation.Validation.byProvider
 import jakarta.validation.Validator
 import org.hibernate.validator.HibernateValidator
@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity.badRequest
 import org.springframework.http.ResponseEntity.internalServerError
 import org.springframework.web.server.ServerWebExchange
 import app.users.security.SecurityConfiguration.Companion.spaNegated
-import app.Loggers.i
+import app.core.Loggers.i
 import java.net.URI
 import java.util.Locale.ENGLISH
 import java.util.Locale.forLanguageTag

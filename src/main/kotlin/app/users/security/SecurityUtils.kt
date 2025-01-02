@@ -1,6 +1,6 @@
 package app.users.security
 
-import app.Constants
+import app.core.Constants
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.apache.commons.lang3.RandomStringUtils.random

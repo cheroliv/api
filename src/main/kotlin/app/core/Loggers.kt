@@ -1,23 +1,23 @@
-package app
+package app.core
 
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
-import app.Constants.CLOUD
-import app.Constants.DEVELOPMENT
-import app.Constants.DEV_HOST
-import app.Constants.EMPTY_CONTEXT_PATH
-import app.Constants.EMPTY_STRING
-import app.Constants.HTTP
-import app.Constants.HTTPS
-import app.Constants.LINE
-import app.Constants.PRODUCTION
-import app.Constants.SERVER_PORT
-import app.Constants.SERVER_SERVLET_CONTEXT_PATH
-import app.Constants.SERVER_SSL_KEY_STORE
-import app.Constants.SPRING_APPLICATION_NAME
-import app.Constants.STARTUP_HOST_WARN_LOG_MSG
-import app.Constants.STARTUP_LOG_MSG_KEY
+import app.core.Constants.CLOUD
+import app.core.Constants.DEVELOPMENT
+import app.core.Constants.DEV_HOST
+import app.core.Constants.EMPTY_CONTEXT_PATH
+import app.core.Constants.EMPTY_STRING
+import app.core.Constants.HTTP
+import app.core.Constants.HTTPS
+import app.core.Constants.LINE
+import app.core.Constants.PRODUCTION
+import app.core.Constants.SERVER_PORT
+import app.core.Constants.SERVER_SERVLET_CONTEXT_PATH
+import app.core.Constants.SERVER_SSL_KEY_STORE
+import app.core.Constants.SPRING_APPLICATION_NAME
+import app.core.Constants.STARTUP_HOST_WARN_LOG_MSG
+import app.core.Constants.STARTUP_LOG_MSG_KEY
 import app.workspace.Workspace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -51,7 +51,7 @@ object Loggers {
             hostAddress = try {
                 getLocalHost().hostAddress
             } catch (e: UnknownHostException) {
-                STARTUP_HOST_WARN_LOG_MSG.run(::w)
+                STARTUP_HOST_WARN_LOG_MSG.run(Loggers::w)
                 DEV_HOST
             },
             profiles = when {
@@ -65,7 +65,7 @@ object Loggers {
                 else -> EMPTY_STRING
             },
         ).run(Loggers::startupLogMessage)
-            .run(::i)
+            .run(Loggers::i)
     }
 
     @JvmRecord

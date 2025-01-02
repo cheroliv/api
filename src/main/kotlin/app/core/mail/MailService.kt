@@ -1,4 +1,4 @@
-package app.mail//package school.base.mail
+package app.core.mail//package school.base.mail
 //
 //import school.accounts.models.AccountCredentials
 //

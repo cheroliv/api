@@ -1,4 +1,4 @@
-package app.mail
+package app.core.mail
 //import jakarta.mail.MessagingException
 //import org.springframework.context.MessageSource
 //import org.springframework.context.annotation.Profile

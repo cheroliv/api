@@ -1,13 +1,13 @@
 package app.users
 
-import app.database.EntityModel.Companion.MODEL_FIELD_FIELD
-import app.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
-import app.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.database.EntityModel.Members.withId
-import app.http.HttpUtils.badResponse
-import app.http.HttpUtils.validator
-import app.http.ProblemsModel
-import app.Constants.defaultProblems
+import app.core.database.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.core.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.core.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.core.database.EntityModel.Members.withId
+import app.core.web.HttpUtils.badResponse
+import app.core.web.HttpUtils.validator
+import app.core.web.ProblemsModel
+import app.core.Constants.defaultProblems
 import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.left
@@ -34,7 +34,8 @@ import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivationDao.activateDao
-import app.Loggers.i
+import app.core.Loggers.i
+import org.springframework.http.ResponseEntity.status
 import java.net.URI
 import java.nio.channels.AlreadyBoundException
 import java.util.UUID.randomUUID
@@ -152,11 +153,11 @@ class UserService(private val context: ApplicationContext) {
                 EMAIL_ATTR,
                 LOGIN_ATTR,
             ).map { it to validateProperty(this@validate, it) }
-                .flatMap { violatedField: Pair<String, MutableSet<ConstraintViolation<Signup>>> ->
-                    violatedField.second.map {
+                .flatMap { (first, second) ->
+                    second.map {
                         mapOf<String, String?>(
                             MODEL_FIELD_OBJECTNAME to Signup.objectName,
-                            MODEL_FIELD_FIELD to violatedField.first,
+                            MODEL_FIELD_FIELD to first,
                             MODEL_FIELD_MESSAGE to it.message
                         )
                     }
@@ -171,11 +172,11 @@ class UserService(private val context: ApplicationContext) {
             "Validate UserActivation : ${this@validate}".run(::i)
             setOf(ACTIVATION_KEY_ATTR)
                 .map { it to validateProperty(this@validate, it) }
-                .flatMap { violatedField: Pair<String, MutableSet<ConstraintViolation<UserActivation>>> ->
-                    violatedField.second.map {
+                .flatMap { (first, second) ->
+                    second.map {
                         mapOf<String, String?>(
                             MODEL_FIELD_OBJECTNAME to UserActivation.objectName,
-                            MODEL_FIELD_FIELD to violatedField.first,
+                            MODEL_FIELD_FIELD to first,
                             MODEL_FIELD_MESSAGE to it.message
                         )
                     }
@@ -211,7 +212,7 @@ class UserService(private val context: ApplicationContext) {
                         )
                     )
                 )
-            }.run { ResponseEntity.status(status).body(this) }
+            }.run { status(status).body(this) }
 
 
         @JvmStatic

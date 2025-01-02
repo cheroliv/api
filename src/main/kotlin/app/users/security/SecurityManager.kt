@@ -1,13 +1,13 @@
 package app.users.security
 
-import app.Constants.AUTHORITIES_KEY
-import app.Constants.INVALID_TOKEN
-import app.Constants.VALID_TOKEN
-import app.Loggers
-import app.Loggers.d
-import app.Loggers.i
-import app.Loggers.t
-import app.Properties
+import app.core.Constants.AUTHORITIES_KEY
+import app.core.Constants.INVALID_TOKEN
+import app.core.Constants.VALID_TOKEN
+import app.core.Loggers
+import app.core.Loggers.d
+import app.core.Loggers.i
+import app.core.Loggers.t
+import app.core.Properties
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts.builder
 import io.jsonwebtoken.Jwts.parserBuilder

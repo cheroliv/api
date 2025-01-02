@@ -2,8 +2,11 @@
 
 package app.workspace
 
-import app.Loggers.i
+import app.core.Loggers.i
+import app.workspace.Workspace.Companion.install
 import app.workspace.Workspace.InstallationType.ALL_IN_ONE
+import app.workspace.Workspace.InstallationType.SEPARATED_FOLDERS
+import app.workspace.Workspace.WorkspaceConfig
 import app.workspace.Workspace.WorkspaceEntry
 import app.workspace.Workspace.WorkspaceEntry.CollaborationEntry.Collaboration
 import app.workspace.Workspace.WorkspaceEntry.CommunicationEntry.Communication
@@ -63,11 +66,18 @@ class WorkspaceTest {
 
     @AfterTest
     fun tearDown() = Unit
-
+    /**
+     * 1 - Créer la configuration du workspace
+     * 2 - Ajouter les repositories a la configuration
+     * 2 - Cloner les repositories du workspace
+     * 3 - Créer les dossiers complémentaires du workspace
+     * 4 - lancer les tests gradle
+     */
     private val workspace = Workspace(
-        workspace = WorkspaceEntry(
+        entries = WorkspaceEntry(
             name = "fonderie",
-            path = "${System.getProperty(USER_HOME_KEY)}/workspace/school",
+            path = System.getProperty(USER_HOME_KEY)
+                .run { "$this/workspace/school" },
             office = Office(
                 books = Books(name = "books-collection"),
                 datas = Datas(name = "datas"),
@@ -77,10 +87,8 @@ class WorkspaceTest {
                 pilotage = Pilotage(name = "pilotage"),
                 schemas = Schemas(name = "schemas"),
                 slides = Slides(
-                    path = "${
-                        System.getProperty("user.home")
-                    }/workspace/office/slides"
-                ),
+                    path = System.getProperty(USER_HOME_KEY)
+                        .run { "$this/workspace/office/slides" }),
                 sites = Sites(name = "sites"),
                 path = "office"
             ),
@@ -125,7 +133,8 @@ class WorkspaceTest {
 
     @Test
     fun `install workspace`(): Unit {
-        Workspace.install(path = "${System.getProperty("user.home")}/workspace/school")
+        install(path = System.getProperty("user.home")
+            .run { "$this/workspace/school"})
         // default type : AllInOneWorkspace
         // ExplodedWorkspace
     }
@@ -141,7 +150,7 @@ class WorkspaceTest {
         }.run {
             exists().run(::assertTrue)
             isDirectory.run(::assertTrue)
-            Workspace.WorkspaceConfig(
+            WorkspaceConfig(
                 basePath = toPath(),
                 type = ALL_IN_ONE,
             ).run(WorkspaceManager::createWorkspace)
@@ -176,9 +185,9 @@ class WorkspaceTest {
                 exists().run(::assertTrue)
                 isDirectory.run(::assertTrue)
 
-                val config = Workspace.WorkspaceConfig(
+                val config = WorkspaceConfig(
                     basePath = toPath(),
-                    type = Workspace.InstallationType.SEPARATED_FOLDERS,
+                    type = SEPARATED_FOLDERS,
                     subPaths = subPaths,
                     configFileName = configFileName
                 ).run(WorkspaceManager::createWorkspace)
@@ -191,23 +200,23 @@ class WorkspaceTest {
                     .run(::i)
                 assertEquals(
                     expected = config.subPaths["office"]!!.pathString,
-                    actual = config.workspace.workspace.office.path
+                    actual = config.workspace.entries.office.path
                 )
                 assertEquals(
                     expected = config.subPaths["education"]!!.pathString,
-                    actual = (config.workspace.workspace.cores["education"] as Education).path
+                    actual = (config.workspace.entries.cores["education"] as Education).path
                 )
                 assertEquals(
                     expected = config.subPaths["communication"]!!.pathString,
-                    actual = (config.workspace.workspace.communication as Communication).path
+                    actual = (config.workspace.entries.communication as Communication).path
                 )
                 assertEquals(
                     expected = config.subPaths["configuration"]!!.pathString,
-                    actual = (config.workspace.workspace.configuration as Configuration).path
+                    actual = (config.workspace.entries.configuration as Configuration).path
                 )
                 assertEquals(
                     expected = config.subPaths["job"]!!.pathString,
-                    actual = (config.workspace.workspace.job as Job).path
+                    actual = (config.workspace.entries.job as Job).path
                 )
 
                 "$this/$configFileName".run(::File).exists().run(::assertTrue)

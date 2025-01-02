@@ -1,7 +1,7 @@
-package app.http
+package app.core.web
 
 import org.springframework.http.HttpHeaders
-import app.Loggers.e
+import app.core.Loggers.e
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 import kotlin.text.Charsets.UTF_8

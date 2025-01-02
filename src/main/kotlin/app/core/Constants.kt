@@ -1,8 +1,8 @@
-package app
+package app.core
 
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE
-import app.http.ProblemsModel
+import app.core.web.ProblemsModel
 import java.net.URI
 import java.net.URI.create
 

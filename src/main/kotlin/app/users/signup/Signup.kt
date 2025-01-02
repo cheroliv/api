@@ -1,7 +1,7 @@
 package app.users.signup
 
-import app.Constants.PASSWORD_MAX
-import app.Constants.PASSWORD_MIN
+import app.core.Constants.PASSWORD_MAX
+import app.core.Constants.PASSWORD_MIN
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern

@@ -1,6 +1,6 @@
 package app.users.security
 
-import app.database.EntityModel
+import app.core.database.EntityModel
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import app.users.security.Role.Fields.ID_FIELD

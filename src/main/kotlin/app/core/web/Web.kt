@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package app.http
+package app.core.web
 
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
@@ -23,7 +23,7 @@ import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Hooks
 import reactor.core.publisher.Mono
-import app.Constants.PRODUCTION
+import app.core.Constants.PRODUCTION
 import java.util.*
 import java.util.regex.Pattern
 
