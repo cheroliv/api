@@ -1,20 +1,12 @@
 package app
 
-import app.ai.translator.AiTranslatorController.AssistantManager
 import app.core.Loggers.startupLog
 import app.core.Properties
-import app.users.User
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication
 
-@SpringBootApplication(
-    scanBasePackageClasses = [
-        API::class,
-        User::class,
-        AssistantManager::class,
-    ]
-)
+@SpringBootApplication
 @EnableConfigurationProperties(Properties::class)
 class API {
     companion object {

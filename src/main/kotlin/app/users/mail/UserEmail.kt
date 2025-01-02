@@ -1,6 +1,6 @@
 package app.users.mail
 
-import app.core.Constants
+import app.core.Constants.EMPTY_STRING
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
@@ -15,6 +15,6 @@ data class UserEmail(
     val userId: UUID,
     @field:Email
     @field:Size(min = 5, max = 254)
-    val email: String = Constants.EMPTY_STRING,
+    val email: String = EMPTY_STRING,
     val date: Instant,
 )

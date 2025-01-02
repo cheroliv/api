@@ -1,5 +1,5 @@
-package app.core.mail//package school.base.mail
-//
+package app.core.mail
+
 //import org.springframework.context.MessageSource
 //import org.thymeleaf.context.Context
 //import org.thymeleaf.spring6.SpringTemplateEngine

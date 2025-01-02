@@ -1,7 +1,5 @@
-package app.core.mail//package school.base.mail
-//
-//import school.accounts.models.AccountCredentials
-//
+package app.core.mail
+
 //interface MailService {
 //    fun sendEmail(
 //        to: String,
