@@ -520,4 +520,4 @@ Open terminal and run : ```./gradlew cli```
 // ----
 // ======
 //
-// == link:cadrage_webapp.adoc[Project phases in french]
+// == link:cadrage_webapp_canevas.adoc[Project phases in french]

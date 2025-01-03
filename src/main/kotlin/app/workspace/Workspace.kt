@@ -127,9 +127,6 @@ data class Workspace(val entries: WorkspaceEntry) {
 
     companion object {
         @JvmStatic
-        fun install(path: String) = path
-            .run { "Installing workspace on path : $this" }
-            .run(::i)
+        fun install(path: String) = i("Installing workspace on path : $path")
     }
 }
-
