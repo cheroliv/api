@@ -24,6 +24,7 @@ import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio
 import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject
 import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject.ProjectBuild
 import app.workspace.WorkspaceManager.WorkspaceConstants.entries
+import app.workspace.WorkspaceManager.displayWorkspaceStructure
 import app.workspace.WorkspaceManager.workspace
 import org.apache.commons.lang3.SystemUtils.USER_HOME_KEY
 import java.io.File

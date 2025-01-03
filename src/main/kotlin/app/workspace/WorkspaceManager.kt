@@ -24,6 +24,7 @@ import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio
 import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject
 import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject.ProjectBuild
 import app.workspace.WorkspaceManager.WorkspaceConstants.entries
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import java.io.File
 import java.nio.file.Path
 import kotlin.io.path.pathString
@@ -39,6 +40,10 @@ object WorkspaceManager {
             "job"
         )
     }
+    fun Workspace.displayWorkspaceStructure(): Unit = toYaml.run(_root_ide_package_.app.core.Loggers::i)
+
+    val Workspace.toYaml: String
+        get() = run(YAMLMapper()::writeValueAsString)
 
     fun createWorkspace(
         config: WorkspaceConfig

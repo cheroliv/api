@@ -2,7 +2,6 @@
 
 package app.workspace
 
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
 import app.core.Loggers.i
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Slides
@@ -134,7 +133,3 @@ data class Workspace(val entries: WorkspaceEntry) {
     }
 }
 
-fun Workspace.displayWorkspaceStructure(): Unit = toYaml.run(::i)
-
-val Workspace.toYaml: String
-    get() = run(YAMLMapper()::writeValueAsString)

@@ -26,7 +26,7 @@ object Installer {
         }
     }.run { invokeLater { run(Installer::GUI).run { isVisible = true } } }
 
-    class GUI(
+    internal class GUI(
         private val selectedPaths: MutableMap<String, Path?> = HashMap(),
         private var currentInstallationType: Workspace.InstallationType = Workspace.InstallationType.ALL_IN_ONE,
         private val communicationPathLabel: JLabel = JLabel("Communication").apply { toolTipText = "" },
@@ -39,7 +39,7 @@ object Installer {
         private val jobPathTextField: JTextField = JTextField(),
         private val officePathLabel: JLabel = JLabel("Office").apply { toolTipText = "" },
         private val officePathTextField: JTextField = JTextField(),
-        private val titleLabel: JLabel = JLabel("School installer"),
+        private val titleLabel: JLabel = JLabel("Workspace installer"),
         private val workspacePathLabel: JLabel = JLabel("Path"),
         private val workspacePathTextField: JTextField = JTextField(),
         private val workspaceTypePanel: JPanel = JPanel().apply {
@@ -65,7 +65,7 @@ object Installer {
             add(allInOneWorkspaceRadioButton)
             add(splitWorkspaceRadioButton)
         },
-    ) : JFrame("School Project Installer") {
+    ) : JFrame("Workspace Project Installer") {
         init {
             initUI().let { "Init, currentInstallationType : $currentInstallationType".run(Loggers::i) }
         }
