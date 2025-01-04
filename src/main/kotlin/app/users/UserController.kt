@@ -14,12 +14,11 @@ import app.users.signup.Signup
 @RestController
 @RequestMapping(API_USERS)
 class UserController(private val service: UserService) {
-    internal class SignupException(message: String) : RuntimeException(message)
 
     /** User REST API URIs */
     object UserRestApiRoutes {
         const val API_AUTHORITY = "/api/authorities"
-        const val API_USERS = "/api/app.users"
+        const val API_USERS = "/api/users"
         const val API_SIGNUP = "/signup"
         const val API_SIGNUP_PATH = "$API_USERS$API_SIGNUP"
         const val API_ACTIVATE = "/activate"
@@ -54,7 +53,6 @@ class UserController(private val service: UserService) {
      *                 request and response context during the activation process.
      */
     @GetMapping(API_ACTIVATE)
-//    @Throws(SignupException::class)
     suspend fun activate(
         @RequestParam(API_ACTIVATE_KEY)
         key: String,

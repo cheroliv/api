@@ -13,6 +13,7 @@ import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
 import app.users.UserController.UserRestApiRoutes.API_ACTIVATE
+import app.users.UserController.UserRestApiRoutes.API_ACTIVATE_PATH
 import app.users.UserController.UserRestApiRoutes.API_SIGNUP
 import app.users.UserController.UserRestApiRoutes.API_USERS
 import app.users.UserDao.signupAvailability
@@ -43,9 +44,14 @@ import java.util.UUID.randomUUID
 class UserService(private val context: ApplicationContext) {
     suspend fun signupService(signup: Signup): Either<Throwable, User> = try {
         context.signupToUser(signup).run {
-            (this to context).signupDao()
-                .mapLeft { return Exception("Unable to save user with id").left() }
-                .map { return withId(it.first).right() }
+            (this to context).signupDao().mapLeft {
+                return Exception("Unable to sign up user with this value : $signup", it).left()
+            }.map {
+                return apply {
+                    i("Activation key: ${it.second}")
+                    i("Activation link : http://localhost$API_ACTIVATE_PATH${it.second}")
+                }.withId(it.first).right()
+            }
         }
     } catch (t: Throwable) {
         t.left()

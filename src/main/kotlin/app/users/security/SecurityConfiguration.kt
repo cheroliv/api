@@ -47,11 +47,11 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         val permitAll = arrayOf(
             "/",
             "/*.*",
-            "/api/app.users/signup",
-            "/api/app.users/activate",
-            "/api/app.users/authenticate",
-            "/api/app.users/reset-password/init",
-            "/api/app.users/reset-password/finish",
+            "/api/users/signup",
+            "/api/users/activate",
+            "/api/users/authenticate",
+            "/api/users/reset-password/init",
+            "/api/users/reset-password/finish",
         )
         val authenticated = arrayOf(
             "/api/**",
@@ -59,7 +59,7 @@ class SecurityConfiguration(private val context: ApplicationContext) {
             "/swagger-resources/**",
             "/v2/api-docs",
             "/api/auth-info",
-            "/api/app.users/**",
+            "/api/users/**",
         )
         val adminAuthority = arrayOf(
             "/management/info",
@@ -90,10 +90,10 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         ): Mono<UserDetails> = getBean<Validator>().run {
             when {
                 validateProperty(
-                    app.users.User(email = emailOrLogin),
+                    User(email = emailOrLogin),
                     User.Fields.EMAIL_FIELD
                 ).isNotEmpty() && validateProperty(
-                    app.users.User(login = emailOrLogin),
+                    User(login = emailOrLogin),
                     User.Fields.LOGIN_FIELD
                 ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
 

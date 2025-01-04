@@ -1,7 +1,7 @@
 @file:Suppress(
     "NonAsciiCharacters",
     "SqlResolve",
-    "RedundantUnitReturnType","unused"
+    "RedundantUnitReturnType", "unused"
 )
 
 package app.users
@@ -48,13 +48,23 @@ package app.users
 //import kotlin.test.assertNotNull
 
 import app.API
+import app.core.Constants.DEVELOPMENT
+import app.core.Constants.EMPTY_STRING
+import app.core.Constants.PRODUCTION
+import app.core.Constants.ROLE_USER
+import app.core.Constants.STARTUP_LOG_MSG_KEY
+import app.core.Constants.VIRGULE
+import app.core.Loggers.i
+import app.core.Properties
+import app.core.Utils.lsWorkingDir
+import app.core.Utils.lsWorkingDirProcess
+import app.core.Utils.toJson
 import app.core.database.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.core.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.core.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
 import app.core.database.EntityModel.Members.withId
+import app.core.mail.MailConfiguration.GoogleAuthConfig
 import app.core.web.HttpUtils.validator
-import app.workspace.Tools.logBody
-import app.workspace.Tools.responseToString
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
@@ -90,6 +100,7 @@ import app.users.Utils.findAuthsByLogin
 import app.users.Utils.findUserActivationByKey
 import app.users.Utils.findUserById
 import app.users.Utils.tripleCounts
+import app.users.mail.MailService
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
 import app.users.security.UserRole
@@ -106,17 +117,8 @@ import app.users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.activateDao
 import app.users.signup.UserActivationDao.countUserActivation
-import app.core.Utils.lsWorkingDir
-import app.core.Utils.lsWorkingDirProcess
-import app.core.Utils.toJson
-import app.core.Constants.DEVELOPMENT
-import app.core.Constants.EMPTY_STRING
-import app.core.Constants.PRODUCTION
-import app.core.Constants.ROLE_USER
-import app.core.Constants.STARTUP_LOG_MSG_KEY
-import app.core.Constants.VIRGULE
-import app.core.Properties
-import app.core.Loggers.i
+import app.workspace.Tools.logBody
+import app.workspace.Tools.responseToString
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
@@ -166,12 +168,11 @@ import java.util.UUID.fromString
 import java.util.UUID.randomUUID
 import javax.inject.Inject
 import kotlin.test.*
-import app.core.mail.MailConfiguration.GoogleAuthConfig
 
 @ActiveProfiles("test")
 @SpringBootTest(
     classes = [API::class],
-    properties = ["spring.main.web-application-type=reactive"]
+    properties = ["spring.main.web-application-type=reactive"],
 )
 class UserTests {
 
@@ -1449,29 +1450,29 @@ class UserTests {
 
     @Test
     fun `Verify the internationalization of validations through REST with a non-conforming password in French`() =
-        runBlocking{
-        assertEquals(0, context.countUsers())
-        client
-            .post()
-            .uri(API_SIGNUP_PATH)
-            .contentType(APPLICATION_PROBLEM_JSON)
-            .header(ACCEPT_LANGUAGE, FRENCH.language)
-            .bodyValue(signup.copy(password = "123"))
-            .exchange()
-            .expectStatus()
-            .isBadRequest
-            .returnResult<ResponseEntity<ProblemDetail>>()
-            .responseBodyContent!!
-            .run {
-                assertTrue(isNotEmpty())
-                assertContains(responseToString(), "la taille doit")
-            }
-        assertEquals(0, context.countUsers())
+        runBlocking {
+            assertEquals(0, context.countUsers())
+            client
+                .post()
+                .uri(API_SIGNUP_PATH)
+                .contentType(APPLICATION_PROBLEM_JSON)
+                .header(ACCEPT_LANGUAGE, FRENCH.language)
+                .bodyValue(signup.copy(password = "123"))
+                .exchange()
+                .expectStatus()
+                .isBadRequest
+                .returnResult<ResponseEntity<ProblemDetail>>()
+                .responseBodyContent!!
+                .run {
+                    assertTrue(isNotEmpty())
+                    assertContains(responseToString(), "la taille doit")
+                }
+            assertEquals(0, context.countUsers())
 
-    }
+        }
 
     val gmailConfig = GoogleAuthConfig(
-        clientId="729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
+        clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
         projectId = "gmail-tester-444502",
         authUri = "https://accounts.google.com/o/oauth2/auth",
         tokenUri = "https://oauth2.googleapis.com/token",
@@ -1480,7 +1481,7 @@ class UserTests {
         redirectUris = listOf("http://localhost:8080/oauth2/callback/google")
     )
 
-//    private lateinit var mailService: MailService
+    private lateinit var mailService: MailService
 //
 //    private val properties: school.base.utils.Properties by lazy { context.getBean() }
 //
@@ -1740,16 +1741,6 @@ class UserTests {
 //@Ignore
 //class GmailServiceTests {
 //
-//    private lateinit var context: ConfigurableApplicationContext
-//
-//    @BeforeAll
-//    fun `lance le server en profile test`() {
-//        context = launcher(GMAIL)
-//    }
-//
-//    @AfterAll
-//    fun `arrête le serveur`() = context.close()
-//}
 //
 ///*=================================================================================*/
 //

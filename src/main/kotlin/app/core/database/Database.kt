@@ -1,10 +1,13 @@
 package app.core.database
 
+import app.core.Loggers.i
 import app.core.Properties
+import app.users.User.Relations.CREATE_TABLES
 import io.r2dbc.spi.ConnectionFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.core.convert.converter.Converter
 import org.springframework.core.io.FileSystemResource
 import org.springframework.data.convert.CustomConversions.StoreConversions
@@ -21,8 +24,6 @@ import org.springframework.transaction.ReactiveTransactionManager
 import org.springframework.transaction.annotation.EnableTransactionManagement
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.TransactionalOperator.create
-import app.users.User.Relations.CREATE_TABLES
-import app.core.Loggers.i
 import java.io.File.createTempFile
 import java.time.Instant
 import java.time.LocalDateTime
@@ -38,7 +39,59 @@ class Database(private val properties: Properties) {
     fun createSystemUser(): Unit = i("Creating system user")
 
     @Bean
+    @Profile("dev")
+    fun localDevConnectionFactoryInitializer(
+        @Qualifier("connectionFactory")
+        connectionFactory: ConnectionFactory
+    ): ConnectionFactoryInitializer =
+        ConnectionFactoryInitializer().apply {
+            setConnectionFactory(connectionFactory)
+            setDatabasePopulator(
+                ResourceDatabasePopulator(
+                    createTempFile("prefix", "suffix")
+                        .apply { CREATE_TABLES.run(::writeText) }
+                        .let(::FileSystemResource)
+                )
+            )
+        }
+
+    @Bean
+    @Profile("cloud-dev")
+    fun testContainerConnectionFactoryInitializer(
+        @Qualifier("connectionFactory")
+        connectionFactory: ConnectionFactory
+    ): ConnectionFactoryInitializer =
+        ConnectionFactoryInitializer().apply {
+            setConnectionFactory(connectionFactory)
+            setDatabasePopulator(
+                ResourceDatabasePopulator(
+                    createTempFile("prefix", "suffix")
+                        .apply { CREATE_TABLES.run(::writeText) }
+                        .let(::FileSystemResource)
+                )
+            )
+        }
+
+    @Bean
+    @Profile("prod")
     fun connectionFactoryInitializer(
+        @Qualifier("connectionFactory")
+        connectionFactory: ConnectionFactory
+    ): ConnectionFactoryInitializer =
+        ConnectionFactoryInitializer().apply {
+            setConnectionFactory(connectionFactory)
+            setDatabasePopulator(
+                ResourceDatabasePopulator(
+                    createTempFile("prefix", "suffix")
+                        .apply { CREATE_TABLES.run(::writeText) }
+                        .let(::FileSystemResource)
+                )
+            )
+        }
+
+    @Bean
+    @Profile("local")
+    fun localConnectionFactoryInitializer(
         @Qualifier("connectionFactory")
         connectionFactory: ConnectionFactory
     ): ConnectionFactoryInitializer =
