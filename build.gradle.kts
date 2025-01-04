@@ -39,11 +39,12 @@ plugins {
     id("io.spring.dependency-management")
 }
 
-extra["springShellVersion"] = "3.3.3"
+"app.workspace.Installer".run(application.mainClass::set)
+"app.API".run(springBoot.mainClass::set)
 
 group = properties["artifact.group"].toString()
 version = "0.0.1"
-
+extra["springShellVersion"] = "3.3.3"
 object Constants {
     const val langchain4jVersion = "0.36.2"
     const val testcontainersVersion = "1.20.1"
@@ -268,8 +269,6 @@ tasks.register<TestReport>("testReport") {
         .run(testResults::setFrom)
 }
 
-"app.workspace.Installer".run(application.mainClass::set)
-"app.API".run(springBoot.mainClass::set)
 
 tasks.register<JavaExec>("runWorkspaceInstaller") {
     group = "application"
