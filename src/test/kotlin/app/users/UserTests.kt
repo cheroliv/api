@@ -106,7 +106,7 @@ import app.users.mail.MailServiceSmtp
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
 import app.users.security.SecurityUtils
-import app.users.security.SecurityUtils.generateResetKey
+import app.users.security.SecurityUtils.generateActivationKey
 import app.users.security.UserRole
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup
@@ -148,7 +148,6 @@ import org.hibernate.validator.HibernateValidator
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Captor
 import org.mockito.Mockito
@@ -177,7 +176,6 @@ import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
 import org.springframework.web.server.ServerWebExchange
-import org.thymeleaf.TemplateEngine
 import org.thymeleaf.spring6.SpringWebFluxTemplateEngine
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -208,8 +206,10 @@ class UserTests {
     lateinit var context: ApplicationContext
     lateinit var client: WebTestClient
     lateinit var mailService: MailService
+
     @Spy
     lateinit var javaMailSender: JavaMailSenderImpl
+
     @Captor
     lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
     val gmailConfig = GoogleAuthConfig(
@@ -1525,7 +1525,6 @@ class UserTests {
         }
 
 
-
     @Test
     fun `test sendEmail`() {
         mailService.sendEmail(
@@ -1641,12 +1640,14 @@ class UserTests {
     @Ignore
     @Test
     fun testSendActivationEmail() {
-        val user = User(
-            langKey = DEFAULT_LANGUAGE,
-            login = "john",
-            email = "john.doe@acme.com"
+        // TODO: change mailService.sendActivationEmail to map("user" to User, "activationKey" to activationKey) as parameter instead of pair(user,activationKey)
+        mailService.sendActivationEmail(
+            User(
+                langKey = DEFAULT_LANGUAGE,
+                login = "john",
+                email = "john.doe@acme.com"
+            ) to generateActivationKey
         )
-        mailService.sendActivationEmail(user)
         verify(javaMailSender).send(messageCaptor.capture())
         val message = messageCaptor.value
         assertThat("${message.allRecipients[0]}").isEqualTo(user.email)
@@ -1707,8 +1708,8 @@ class UserTests {
     val PATTERN_LOCALE_3: java.util.regex.Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
     val PATTERN_LOCALE_2: java.util.regex.Pattern = compile("([a-z]{2})-([a-z]{2})")
 
-@Ignore
-@Test
+    @Ignore
+    @Test
     fun testSendLocalizedEmailForAllSupportedLanguages() {
         val user = User(
             login = "john", email = "john.doe@acme.com"

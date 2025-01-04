@@ -26,14 +26,14 @@ interface MailService {
     )
 
     fun sendEmailFromTemplate(
-        account: User,
+        user: User,
         templateName: String,
         titleKey: String
     )
 
-    fun sendPasswordResetMail(account: User)
-    fun sendActivationEmail(account: User)
-    fun sendCreationEmail(account: User)
+    fun sendPasswordResetMail(user: User)
+    fun sendActivationEmail(pairUserActivationKey: Pair<User, String>)
+    fun sendCreationEmail(user: User)
 
     abstract class AbstractThymeleafMailService(
         private val properties: Properties,
@@ -50,25 +50,25 @@ interface MailService {
         )
 
         override fun sendEmailFromTemplate(
-            account: User,
+            user: User,
             templateName: String,
             titleKey: String
         ) {
             @Suppress(
                 "SENSELESS_NULL_IN_WHEN"
             )
-            when (account.email) {
+            when (user.email) {
                 null -> {
-                    d("Email doesn't exist for user '${account.login}'")
+                    d("Email doesn't exist for user '${user.login}'")
                     return
                 }
 
-                else -> forLanguageTag(account.langKey).apply {
+                else -> forLanguageTag(user.langKey).apply {
                     sendEmail(
-                        account.email,
+                        user.email,
                         messageSource.getMessage(titleKey, null, this),
                         templateEngine.process(templateName, Context(this).apply {
-                            setVariable(USER, account)
+                            setVariable(USER, user)
                             setVariable(BASE_URL, properties.mail.baseUrl)
                         }),
                         isMultipart = false,
@@ -78,21 +78,21 @@ interface MailService {
             }
         }
 
-        override fun sendActivationEmail(account: User) = sendEmailFromTemplate(
-            account.apply {
-                d("Sending activation email to '${account.email}'")
+        override fun sendActivationEmail(pairUserActivationKey: Pair<User, String>) = sendEmailFromTemplate(
+            pairUserActivationKey.first.apply {
+                d("Sending activation email to $email")
             }, TEMPLATE_NAME_SIGNUP, TITLE_KEY_SIGNUP
         )
 
-        override fun sendCreationEmail(account: User) = sendEmailFromTemplate(
-            account.apply {
-                d("Sending creation email to '${account.email}'")
+        override fun sendCreationEmail(user: User) = sendEmailFromTemplate(
+            user.apply {
+                d("Sending creation email to '${user.email}'")
             }, TEMPLATE_NAME_CREATION, TITLE_KEY_SIGNUP
         )
 
-        override fun sendPasswordResetMail(account: User) = sendEmailFromTemplate(
-            account.apply {
-                d("Sending password reset email to '${account.email}'")
+        override fun sendPasswordResetMail(user: User) = sendEmailFromTemplate(
+            user.apply {
+                d("Sending password reset email to '${user.email}'")
             }, TEMPLATE_NAME_PASSWORD, TITLE_KEY_PASSWORD
         )
     }
