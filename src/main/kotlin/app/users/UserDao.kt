@@ -4,8 +4,6 @@ package app.users
 
 import app.core.database.EntityModel
 import app.core.Constants.ROLE_USER
-import app.core.Loggers
-import app.core.Loggers.i
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -46,7 +44,6 @@ import app.users.User.Relations.INSERT
 import app.users.User.Relations.LOGIN_AND_EMAIL_AVAILABLE_COLUMN
 import app.users.User.Relations.LOGIN_AVAILABLE_COLUMN
 import app.users.User.Relations.SELECT_SIGNUP_AVAILABILITY
-import app.users.UserController.UserRestApiRoutes.API_ACTIVATE_PATH
 import app.users.security.UserRoleDao.signup
 import app.users.signup.Signup
 import app.users.signup.UserActivation

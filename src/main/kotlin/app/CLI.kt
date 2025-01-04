@@ -6,7 +6,6 @@ import app.core.Constants.NORMAL_TERMINATION
 import app.core.Loggers.i
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.CommandLineRunner
-import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component

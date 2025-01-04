@@ -5,7 +5,6 @@ import app.core.Constants.MAILSLURP
 import app.core.Loggers.d
 import app.core.Loggers.w
 import app.core.Properties
-import app.users.mail.MailService.AbstractThymeleafMailService
 import jakarta.mail.MessagingException
 import org.springframework.context.MessageSource
 import org.springframework.context.annotation.Profile

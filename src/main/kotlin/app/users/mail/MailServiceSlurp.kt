@@ -1,19 +1,16 @@
-@file:Suppress("CanBeParameter")
+@file:Suppress("CanBeParameter","unused")
 
 package app.users.mail
 
 import app.core.Constants.MAILSLURP
 import app.core.Loggers.i
 import app.core.Properties
-import app.users.mail.MailService.AbstractThymeleafMailService
 import org.springframework.context.MessageSource
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.thymeleaf.spring6.SpringTemplateEngine
 
-/*=================================================================================*/
-@Suppress("unused")
 @Async
 @Service
 @Profile(MAILSLURP)

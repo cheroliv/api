@@ -1584,7 +1584,7 @@ class UserTests {
             langKey = "en"
         )
         mailService.sendEmailFromTemplate(
-            user,
+            mapOf(User.objectName to user),
             "mail/testEmail",
             "email.test.title"
         )
@@ -1684,7 +1684,7 @@ class UserTests {
         )
         for (langKey in languages) {
             mailService.sendEmailFromTemplate(
-                user.copy(langKey = langKey), "mail/testEmail", "email.test.title"
+                mapOf(User.objectName to user.copy(langKey = langKey)), "mail/testEmail", "email.test.title"
             )
             verify(javaMailSender, atLeastOnce()).send(messageCaptor.capture())
             val message = messageCaptor.value

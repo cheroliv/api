@@ -3,7 +3,6 @@ package app.users.mail
 import app.core.Constants.GMAIL
 import app.core.Loggers.i
 import app.core.Properties
-import app.users.mail.MailService.AbstractThymeleafMailService
 import org.springframework.context.MessageSource
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Async
