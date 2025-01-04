@@ -1,51 +1,11 @@
 @file:Suppress(
     "NonAsciiCharacters",
     "SqlResolve",
-    "RedundantUnitReturnType", "unused"
+    "RedundantUnitReturnType",
+    "unused"
 )
 
 package app.users
-//import jakarta.mail.Multipart
-//import jakarta.mail.internet.MimeBodyPart
-//import jakarta.mail.internet.MimeMessage
-//import jakarta.mail.internet.MimeMultipart
-//import org.assertj.base.api.Assertions
-//import org.assertj.base.api.Assertions.assertThat
-//import org.junit.jupiter.api.AfterAll
-//import org.junit.jupiter.api.BeforeAll
-//import org.junit.jupiter.api.BeforeEach
-//import org.mockito.ArgumentCaptor
-//import org.mockito.ArgumentMatchers.any
-//import org.mockito.Captor
-//import org.mockito.Mockito
-//import org.mockito.Mockito.*
-//import org.mockito.MockitoAnnotations.openMocks
-//import org.mockito.Spy
-//import org.springframework.beans.factory.getBean
-//import org.springframework.context.ConfigurableApplicationContext
-//import org.springframework.context.MessageSource
-//import org.springframework.mail.MailSendException
-//import org.springframework.mail.javamail.JavaMailSenderImpl
-//import org.thymeleaf.spring6.SpringWebFluxTemplateEngine
-//import school.accounts.models.AccountCredentials
-//import school.accounts.models.AccountUtils.generateResetKey
-//import school.base.mail.MailService
-//import school.base.mail.MailServiceSmtp
-//import school.base.property.DEFAULT_LANGUAGE
-//import school.base.property.GMAIL
-//import school.launcher
-//import java.io.ByteArrayOutputStream
-//import java.io.File
-//import java.io.FileInputStream
-//import java.io.InputStreamReader
-//import java.net.URI
-//import java.nio.charset.Charset
-//import java.util.*
-//import java.util.regex.Pattern
-//import java.util.regex.Pattern.compile
-//import kotlin.test.Ignore
-//import kotlin.test.Test
-//import kotlin.test.assertNotNull
 
 import app.API
 import app.core.Constants.DEFAULT_LANGUAGE
@@ -105,7 +65,6 @@ import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
-import app.users.security.SecurityUtils
 import app.users.security.SecurityUtils.generateActivationKey
 import app.users.security.UserRole
 import app.users.security.UserRoleDao.countUserAuthority
@@ -134,26 +93,27 @@ import jakarta.mail.internet.MimeMessage
 import jakarta.mail.internet.MimeMultipart
 import jakarta.validation.Validation.byProvider
 import jakarta.validation.Validator
-import jakarta.validation.constraints.Pattern
-//import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.RandomStringUtils.random
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.hibernate.validator.HibernateValidator
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Captor
-import org.mockito.Mockito
+import org.mockito.Mockito.doThrow
 import org.mockito.MockitoAnnotations.openMocks
 import org.mockito.Spy
-import org.mockito.kotlin.*
+import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
@@ -191,9 +151,11 @@ import java.util.*
 import java.util.Locale.*
 import java.util.UUID.fromString
 import java.util.UUID.randomUUID
+import java.util.regex.Pattern
 import java.util.regex.Pattern.compile
 import javax.inject.Inject
 import kotlin.test.*
+import jakarta.validation.constraints.Pattern as ValidationConstraintsPattern
 
 @ActiveProfiles("test")
 @SpringBootTest(
@@ -870,7 +832,7 @@ class UserTests {
             assertTrue(isNotEmpty())
             first().run {
                 assertEquals(
-                    "{${jakarta.validation.constraints.Pattern::class.java.name}.message}",
+                    "{${ValidationConstraintsPattern::class.java.name}.message}",
                     messageTemplate
                 )
             }
@@ -1165,7 +1127,7 @@ class UserTests {
                 assertTrue(isNotEmpty())
                 first().run {
                     assertEquals(
-                        "{${Pattern::class.java.name}.message}",
+                        "{${ValidationConstraintsPattern::class.java.name}.message}",
                         messageTemplate
                     )
                     assertEquals(false, message.contains("doit correspondre à"))
@@ -1489,7 +1451,7 @@ class UserTests {
                 assertTrue(isNotEmpty())
                 first().run {
                     assertEquals(
-                        "{${Pattern::class.java.name}.message}",
+                        "{${ValidationConstraintsPattern::class.java.name}.message}",
                         messageTemplate
                     )
                     assertEquals(false, message.contains("doit correspondre à"))
@@ -1640,7 +1602,7 @@ class UserTests {
     @Ignore
     @Test
     fun testSendActivationEmail() {
-        // TODO: change mailService.sendActivationEmail to map("user" to User, "activationKey" to activationKey) as parameter instead of pair(user,activationKey)
+        // TODO: change mailService.sendActivationEmail parameter signature from pair(user,activationKey) to map("user" to User, "activationKey" to activationKey)
         mailService.sendActivationEmail(
             User(
                 langKey = DEFAULT_LANGUAGE,
@@ -1677,7 +1639,9 @@ class UserTests {
     @Test
     fun testSendPasswordResetMail() {
         val user = User(
-            langKey = DEFAULT_LANGUAGE, login = "john", email = "john.doe@acme.com"
+            langKey = DEFAULT_LANGUAGE,
+            login = "john",
+            email = "john.doe@acme.com"
         )
         mailService.sendPasswordResetMail(user)
         verify(javaMailSender).send(messageCaptor.capture())
@@ -1686,27 +1650,31 @@ class UserTests {
         assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
         assertThat(message.content.toString()).isNotEmpty
         assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+
     }
 
     @Ignore
     @Test
     fun testSendEmailWithException() {
-        Mockito.doThrow(MailSendException::class.java).`when`(javaMailSender)
+        doThrow(MailSendException::class.java)
+            .`when`(javaMailSender)
             .send(any(MimeMessage::class.java))
         try {
             mailService.sendEmail(
-                "john.doe@acme.com", "testSubject", "testContent", isMultipart = false, isHtml = false
+                "john.doe@acme.com",
+                "testSubject",
+                "testContent",
+                isMultipart = false,
+                isHtml = false
             )
         } catch (e: Exception) {
-            Assertions.fail<String>("Exception shouldn't have been thrown")
+            fail<String>("Exception shouldn't have been thrown")
         }
     }
 
-    val languages = arrayOf(
-        "en", "fr", "de", "it", "es"
-    )
-    val PATTERN_LOCALE_3: java.util.regex.Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
-    val PATTERN_LOCALE_2: java.util.regex.Pattern = compile("([a-z]{2})-([a-z]{2})")
+    val languages = arrayOf("en", "fr", "de", "it", "es")
+    val PATTERN_LOCALE_3: Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
+    val PATTERN_LOCALE_2: Pattern = compile("([a-z]{2})-([a-z]{2})")
 
     @Ignore
     @Test
