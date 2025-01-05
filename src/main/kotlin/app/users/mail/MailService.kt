@@ -18,7 +18,7 @@ interface MailService {
         titleKey: String
     )
 
-    fun sendPasswordResetMail(user: User)
+    fun sendPasswordResetMail(userResetKeyPair: Pair<User, String>)
     fun sendActivationEmail(pairUserActivationKey: Pair<User, String>)
     fun sendCreationEmail(userResetKeyPair: Pair<User, String>)
 

@@ -1714,20 +1714,20 @@ class UserTests {
         }
     }
 
-    @Ignore
     @Test
     fun testSendPasswordResetMail() {
-        user.copy(
+        (user.copy(
             langKey = DEFAULT_LANGUAGE,
             login = "john",
             email = "john.doe@acme.com"
-        ).run {
+        ) to generateResetKey).run {
             run(mailService::sendPasswordResetMail)
             verify(javaMailSender).send(messageCaptor.capture())
             messageCaptor.value.run {
-                assertThat("${allRecipients[0]}").isEqualTo(email)
+                assertThat("${allRecipients[0]}").isEqualTo(first.email)
                 assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
                 assertThat(content.toString()).isNotEmpty
+                assertThat(content.toString()).contains(second)
                 assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
             }
         }
