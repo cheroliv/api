@@ -40,7 +40,6 @@ object UserActivationDao {
             .bind(CREATED_DATE_ATTR, first.createdDate)
             .bind(
                 ACTIVATION_DATE_ATTR,
-                @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 first.activationDate
             ).fetch()
             .awaitRowsUpdated()

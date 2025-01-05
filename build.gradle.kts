@@ -54,7 +54,6 @@ object Constants {
     const val arrowKtVersion = "1.2.4"
     const val jgitVersion = "6.10.0.202406032230-r"
     const val apiVersion = "0.0.1"
-    const val USER_HOME_KEY = "user.home"
     const val BLANK = ""
 }
 
@@ -234,7 +233,9 @@ configurations {
     }
 }
 
-tasks.withType<KotlinCompile> { kotlinOptions { freeCompilerArgs = listOf("-Xjsr305=strict") } }
+tasks.withType<KotlinCompile> {
+    compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
+}
 
 tasks.withType<Test> {
     useJUnitPlatform()
