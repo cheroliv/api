@@ -11,7 +11,7 @@
     <p th:text="#{email.activation.greeting(${user.login})}">Dear</p>
     <p th:text="#{email.activation.text1}">Your workspace account has been created, please click on the URL below to activate it:</p>
     <p>
-      <a th:with="url=(@{|${baseUrl}/users/activate?key=${activationKey}|})" th:href="${url}" th:text="${url}">Activation link</a>
+      <a th:with="url=(@{|${baseUrl}/api/users/activate?key=${activationKey}|})" th:href="${url}" th:text="${url}">Activation link</a>
     </p>
     <p>
       <span th:text="#{email.activation.text2}">Regards, </span>

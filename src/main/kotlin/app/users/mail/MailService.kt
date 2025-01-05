@@ -20,6 +20,6 @@ interface MailService {
 
     fun sendPasswordResetMail(user: User)
     fun sendActivationEmail(pairUserActivationKey: Pair<User, String>)
-    fun sendCreationEmail(user: User)
+    fun sendCreationEmail(userResetKeyPair: Pair<User, String>)
 
 }

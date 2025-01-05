@@ -66,6 +66,7 @@ import app.users.mail.MailServiceSmtp
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
 import app.users.security.SecurityUtils.generateActivationKey
+import app.users.security.SecurityUtils.generateResetKey
 import app.users.security.UserRole
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup
@@ -1593,73 +1594,18 @@ class UserTests {
                 "email.test.title"
             )
             verify(javaMailSender).send(messageCaptor.capture())
-            val message = messageCaptor.value
-            assertThat(message.subject).isEqualTo("test title")
-            assertThat("${message.allRecipients[0]}").isEqualTo(email)
-            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-            assertThat(message.content.toString()).isEqualToNormalizingNewlines(
-                "<html>test title, http://127.0.0.1:8080, john</html>"
-            )
-            assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-        }
-    }
-
-    @Test
-    fun testSendActivationEmail() {
-        (user.copy(
-            langKey = DEFAULT_LANGUAGE,
-            login = "john",
-            email = "john.doe@acme.com"
-        ) to generateActivationKey).run {
-            run(mailService::sendActivationEmail)
-            verify(javaMailSender).send(messageCaptor.capture())
             messageCaptor.value.run {
-                assertThat("${allRecipients[0]}").isEqualTo(first.email)
-                assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                assertThat(content.toString()).isNotEmpty
-                assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-            }
-        }
-    }
-
-    @Ignore
-    @Test
-    fun testCreationEmail() {
-        user.copy(
-            langKey = DEFAULT_LANGUAGE,
-            login = "john",
-            email = "john.doe@acme.com",
-        ).run {
-            run(mailService::sendCreationEmail)
-            verify(javaMailSender).send(messageCaptor.capture())
-            val message = messageCaptor.value
-            assertThat("${message.allRecipients[0]}").isEqualTo(email)
-            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-            assertThat(message.content.toString()).isNotEmpty
-            assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-        }
-    }
-
-    @Ignore
-    @Test
-    fun testSendPasswordResetMail() {
-        user.copy(
-            langKey = DEFAULT_LANGUAGE,
-            login = "john",
-            email = "john.doe@acme.com"
-        ).run {
-            run(mailService::sendPasswordResetMail)
-            verify(javaMailSender).send(messageCaptor.capture())
-            messageCaptor.value.run {
+                assertThat(subject).isEqualTo("test title")
                 assertThat("${allRecipients[0]}").isEqualTo(email)
                 assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                assertThat(content.toString()).isNotEmpty
+                assertThat(content.toString()).isEqualToNormalizingNewlines(
+                    "<html>test title, http://127.0.0.1:8080, john</html>"
+                )
                 assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
             }
         }
     }
 
-    @Ignore
     @Test
     fun testSendEmailWithException() {
         doThrow(MailSendException::class.java)
@@ -1678,8 +1624,6 @@ class UserTests {
         }
     }
 
-
-    @Ignore
     @Test
     fun testSendLocalizedEmailForAllSupportedLanguages() {
         user.copy(
@@ -1730,35 +1674,65 @@ class UserTests {
         }"
         return javaLangKey
     }
+
+    @Test
+    fun testSendActivationEmail() {
+        (user.copy(
+            langKey = DEFAULT_LANGUAGE,
+            login = "john",
+            email = "john.doe@acme.com"
+        ) to generateActivationKey).run {
+            run(mailService::sendActivationEmail)
+            verify(javaMailSender).send(messageCaptor.capture())
+            messageCaptor.value.run {
+                assertThat("${allRecipients[0]}").isEqualTo(first.email)
+                assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                assertThat(content.toString()).isNotEmpty
+                assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+            }
+        }
+    }
+
+    @Test
+    fun testCreationEmail() {
+        (user.copy(
+            langKey = DEFAULT_LANGUAGE,
+            login = "john",
+            email = "john.doe@acme.com",
+        ) to generateResetKey).run {
+            run(mailService::sendCreationEmail)
+            verify(javaMailSender).send(messageCaptor.capture())
+            messageCaptor.value
+                .apply { i("Mime message content: $content") }
+                .run {
+                    assertThat("${allRecipients[0]}").isEqualTo(first.email)
+                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                    assertThat(content.toString()).isNotEmpty
+                    assertThat(content.toString()).contains(second)
+                    assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+                }
+        }
+    }
+
+    @Ignore
+    @Test
+    fun testSendPasswordResetMail() {
+        user.copy(
+            langKey = DEFAULT_LANGUAGE,
+            login = "john",
+            email = "john.doe@acme.com"
+        ).run {
+            run(mailService::sendPasswordResetMail)
+            verify(javaMailSender).send(messageCaptor.capture())
+            messageCaptor.value.run {
+                assertThat("${allRecipients[0]}").isEqualTo(email)
+                assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                assertThat(content.toString()).isNotEmpty
+                assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+            }
+        }
+    }
 }
-
-/*=================================================================================*/
-//@Ignore
-//class GmailServiceTests {
-//
-//
-///*=================================================================================*/
-//
-
-
-////import org.assertj.base.api.Assertions.assertThat
-////import org.springframework.test.web.reactive.server.returnResult
-////import java.net.URI
-//import jakarta.validation.Validator
-//import org.junit.jupiter.api.AfterAll
-//import org.junit.jupiter.api.AfterEach
-//import org.junit.jupiter.api.BeforeAll
-//import org.springframework.beans.factory.getBean
-//import org.springframework.context.ConfigurableApplicationContext
-//import org.springframework.data.r2dbc.base.R2dbcEntityTemplate
-//import org.springframework.test.web.reactive.server.WebTestClient
-//import org.springframework.test.web.reactive.server.WebTestClient.bindToServer
-//import school.base.property.BASE_URL_DEV
-//import school.base.logging.i
-//import school.deleteAllAccounts
-//import school.launcher
-//import kotlin.test.Test
-//
 //internal class PasswordControllerTests {
 //
 //    private lateinit var context: ConfigurableApplicationContext

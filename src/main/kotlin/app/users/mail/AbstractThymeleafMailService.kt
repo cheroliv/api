@@ -52,6 +52,7 @@ abstract class AbstractThymeleafMailService(
                         setVariable(USER, map[User.objectName])
                         setVariable(ACTIVATION_KEY_ATTR, map[ACTIVATION_KEY_ATTR])
                         setVariable(BASE_URL, properties.mail.baseUrl)
+                        setVariable("resetKey", map["resetKey"].toString())
                     }),
                     isMultipart = false,
                     isHtml = true
@@ -66,10 +67,10 @@ abstract class AbstractThymeleafMailService(
         }), TEMPLATE_NAME_SIGNUP, TITLE_KEY_SIGNUP
     )
 
-    override fun sendCreationEmail(user: User) = sendEmailFromTemplate(
-        mapOf(User.objectName to user.apply {
-            d("Sending creation email to '${user.email}'")
-        }), TEMPLATE_NAME_CREATION, TITLE_KEY_SIGNUP
+    override fun sendCreationEmail(userResetKeyPair: Pair<User, String>) = sendEmailFromTemplate(
+        mapOf(User.objectName to userResetKeyPair.apply {
+            d("Sending creation email to '${first.email}' with reset key : $second")
+        }.first, "resetKey" to userResetKeyPair.second), TEMPLATE_NAME_CREATION, TITLE_KEY_PASSWORD
     )
 
     override fun sendPasswordResetMail(user: User) = sendEmailFromTemplate(
