@@ -1734,14 +1734,6 @@ class UserTests {
         }
     }
 
-    //}
-//    @Test
-//    fun `test Change Password Wrong Existing Password`() {
-//        i("test Change Password Wrong Existing Password")
-//        //TODO: activate account
-//        //TODO: get bearer by login
-//    }
-//    /*
     @Test
     @WithMockUser("change-password-wrong-existing-password")
     fun testChangePasswordWrongExistingPassword() {
@@ -1766,7 +1758,6 @@ class UserTests {
 //            assertThat(passwordEncoder.matches(currentPassword, updatedUser.password)).isTrue
     }
 
-    //
     @Test
     @WithMockUser("change-password")
     fun testChangePassword() {
@@ -1862,6 +1853,8 @@ class UserTests {
 //            val updatedUser = userRepository.findOneByLogin("change-password-empty").block()
 //            assertThat(updatedUser.password).isEqualTo(user.password)
     }
+
+
 //    @Test
 //    fun `test Request Password Reset`() {
 //    }
@@ -1971,4 +1964,3 @@ class UserTests {
 ////            .expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
 //    }
 }
-
