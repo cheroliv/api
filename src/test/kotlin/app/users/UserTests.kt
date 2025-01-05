@@ -131,6 +131,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
@@ -1732,28 +1733,8 @@ class UserTests {
             }
         }
     }
-}
-//internal class PasswordControllerTests {
-//
-//    private lateinit var context: ConfigurableApplicationContext
-//    private val dao: R2dbcEntityTemplate by lazy { context.getBean() }
-//    private val validator: Validator by lazy { context.getBean() }
-//    private val client: WebTestClient by lazy {
-//        bindToServer()
-//            .baseUrl(BASE_URL_DEV)
-//            .build()
-//    }
-//
-//    @BeforeAll
-//    fun `lance le server en profile test`() {
-//        context = launcher()
-//    }
-//
-//    @AfterAll
-//    fun `arrête le serveur`() = context.close()
-//
-//    @AfterEach
-//    fun tearDown() = deleteAllAccounts(dao)
+
+    //}
 //    @Test
 //    fun `test Change Password Wrong Existing Password`() {
 //        i("test Change Password Wrong Existing Password")
@@ -1761,9 +1742,9 @@ class UserTests {
 //        //TODO: get bearer by login
 //    }
 //    /*
-//        @Test
-//        @WithMockUser("change-password-wrong-existing-password")
-//        fun testChangePasswordWrongExistingPassword() {
+    @Test
+    @WithMockUser("change-password-wrong-existing-password")
+    fun testChangePasswordWrongExistingPassword() {
 //            val currentPassword = RandomStringUtils.random(60)
 //            val user = User(
 //                password = passwordEncoder.encode(currentPassword),
@@ -1783,11 +1764,12 @@ class UserTests {
 //            val updatedUser = userRepository.findOneByLogin("change-password-wrong-existing-password").block()
 //            assertThat(passwordEncoder.matches("new password", updatedUser.password)).isFalse
 //            assertThat(passwordEncoder.matches(currentPassword, updatedUser.password)).isTrue
-//        }
-//
-//        @Test
-//        @WithMockUser("change-password")
-//        fun testChangePassword() {
+    }
+
+    //
+    @Test
+    @WithMockUser("change-password")
+    fun testChangePassword() {
 //            val currentPassword = RandomStringUtils.random(60)
 //            val user = User(
 //                password = passwordEncoder.encode(currentPassword),
@@ -1806,11 +1788,11 @@ class UserTests {
 //
 //            val updatedUser = userRepository.findOneByLogin("change-password").block()
 //            assertThat(passwordEncoder.matches("new password", updatedUser.password)).isTrue
-//        }
-//
-//        @Test
-//        @WithMockUser("change-password-too-small")
-//        fun testChangePasswordTooSmall() {
+    }
+
+    @Test
+    @WithMockUser("change-password-too-small")
+    fun testChangePasswordTooSmall() {
 //            val currentPassword = RandomStringUtils.random(60)
 //            val user = User(
 //                password = passwordEncoder.encode(currentPassword),
@@ -1831,11 +1813,11 @@ class UserTests {
 //
 //            val updatedUser = userRepository.findOneByLogin("change-password-too-small").block()
 //            assertThat(updatedUser.password).isEqualTo(user.password)
-//        }
-//
-//        @Test
-//        @WithMockUser("change-password-too-long")
-//        fun testChangePasswordTooLong() {
+    }
+
+    @Test
+    @WithMockUser("change-password-too-long")
+    fun testChangePasswordTooLong() {
 //            val currentPassword = RandomStringUtils.random(60)
 //            val user = User(
 //                password = passwordEncoder.encode(currentPassword),
@@ -1856,11 +1838,11 @@ class UserTests {
 //
 //            val updatedUser = userRepository.findOneByLogin("change-password-too-long").block()
 //            assertThat(updatedUser.password).isEqualTo(user.password)
-//        }
-//
-//        @Test
-//        @WithMockUser("change-password-empty")
-//        fun testChangePasswordEmpty() {
+    }
+
+    @Test
+    @WithMockUser("change-password-empty")
+    fun testChangePasswordEmpty() {
 //            val currentPassword = RandomStringUtils.random(60)
 //            val user = User(
 //                password = passwordEncoder.encode(currentPassword),
@@ -1879,8 +1861,7 @@ class UserTests {
 //
 //            val updatedUser = userRepository.findOneByLogin("change-password-empty").block()
 //            assertThat(updatedUser.password).isEqualTo(user.password)
-//        }
-//     */
+    }
 //    @Test
 //    fun `test Request Password Reset`() {
 //    }
@@ -1989,5 +1970,5 @@ class UserTests {
 ////            .exchange()
 ////            .expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
 //    }
-//}
+}
 

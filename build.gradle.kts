@@ -134,14 +134,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-
-    // Spring-Shell
-//    implementation("org.springframework.shell:spring-shell-starter")
-//    testImplementation("org.springframework.shell:spring-shell-starter-test")
-
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude(module = "mockito-core")
+    }
     // Spring security
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.security:spring-security-data")
+    testImplementation("org.springframework.security:spring-security-test")
 
     // Spring cloud
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:${properties["spring_cloud_starter.version"]}") {
@@ -149,9 +148,9 @@ dependencies {
     }
 
     // Spring tests
-    testImplementation("org.springframework.boot:spring-boot-starter-test") {
-        exclude(module = "mockito-core")
-    }
+    // Spring-Shell
+//    implementation("org.springframework.shell:spring-shell-starter")
+//    testImplementation("org.springframework.shell:spring-shell-starter-test")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-impl:${properties["jsonwebtoken.version"]}")
