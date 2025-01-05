@@ -174,6 +174,10 @@ class UserTests {
 
     @Captor
     lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
+
+    val languages = arrayOf("en", "fr", "de", "it", "es")
+    val PATTERN_LOCALE_3: Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
+    val PATTERN_LOCALE_2: Pattern = compile("([a-z]{2})-([a-z]{2})")
     val gmailConfig = GoogleAuthConfig(
         clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
         projectId = "gmail-tester-444502",
@@ -197,7 +201,6 @@ class UserTests {
             context.getBean<MessageSource>(),
             context.getBean<SpringWebFluxTemplateEngine>()
         )
-
     }
 
     @AfterTest
@@ -1498,6 +1501,7 @@ class UserTests {
         )
         verify(javaMailSender).send(messageCaptor.capture())
         messageCaptor.value.run {
+            i("Mime message content: $content")
             assertThat(subject).isEqualTo("testSubject")
             assertThat(allRecipients[0]).hasToString("john.doe@acme.com")
             assertThat(from[0]).hasToString(context.getBean<Properties>().mail.from)
@@ -1578,79 +1582,81 @@ class UserTests {
 
     @Test
     fun `test SendEmailFromTemplate`() {
-        val user = User(
+        user.copy(
             login = "john",
             email = "john.doe@acme.com",
             langKey = "en"
-        )
-        mailService.sendEmailFromTemplate(
-            mapOf(User.objectName to user),
-            "mail/testEmail",
-            "email.test.title"
-        )
-        verify(javaMailSender).send(messageCaptor.capture())
-        val message = messageCaptor.value
-        assertThat(message.subject).isEqualTo("test title")
-        assertThat("${message.allRecipients[0]}").isEqualTo(user.email)
-        assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-        assertThat(message.content.toString()).isEqualToNormalizingNewlines(
-            "<html>test title, http://127.0.0.1:8080, john</html>"
-        )
-        assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+        ).run {
+            mailService.sendEmailFromTemplate(
+                mapOf(User.objectName to this),
+                "mail/testEmail",
+                "email.test.title"
+            )
+            verify(javaMailSender).send(messageCaptor.capture())
+            val message = messageCaptor.value
+            assertThat(message.subject).isEqualTo("test title")
+            assertThat("${message.allRecipients[0]}").isEqualTo(email)
+            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+            assertThat(message.content.toString()).isEqualToNormalizingNewlines(
+                "<html>test title, http://127.0.0.1:8080, john</html>"
+            )
+            assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+        }
     }
 
-    @Ignore
     @Test
     fun testSendActivationEmail() {
-        // TODO: change mailService.sendActivationEmail parameter signature from pair(user,activationKey) to map("user" to User, "activationKey" to activationKey)
-        mailService.sendActivationEmail(
-            User(
-                langKey = DEFAULT_LANGUAGE,
-                login = "john",
-                email = "john.doe@acme.com"
-            ) to generateActivationKey
-        )
-        verify(javaMailSender).send(messageCaptor.capture())
-        val message = messageCaptor.value
-        assertThat("${message.allRecipients[0]}").isEqualTo(user.email)
-        assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-        assertThat(message.content.toString()).isNotEmpty
-        assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+        (user.copy(
+            langKey = DEFAULT_LANGUAGE,
+            login = "john",
+            email = "john.doe@acme.com"
+        ) to generateActivationKey).run {
+            run(mailService::sendActivationEmail)
+            verify(javaMailSender).send(messageCaptor.capture())
+            messageCaptor.value.run {
+                assertThat("${allRecipients[0]}").isEqualTo(first.email)
+                assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                assertThat(content.toString()).isNotEmpty
+                assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+            }
+        }
     }
 
     @Ignore
     @Test
     fun testCreationEmail() {
-        val user = User(
+        user.copy(
             langKey = DEFAULT_LANGUAGE,
             login = "john",
             email = "john.doe@acme.com",
-        )
-        mailService.sendCreationEmail(user)
-        verify(javaMailSender).send(messageCaptor.capture())
-        val message = messageCaptor.value
-        assertThat("${message.allRecipients[0]}").isEqualTo(user.email)
-        assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-        assertThat(message.content.toString()).isNotEmpty
-        assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+        ).run {
+            run(mailService::sendCreationEmail)
+            verify(javaMailSender).send(messageCaptor.capture())
+            val message = messageCaptor.value
+            assertThat("${message.allRecipients[0]}").isEqualTo(email)
+            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+            assertThat(message.content.toString()).isNotEmpty
+            assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+        }
     }
 
     @Ignore
     @Test
     fun testSendPasswordResetMail() {
-        val user = User(
+        user.copy(
             langKey = DEFAULT_LANGUAGE,
             login = "john",
             email = "john.doe@acme.com"
-        )
-        mailService.sendPasswordResetMail(user)
-        verify(javaMailSender).send(messageCaptor.capture())
-        val message = messageCaptor.value
-        assertThat("${message.allRecipients[0]}").isEqualTo(user.email)
-        assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-        assertThat(message.content.toString()).isNotEmpty
-        assertThat(message.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-
+        ).run {
+            run(mailService::sendPasswordResetMail)
+            verify(javaMailSender).send(messageCaptor.capture())
+            messageCaptor.value.run {
+                assertThat("${allRecipients[0]}").isEqualTo(email)
+                assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                assertThat(content.toString()).isNotEmpty
+                assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+            }
+        }
     }
 
     @Ignore
@@ -1672,40 +1678,37 @@ class UserTests {
         }
     }
 
-    val languages = arrayOf("en", "fr", "de", "it", "es")
-    val PATTERN_LOCALE_3: Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
-    val PATTERN_LOCALE_2: Pattern = compile("([a-z]{2})-([a-z]{2})")
 
     @Ignore
     @Test
     fun testSendLocalizedEmailForAllSupportedLanguages() {
-        val user = User(
+        user.copy(
             login = "john", email = "john.doe@acme.com"
-        )
-        for (langKey in languages) {
-            mailService.sendEmailFromTemplate(
-                mapOf(User.objectName to user.copy(langKey = langKey)), "mail/testEmail", "email.test.title"
-            )
-            verify(javaMailSender, atLeastOnce()).send(messageCaptor.capture())
-            val message = messageCaptor.value
-
-            val resource = this::class.java.classLoader.getResource(
-                "i18n/messages_${
-                    getJavaLocale(langKey)
-                }.properties"
-            )
-            assertNotNull(resource)
-            val prop = Properties()
-            prop.load(
-                InputStreamReader(
-                    FileInputStream(File(URI(resource.file).path)), Charset.forName("UTF-8")
+        ).run {
+            for (langKey in languages) {
+                mailService.sendEmailFromTemplate(
+                    mapOf(User.objectName to copy(langKey = langKey)), "mail/testEmail", "email.test.title"
                 )
-            )
+                verify(javaMailSender, atLeastOnce()).send(messageCaptor.capture())
+                val message = messageCaptor.value
 
-            val emailTitle = prop["email.test.title"] as String
-            assertThat(message.subject).isEqualTo(emailTitle)
-            assertThat(message.content.toString())
-                .isEqualToNormalizingNewlines("<html>$emailTitle, http://127.0.0.1:8080, john</html>")
+                val resource = this::class.java.classLoader.getResource(
+                    "i18n/messages_${
+                        getJavaLocale(langKey)
+                    }.properties"
+                )
+                assertNotNull(resource)
+                val prop = Properties()
+                prop.load(
+                    InputStreamReader(
+                        FileInputStream(File(URI(resource.file).path)), Charset.forName("UTF-8")
+                    )
+                )
+                val emailTitle = prop["email.test.title"] as String
+                assertThat(message.subject).isEqualTo(emailTitle)
+                assertThat(message.content.toString())
+                    .isEqualToNormalizingNewlines("<html>$emailTitle, http://127.0.0.1:8080, john</html>")
+            }
         }
     }
 

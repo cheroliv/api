@@ -1,3 +1,5 @@
+@file:Suppress("UnclearPrecedenceOfBinaryExpression", "SENSELESS_COMPARISON")
+
 package app.users.signup
 
 import org.apache.commons.beanutils.BeanUtils
