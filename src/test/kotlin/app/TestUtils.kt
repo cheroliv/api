@@ -2,7 +2,7 @@
 
 package app
 
-import app.core.database.EntityModel.Members.withId
+import app.TestUtils.Data.displayInsertUserScript
 import app.core.Constants.ADMIN
 import app.core.Constants.DOMAIN_DEV_URL
 import app.core.Constants.EMPTY_STRING
@@ -10,21 +10,11 @@ import app.core.Constants.ROLE_ADMIN
 import app.core.Constants.ROLE_ANONYMOUS
 import app.core.Constants.ROLE_USER
 import app.core.Constants.USER
-import arrow.core.Either
-import arrow.core.left
-import arrow.core.right
-import kotlinx.coroutines.reactive.collect
-import org.springframework.beans.factory.getBean
-import org.springframework.context.ApplicationContext
-import org.springframework.dao.EmptyResultDataAccessException
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
-import org.springframework.r2dbc.core.DatabaseClient
-import org.springframework.r2dbc.core.awaitSingleOrNull
+import app.core.database.EntityModel.Members.withId
+import app.users.User
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.UserDao.countUsers
-import app.TestUtils.Data.displayInsertUserScript
-import app.users.User
 import app.users.security.Role
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup
@@ -36,6 +26,16 @@ import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ID_FIELD
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.countUserActivation
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import kotlinx.coroutines.reactive.collect
+import org.springframework.beans.factory.getBean
+import org.springframework.context.ApplicationContext
+import org.springframework.dao.EmptyResultDataAccessException
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
+import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.r2dbc.core.awaitSingleOrNull
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneOffset.UTC

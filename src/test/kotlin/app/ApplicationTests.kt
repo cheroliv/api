@@ -2001,7 +2001,7 @@ class ApplicationTests {
 ////            .expectStatus().isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
 //    }
     /**
-     *     1/ Workspace
+     *    1/ Workspace
      *         a. create a workspace
      *         b. add an entry to the workspace
      *         c. remove an entry from the workspace
@@ -2028,7 +2028,6 @@ class ApplicationTests {
      *     11/ dashboard
      *     12/ portfolio
      */
-
     @Nested
     @TestInstance(PER_CLASS)
     inner class WorkspaceTest {
