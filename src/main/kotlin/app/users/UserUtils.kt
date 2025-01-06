@@ -11,10 +11,11 @@ import app.users.signup.UserActivation
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.status
 import org.springframework.web.server.ServerWebExchange
 import java.net.URI
 
-object UserValidations{
+object UserUtils {
     const val ONE_ROW_UPDATED = 1L
 
     @JvmStatic
@@ -69,10 +70,12 @@ object UserValidations{
     }
 
     @JvmStatic
-    val signupProblems: ProblemsModel = Constants.defaultProblems.copy(path = "${UserController.UserRestApiRoutes.API_USERS}${UserController.UserRestApiRoutes.API_SIGNUP}")
+    val signupProblems: ProblemsModel =
+        Constants.defaultProblems.copy(path = "${UserController.UserRestApiRoutes.API_USERS}${UserController.UserRestApiRoutes.API_SIGNUP}")
 
     @JvmStatic
-    val activateProblems: ProblemsModel = Constants.defaultProblems.copy(path = "${UserController.UserRestApiRoutes.API_USERS}${UserController.UserRestApiRoutes.API_ACTIVATE}")
+    val activateProblems: ProblemsModel =
+        Constants.defaultProblems.copy(path = "${UserController.UserRestApiRoutes.API_USERS}${UserController.UserRestApiRoutes.API_ACTIVATE}")
 
     @JvmStatic
     fun ProblemsModel.exceptionProblem(
@@ -97,7 +100,7 @@ object UserValidations{
                     )
                 )
             )
-        }.run { ResponseEntity.status(status).body(this) }
+        }.run { status(status).body(this) }
 
 
     @JvmStatic

@@ -1,6 +1,5 @@
-package app.workspace
+package app
 
-import app.API
 import app.core.Constants
 import app.core.Constants.VIRGULE
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -32,7 +31,7 @@ import kotlin.reflect.full.createInstance
 import kotlin.repeat
 import kotlin.run
 
-object Tools {
+object TestTools {
 
 //@Suppress("MemberVisibilityCanBePrivate")
 //object DataTests {
