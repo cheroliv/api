@@ -50,6 +50,11 @@ import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Companion.USERACTIVATIONCLASS
 import app.users.signup.UserActivationDao.save
+import kotlinx.coroutines.reactor.mono
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UsernameNotFoundException
+import reactor.core.publisher.Mono
 import java.lang.Boolean.parseBoolean
 import java.lang.Long.getLong
 import java.util.*
@@ -57,6 +62,28 @@ import java.util.UUID.fromString
 
 
 object UserDao {
+    fun ApplicationContext.userDetailsMono(
+        emailOrLogin: String
+    ): Mono<UserDetails> = getBean<Validator>().run {
+        when {
+            validateProperty(
+                User(email = emailOrLogin),
+                User.Fields.EMAIL_FIELD
+            ).isNotEmpty() && validateProperty(
+                User(login = emailOrLogin),
+                User.Fields.LOGIN_FIELD
+            ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
+
+            else -> mono {
+                findOneWithAuths<User>(emailOrLogin).map { user ->
+                    return@mono org.springframework.security.core.userdetails.User(
+                        user.login,
+                        user.password,
+                        user.roles.map { SimpleGrantedAuthority(it.id) })
+                }.getOrNull() ?: throw UsernameNotFoundException("User $emailOrLogin was not found")
+            }
+        }
+    }
 
     fun Pair<String, ApplicationContext>.isActivationKeySizeValid()
             : Set<ConstraintViolation<UserActivation>> = second

@@ -1,45 +1,33 @@
-package app.users.security
+package app.core.security
 
-import app.core.Constants.ROLE_ADMIN
-import app.core.Loggers.d
+import app.core.Constants
+import app.core.Loggers
 import app.core.Properties
-import app.core.web.Web.SpaWebFilter
-import app.users.User
-import app.users.UserDao.findOneWithAuths
-import jakarta.validation.Validator
-import kotlinx.coroutines.reactor.mono
+import app.core.web.Web
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpMethod.OPTIONS
+import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
-import org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHENTICATION
-import org.springframework.security.config.web.server.SecurityWebFiltersOrder.HTTP_BASIC
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder
 import org.springframework.security.config.web.server.ServerHttpSecurity
-import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
-import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.server.SecurityWebFilterChain
-import org.springframework.security.web.server.header.ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY
-import org.springframework.security.web.server.header.FeaturePolicyServerHttpHeadersWriter.FEATURE_POLICY
-import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN
+import org.springframework.security.web.server.header.ContentSecurityPolicyServerHttpHeadersWriter
+import org.springframework.security.web.server.header.FeaturePolicyServerHttpHeadersWriter
+import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers
-import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
 import org.springframework.web.cors.reactive.CorsWebFilter
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import org.springframework.web.server.WebFilter
-import reactor.core.publisher.Mono
-import org.springframework.security.core.userdetails.User as SecurityUser
 
 @Configuration
 @EnableWebFluxSecurity
@@ -86,37 +74,6 @@ class SecurityConfiguration(private val context: ApplicationContext) {
             "/swagger",
             "/v2/api-docs",
         )
-
-        fun ApplicationContext.userDetailsMono(
-            emailOrLogin: String
-        ): Mono<UserDetails> = getBean<Validator>().run {
-            when {
-                validateProperty(
-                    User(email = emailOrLogin),
-                    User.Fields.EMAIL_FIELD
-                ).isNotEmpty() && validateProperty(
-                    User(login = emailOrLogin),
-                    User.Fields.LOGIN_FIELD
-                ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
-
-                else -> mono {
-                    findOneWithAuths<User>(emailOrLogin).map { user ->
-                        return@mono SecurityUser(
-                            user.login,
-                            user.password,
-                            user.roles.map { SimpleGrantedAuthority(it.id) })
-                    }.getOrNull() ?: throw UsernameNotFoundException("User $emailOrLogin was not found")
-                }
-            }
-        }
-    }
-
-    @Component("userDetailsService")
-    class DomainUserDetailsService(private val context: ApplicationContext) : ReactiveUserDetailsService {
-
-        @Transactional(readOnly = true)
-        @Throws(UsernameNotFoundException::class)
-        override fun findByUsername(emailOrLogin: String): Mono<UserDetails> = context.userDetailsMono(emailOrLogin)
     }
 
     @Bean("passwordEncoder")
@@ -133,33 +90,33 @@ class SecurityConfiguration(private val context: ApplicationContext) {
             : SecurityWebFilterChain = http.securityMatcher(
         NegatedServerWebExchangeMatcher(
             OrServerWebExchangeMatcher(
-                pathMatchers(
+                ServerWebExchangeMatchers.pathMatchers(
                     "/app/**",
                     "/i18n/**",
                     "/content/**",
                     "/swagger-ui/**",
                     "/test/**",
                     "/webjars/**"
-                ), pathMatchers(OPTIONS, "/**")
+                ), ServerWebExchangeMatchers.pathMatchers(HttpMethod.OPTIONS, "/**")
             )
         )
     ).csrf { csrf ->
         csrf.disable()
-            .addFilterAt(SpaWebFilter(), AUTHENTICATION)
-            .addFilterAt(JwtFilter(context), HTTP_BASIC)
+            .addFilterAt(Web.SpaWebFilter(), SecurityWebFiltersOrder.AUTHENTICATION)
+            .addFilterAt(JwtFilter(context), SecurityWebFiltersOrder.HTTP_BASIC)
             .authenticationManager(reactiveAuthenticationManager())
             .exceptionHandling { }
             .headers { h ->
                 h.contentSecurityPolicy { p ->
-                    p.policyDirectives(CONTENT_SECURITY_POLICY)
+                    p.policyDirectives(ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY)
                 }
-                h.referrerPolicy { p -> p.policy(STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
-                h.permissionsPolicy { p -> p.policy(FEATURE_POLICY) }
+                h.referrerPolicy { p -> p.policy(ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
+                h.permissionsPolicy { p -> p.policy(FeaturePolicyServerHttpHeadersWriter.FEATURE_POLICY) }
                 h.frameOptions { f -> f.disable() }
             }.authorizeExchange {
                 it.pathMatchers(*permitAll).permitAll()
                 it.pathMatchers(*authenticated).authenticated()
-                it.pathMatchers(*adminAuthority).hasAuthority(ROLE_ADMIN)
+                it.pathMatchers(*adminAuthority).hasAuthority(Constants.ROLE_ADMIN)
             }
     }.build()
 
@@ -168,7 +125,7 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         context.getBean<Properties>().cors.apply config@{
             when {
                 allowedOrigins != null && allowedOrigins!!.isNotEmpty() -> this@source.apply {
-                    d("Registering CORS filter")
+                    Loggers.d("Registering CORS filter")
                     setOf(
                         "/api/**",
                         "/management/**",

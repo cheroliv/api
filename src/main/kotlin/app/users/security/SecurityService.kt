@@ -8,6 +8,7 @@ import app.core.Loggers.d
 import app.core.Loggers.i
 import app.core.Loggers.t
 import app.core.Properties
+import app.users.UserDao.userDetailsMono
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts.builder
 import io.jsonwebtoken.Jwts.parserBuilder
@@ -22,14 +23,19 @@ import org.springframework.context.ApplicationContext
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.User
+import org.springframework.security.core.userdetails.UserDetails
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+import reactor.core.publisher.Mono
 import java.security.Key
 import java.time.ZonedDateTime.now
 import java.util.*
 
-@Component
-class SecurityManager(
+@Component("userDetailsService")
+class SecurityService(
     private val context: ApplicationContext,
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     private var key: Key? = null,
@@ -37,7 +43,11 @@ class SecurityManager(
     private var tokenValidityInMilliseconds: Long = 0,
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
     private var tokenValidityInMillisecondsForRememberMe: Long = 0
-) : InitializingBean {
+) : ReactiveUserDetailsService, InitializingBean {
+
+    @Transactional(readOnly = true)
+    @Throws(UsernameNotFoundException::class)
+    override fun findByUsername(emailOrLogin: String): Mono<UserDetails> = context.userDetailsMono(emailOrLogin)
 
     @Throws(Exception::class)
     override fun afterPropertiesSet() {

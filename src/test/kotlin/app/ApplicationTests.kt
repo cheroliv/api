@@ -71,8 +71,8 @@ import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
-import app.users.security.SecurityUtils.generateActivationKey
-import app.users.security.SecurityUtils.generateResetKey
+import app.core.security.SecurityUtils.generateActivationKey
+import app.core.security.SecurityUtils.generateResetKey
 import app.users.security.UserRole
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup

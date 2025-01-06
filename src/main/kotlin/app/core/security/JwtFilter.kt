@@ -1,7 +1,8 @@
-package app.users.security
+package app.core.security
 
 import app.core.Constants.AUTHORIZATION_HEADER
 import app.core.Constants.BEARER_START_WITH
+import app.users.security.SecurityService
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.http.server.reactive.ServerHttpRequest
@@ -23,7 +24,7 @@ class JwtFilter(private val context: ApplicationContext) : WebFilter {
         .run(::resolveToken)
         .run {
             chain.run {
-                context.getBean<SecurityManager>().run {
+                context.getBean<SecurityService>().run {
                     when {
                         !isNullOrBlank() && run(::validateToken) ->
                             run(::getAuthentication)

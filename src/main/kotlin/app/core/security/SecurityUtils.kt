@@ -1,4 +1,4 @@
-package app.users.security
+package app.core.security
 
 import app.core.Constants
 import kotlinx.coroutines.reactive.awaitSingle
@@ -13,7 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers
-import app.users.security.SecurityConfiguration.Companion.negated
+import app.core.security.SecurityConfiguration.Companion.negated
 import java.security.SecureRandom
 
 
@@ -47,7 +47,7 @@ object SecurityUtils {
 
     val String.objectName get() = replaceFirst(first(), first().lowercaseChar())
 
-    private fun extractPrincipal(authentication: Authentication?) =
+    private fun extractPrincipal(authentication: Authentication?): String =
         when (authentication) {
             null -> ""
             else -> when (val principal = authentication.principal) {
@@ -57,11 +57,11 @@ object SecurityUtils {
             }
         }
 
-    suspend fun getCurrentUserLogin() = extractPrincipal(
+    suspend fun getCurrentUserLogin(): String = extractPrincipal(
         getContext().awaitSingle().authentication
     )!!
 
-    suspend fun getCurrentUserJwt() = getContext()
+    suspend fun getCurrentUserJwt(): String = getContext()
         .map(SecurityContext::getAuthentication)
         .filter { it.credentials is String }
         .map { it.credentials as String }
@@ -76,7 +76,7 @@ object SecurityUtils {
         }.awaitSingleOrNull()!!
 
 
-    suspend fun isCurrentUserInRole(authority: String) =
+    suspend fun isCurrentUserInRole(authority: String): Boolean =
         @Suppress("ReactiveStreamsTooLongSameOperatorsChain")
         getContext()
         .map(SecurityContext::getAuthentication)
