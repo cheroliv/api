@@ -44,11 +44,11 @@ import app.users.UserDao.findOneWithAuths
 import app.users.UserDao.save
 import app.users.UserDao.signupAvailability
 import app.users.UserDao.signupDao
-import app.users.UserService.Companion.SIGNUP_AVAILABLE
-import app.users.UserService.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
-import app.users.UserService.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
-import app.users.UserService.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
-import app.users.UserService.Companion.validate
+import app.users.UserValidations.SIGNUP_AVAILABLE
+import app.users.UserValidations.SIGNUP_EMAIL_NOT_AVAILABLE
+import app.users.UserValidations.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
+import app.users.UserValidations.SIGNUP_LOGIN_NOT_AVAILABLE
+import app.users.UserValidations.validate
 import app.users.Utils.Data.DEFAULT_USER_JSON
 import app.users.Utils.Data.OFFICIAL_SITE
 import app.users.Utils.Data.admin
