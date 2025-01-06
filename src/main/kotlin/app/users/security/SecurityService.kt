@@ -27,14 +27,14 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import reactor.core.publisher.Mono
 import java.security.Key
 import java.time.ZonedDateTime.now
 import java.util.*
 
-@Component("userDetailsService")
+@Service("userDetailsService")
 class SecurityService(
     private val context: ApplicationContext,
     @Suppress("SpringJavaInjectionPointsAutowiringInspection")
