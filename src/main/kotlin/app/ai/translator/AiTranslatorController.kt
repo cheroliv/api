@@ -57,7 +57,7 @@ class AiTranslatorController(service: ChatModelService) {
                 "llama3.2:3b" to "LlamaTiny",
                 "dolphin-llama3:8b" to "DolphinSmall",
                 "aya:8b" to "AyaSmall",
-                "smollm:135m" to "SmollM",
+                "smollm:135m" to "Smoll",
             )
 
         // Creating tasks for each model
