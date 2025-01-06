@@ -24,10 +24,13 @@ import app.TestUtils.tripleCounts
 import app.core.Constants.DEFAULT_LANGUAGE
 import app.core.Constants.DEVELOPMENT
 import app.core.Constants.EMPTY_STRING
+import app.core.Constants.PATTERN_LOCALE_2
+import app.core.Constants.PATTERN_LOCALE_3
 import app.core.Constants.PRODUCTION
 import app.core.Constants.ROLE_USER
 import app.core.Constants.STARTUP_LOG_MSG_KEY
 import app.core.Constants.VIRGULE
+import app.core.Constants.languages
 import app.core.Loggers.i
 import app.core.Properties
 import app.core.Utils.lsWorkingDir
@@ -121,13 +124,13 @@ import jakarta.mail.internet.MimeMessage
 import jakarta.mail.internet.MimeMultipart
 import jakarta.validation.Validation.byProvider
 import jakarta.validation.Validator
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.RandomStringUtils.random
-import org.apache.commons.lang3.SystemUtils.USER_HOME
 import org.apache.commons.lang3.SystemUtils.USER_HOME_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -188,12 +191,9 @@ import java.util.*
 import java.util.Locale.*
 import java.util.UUID.fromString
 import java.util.UUID.randomUUID
-import java.util.regex.Pattern
-import java.util.regex.Pattern.compile
 import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.*
-import jakarta.validation.constraints.Pattern as ValidationConstraintsPattern
 
 @ActiveProfiles("test")
 @TestInstance(PER_CLASS)
@@ -214,9 +214,7 @@ class ApplicationTests {
     @Captor
     lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
 
-    val languages = arrayOf("en", "fr", "de", "it", "es")
-    val PATTERN_LOCALE_3: Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
-    val PATTERN_LOCALE_2: Pattern = compile("([a-z]{2})-([a-z]{2})")
+
     val gmailConfig = GoogleAuthConfig(
         clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
         projectId = "gmail-tester-444502",
@@ -430,13 +428,13 @@ class ApplicationTests {
                 assertEquals(ROLE_USER, roles.first().id)
                 assertEquals(userId, id)
             }.run { "context.findOneWithAuths<User>(${user.email}).getOrNull() : $this" }
-            .run(::println)
+            .run(::i)
         context.findOne<User>(user.email).getOrNull()
             .run { "context.findOne<User>(user.email).getOrNull() : $this" }
-            .run(::println)
+            .run(::i)
         context.findAuthsByEmail(user.email).getOrNull()
             .run { "context.findAuthsByEmail(${user.email}).getOrNull() : $this" }
-            .run(::println)
+            .run(::i)
     }
 
     @Test
@@ -446,7 +444,7 @@ class ApplicationTests {
         assertEquals(1, context.countUsers())
         val findOneEmailResult: Either<Throwable, User> = context.findOne<User>(user.email)
         findOneEmailResult.map { assertDoesNotThrow { fromString(it.toString()) } }
-        println("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
+        i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
         context.findOne<User>(user.login).map { assertDoesNotThrow { fromString(it.toString()) } }
     }
 
@@ -478,8 +476,8 @@ class ApplicationTests {
         }
         userWithAuths.roles.isNotEmpty().run(::assertTrue)
         assertEquals(ROLE_USER, userWithAuths.roles.first().id)
-        "userWithAuths : $userWithAuths".run(::println)
-        "userResult : $userResult".run(::println)
+        "userWithAuths : $userWithAuths".run(::i)
+        "userResult : $userResult".run(::i)
     }
 
     @Test
@@ -504,7 +502,7 @@ class ApplicationTests {
             .run { userWithAuths = userWithAuths.copy(roles = this!!) }
         userWithAuths.roles.isNotEmpty().run(::assertTrue)
         assertEquals(ROLE_USER, userWithAuths.roles.first().id)
-        "userWithAuths : $userWithAuths".run(::println)
+        "userWithAuths : $userWithAuths".run(::i)
     }
 
     @Test
@@ -529,7 +527,7 @@ class ApplicationTests {
             .run { userWithAuths = userWithAuths.copy(roles = this!!) }
         userWithAuths.roles.isNotEmpty().run(::assertTrue)
         assertEquals(ROLE_USER, userWithAuths.roles.first().id)
-        "userWithAuths : $userWithAuths".run(::println)
+        "userWithAuths : $userWithAuths".run(::i)
     }
 
     @Test
@@ -874,7 +872,7 @@ class ApplicationTests {
             assertTrue(isNotEmpty())
             first().run {
                 assertEquals(
-                    "{${ValidationConstraintsPattern::class.java.name}.message}",
+                    "{${Pattern::class.java.name}.message}",
                     messageTemplate
                 )
             }
@@ -1169,7 +1167,7 @@ class ApplicationTests {
                 assertTrue(isNotEmpty())
                 first().run {
                     assertEquals(
-                        "{${ValidationConstraintsPattern::class.java.name}.message}",
+                        "{${Pattern::class.java.name}.message}",
                         messageTemplate
                     )
                     assertEquals(false, message.contains("doit correspondre à"))
@@ -1493,7 +1491,7 @@ class ApplicationTests {
                 assertTrue(isNotEmpty())
                 first().run {
                     assertEquals(
-                        "{${ValidationConstraintsPattern::class.java.name}.message}",
+                        "{${Pattern::class.java.name}.message}",
                         messageTemplate
                     )
                     assertEquals(false, message.contains("doit correspondre à"))
@@ -2092,13 +2090,14 @@ class ApplicationTests {
 
         @Test
         fun checkDisplayWorkspaceStructure(): Unit {
-            workspace.toString().run(::println)
+            workspace.toString().run(::i)
             workspace.displayWorkspaceStructure()
         }
 
         @Test
         fun `install workspace`(): Unit {
-            install(System.getProperty(USER_HOME_KEY)
+            install(
+                System.getProperty(USER_HOME_KEY)
                     .run { "$this/workspace/school" })
             // default type : AllInOneWorkspace
             // ExplodedWorkspace

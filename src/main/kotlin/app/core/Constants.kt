@@ -1,12 +1,18 @@
 package app.core
 
+import app.core.web.ProblemsModel
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE
-import app.core.web.ProblemsModel
 import java.net.URI
 import java.net.URI.create
+import java.util.regex.Pattern
+import java.util.regex.Pattern.compile
 
 object Constants {
+    val languages = arrayOf("en", "fr", "de", "it", "es")
+    val PATTERN_LOCALE_3: Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
+    val PATTERN_LOCALE_2: Pattern = compile("([a-z]{2})-([a-z]{2})")
+
     const val ROLE_FIELD = "role"
     const val SPA_NEGATED_REGEX = "[^\\\\.]*"
     const val EMPTY_STRING = ""
