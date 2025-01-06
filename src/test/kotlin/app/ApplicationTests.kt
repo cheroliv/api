@@ -1526,6 +1526,71 @@ class ApplicationTests {
 
         }
 
+
+    //TODO : test password dao
+    @Ignore
+    @Test
+    fun `test password dao`(): Unit = runBlocking {
+        val countUserBefore = context.countUsers()
+        assertEquals(0, countUserBefore)
+
+        // Save a user with a password
+        val userWithPassword = user.copy(password = "securePassword123")
+        (userWithPassword to context).save()
+        assertEquals(countUserBefore + 1, context.countUsers())
+
+        // Retrieve the user and check the password
+        val retrievedUser = context.findOne<User>(userWithPassword.email).getOrNull()
+        assertNotNull(retrievedUser)
+        assertEquals("securePassword123", retrievedUser?.password)
+
+        // Update the user's password
+        val updatedPassword = "newSecurePassword456"
+        val updatedUser = retrievedUser?.copy(password = updatedPassword)
+        if (updatedUser != null) {
+            (updatedUser to context).save()
+        }
+
+        // Retrieve the user again and check the updated password
+        val retrievedUpdatedUser = context.findOne<User>(userWithPassword.email).getOrNull()
+        assertNotNull(retrievedUpdatedUser)
+        assertEquals(updatedPassword, retrievedUpdatedUser?.password)
+
+        // Clean up
+        context.delete(retrievedUser?.id!!)
+        assertEquals(countUserBefore, context.countUsers())
+    }
+    //TODO : test password service
+    @Ignore
+    @Test
+    fun `test password service`(): Unit = runBlocking {
+        val countUserBefore = context.countUsers()
+        assertEquals(0, countUserBefore)
+
+        // Save a user with a password
+        val userWithPassword = user.copy(password = "securePassword123")
+        (userWithPassword to context).save()
+        assertEquals(countUserBefore + 1, context.countUsers())
+
+        // Retrieve the user and check the password
+        val retrievedUser = context.findOne<User>(userWithPassword.email).getOrNull()
+        assertNotNull(retrievedUser)
+        assertEquals("securePassword123", retrievedUser?.password)
+
+        // Update the user's password using the password service
+        val updatedPassword = "newSecurePassword456"
+//        context.getBean<PasswordService>().updatePassword(retrievedUser!!.id, updatedPassword)
+
+        // Retrieve the user again and check the updated password
+        val retrievedUpdatedUser = context.findOne<User>(userWithPassword.email).getOrNull()
+        assertNotNull(retrievedUpdatedUser)
+        assertEquals(updatedPassword, retrievedUpdatedUser?.password)
+
+        // Clean up
+        context.delete(retrievedUser.id!!)
+        assertEquals(countUserBefore, context.countUsers())
+    }
+
     @Test
     @WithMockUser("change-password-wrong-existing-password")
     fun testChangePasswordWrongExistingPassword() {
