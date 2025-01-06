@@ -6,9 +6,7 @@
 )
 
 package app
-import app.workspace.Installer
-import org.assertj.swing.edt.GuiActionRunner.execute
-import org.assertj.swing.fixture.FrameFixture
+
 import app.TestTools.logBody
 import app.TestTools.responseToString
 import app.TestUtils.Data.DEFAULT_USER_JSON
@@ -86,6 +84,7 @@ import app.users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
 import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.activateDao
 import app.users.signup.UserActivationDao.countUserActivation
+import app.workspace.Installer
 import app.workspace.Workspace
 import app.workspace.Workspace.Companion.install
 import app.workspace.Workspace.InstallationType.ALL_IN_ONE
@@ -128,11 +127,16 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.RandomStringUtils.random
+import org.apache.commons.lang3.SystemUtils.USER_HOME
 import org.apache.commons.lang3.SystemUtils.USER_HOME_KEY
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.assertj.swing.edt.GuiActionRunner.execute
+import org.assertj.swing.fixture.FrameFixture
 import org.hibernate.validator.HibernateValidator
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentCaptor
@@ -192,6 +196,7 @@ import kotlin.test.*
 import jakarta.validation.constraints.Pattern as ValidationConstraintsPattern
 
 @ActiveProfiles("test")
+@TestInstance(PER_CLASS)
 @SpringBootTest(
     classes = [API::class],
     properties = ["spring.main.web-application-type=reactive"],
@@ -2025,6 +2030,7 @@ class ApplicationTests {
      */
 
     @Nested
+    @TestInstance(PER_CLASS)
     inner class WorkspaceTest {
         /**
          * 1 - Créer la configuration du workspace
@@ -2093,8 +2099,8 @@ class ApplicationTests {
 
         @Test
         fun `install workspace`(): Unit {
-            install(path = System.getProperty("user.home")
-                .run { "$this/workspace/school"})
+            install(System.getProperty(USER_HOME_KEY)
+                    .run { "$this/workspace/school" })
             // default type : AllInOneWorkspace
             // ExplodedWorkspace
         }
@@ -2187,6 +2193,7 @@ class ApplicationTests {
     }
 
     //@org.junit.jupiter.api.extension.ExtendWith
+    //@org.junit.jupiter.api.TestInstance(PER_CLASS)
     class GUITest {
         private lateinit var window: FrameFixture
 
