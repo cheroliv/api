@@ -3,6 +3,7 @@
 package app
 
 import app.TestUtils.Data.displayInsertUserScript
+import app.TestUtils.WithUnauthenticatedMockUser.Factory
 import app.core.Constants.ADMIN
 import app.core.Constants.DOMAIN_DEV_URL
 import app.core.Constants.EMPTY_STRING
@@ -42,10 +43,29 @@ import java.time.ZoneOffset.UTC
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.test.assertEquals
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.test.context.support.WithSecurityContext
+import org.springframework.security.test.context.support.WithSecurityContextFactory
+import kotlin.annotation.AnnotationRetention.RUNTIME
+import kotlin.annotation.AnnotationTarget.*
+
+
 
 object TestUtils {
     @JvmStatic
     fun main(args: Array<String>): Unit = displayInsertUserScript()
+
+
+    @Retention(RUNTIME)
+    @WithSecurityContext(factory = Factory::class)
+    @Target(FUNCTION, PROPERTY_GETTER, PROPERTY_SETTER, ANNOTATION_CLASS, CLASS)
+    annotation class WithUnauthenticatedMockUser {
+        class Factory : WithSecurityContextFactory<WithUnauthenticatedMockUser?> {
+            override fun createSecurityContext(annotation: WithUnauthenticatedMockUser?)
+                    : SecurityContext = SecurityContextHolder.createEmptyContext()
+        }
+    }
 
     object Data {
         const val OFFICIAL_SITE = "https://cccp-education.github.io/"
