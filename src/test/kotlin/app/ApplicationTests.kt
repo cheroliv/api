@@ -41,12 +41,16 @@ import app.core.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.core.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
 import app.core.database.EntityModel.Members.withId
 import app.core.mail.MailConfiguration.GoogleAuthConfig
+import app.core.security.SecurityUtils.generateActivationKey
+import app.core.security.SecurityUtils.generateResetKey
 import app.core.web.HttpUtils.validator
 import app.users.User
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
+import app.users.User.Fields.ID_FIELD
 import app.users.User.Fields.LOGIN_FIELD
+import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Relations.FIND_ALL_USERS
 import app.users.User.Relations.FIND_USER_BY_LOGIN
 import app.users.UserController.UserRestApiRoutes.API_ACTIVATE_PARAM
@@ -61,6 +65,7 @@ import app.users.UserDao.findOneWithAuths
 import app.users.UserDao.save
 import app.users.UserDao.signupAvailability
 import app.users.UserDao.signupDao
+import app.users.UserDao.updatePassword
 import app.users.UserService
 import app.users.UserUtils.SIGNUP_AVAILABLE
 import app.users.UserUtils.SIGNUP_EMAIL_NOT_AVAILABLE
@@ -71,8 +76,6 @@ import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
-import app.core.security.SecurityUtils.generateActivationKey
-import app.core.security.SecurityUtils.generateResetKey
 import app.users.security.UserRole
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup
@@ -168,6 +171,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -398,15 +402,22 @@ class ApplicationTests {
                     .getOrNull()!!
                 assertNotNull(expectedUserResult)
                 assertNotNull(expectedUserResult.id)
-                assertTrue(expectedUserResult.roles.isNotEmpty())
                 assertEquals(expectedUserResult.roles.first().id, ROLE_USER)
                 assertEquals(1, expectedUserResult.roles.size)
-                assertEquals(expectedUserResult, userResult)
-                assertEquals(
-                    user.withId(expectedUserResult.id!!)
-                        .copy(roles = setOf(Role(ROLE_USER))),
-                    userResult
-                )
+                assertEquals(expectedUserResult.id, userResult.id)
+                assertEquals(expectedUserResult.email, userResult.email)
+                assertEquals(expectedUserResult.login, userResult.login)
+                assertEquals(expectedUserResult.langKey, userResult.langKey)
+                assertEquals(expectedUserResult.version, userResult.version)
+                assertTrue {
+                    expectedUserResult.roles.isNotEmpty()
+                    context.getBean<PasswordEncoder>().matches(user.password, expectedUserResult.password)
+                    context.getBean<PasswordEncoder>().matches(user.password, userResult.password)
+                }
+                assertEquals(expectedUserResult.roles.first().id, ROLE_USER)
+                assertEquals(userResult.roles.first().id, ROLE_USER)
+                assertEquals(userResult.roles.size,1)
+
             }
     }
 
@@ -1527,39 +1538,62 @@ class ApplicationTests {
         }
 
 
-    //TODO : test password dao
-    @Ignore
     @Test
-    fun `test password dao`(): Unit = runBlocking {
-        val countUserBefore = context.countUsers()
-        assertEquals(0, countUserBefore)
+    fun `test dao update user password`(): Unit = runBlocking {
+        user.id.run(::assertNull)
 
-        // Save a user with a password
-        val userWithPassword = user.copy(password = "securePassword123")
-        (userWithPassword to context).save()
-        assertEquals(countUserBefore + 1, context.countUsers())
+        context.tripleCounts().run {
 
-        // Retrieve the user and check the password
-        val retrievedUser = context.findOne<User>(userWithPassword.email).getOrNull()
-        assertNotNull(retrievedUser)
-        assertEquals("securePassword123", retrievedUser?.password)
+            val uuid: UUID = (user to context).signupDao()
+                .getOrNull()!!.first
+                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-        // Update the user's password
-        val updatedPassword = "newSecurePassword456"
-        val updatedUser = retrievedUser?.copy(password = updatedPassword)
-        if (updatedUser != null) {
-            (updatedUser to context).save()
+            assertEquals(first + 1, context.countUsers())
+            assertEquals(second + 1, context.countUserActivation())
+            assertEquals(third + 1, context.countUserAuthority())
+
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .fetch().awaitSingle().run {
+                    (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
+                }.run {
+
+                    "user.id retrieved before update password: $first".apply(::i)
+                    assertEquals(uuid, first, "user.id should be the same")
+                    assertNotEquals(user.password, second, "password should be different")
+                    assertTrue(
+                        context.getBean<PasswordEncoder>().matches(user.password, second),
+                        "password should be encoded"
+                    )
+
+                    "updatedPassword123".run {
+                        (user.copy(
+                            id = first,
+                            password = this
+                        ) to context)
+                            .updatePassword()
+                            .apply { assertTrue(isRight()) }
+                            .getOrNull()!!
+                            .run { "row updated : $this".apply(::i) }
+
+                        assertTrue(
+                            context.getBean<PasswordEncoder>().matches(
+                                this, FIND_ALL_USERS
+                                    .trimIndent()
+                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .fetch()
+                                    .awaitSingle()[PASSWORD_FIELD]
+                                    .toString()
+                                    .also { "password retrieved after user update: $it".run(::i) }
+                            ).apply { "passwords matches : ${toString()}".run(::i) },
+                            "password should be updated"
+                        )
+                    }
+                }
         }
-
-        // Retrieve the user again and check the updated password
-        val retrievedUpdatedUser = context.findOne<User>(userWithPassword.email).getOrNull()
-        assertNotNull(retrievedUpdatedUser)
-        assertEquals(updatedPassword, retrievedUpdatedUser?.password)
-
-        // Clean up
-        context.delete(retrievedUser?.id!!)
-        assertEquals(countUserBefore, context.countUsers())
     }
+
     //TODO : test password service
     @Ignore
     @Test

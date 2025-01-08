@@ -1,5 +1,6 @@
 package app.users.password
 
+import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.User
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Service
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Service
 class PasswordService(context: ApplicationContext) {
 
     suspend fun changePassword(currentClearTextPassword: String, newPassword: String) {
-//        SecurityUtils.getCurrentUserLogin().apply {
+        getCurrentUserLogin().apply {
 //            if (!isNullOrBlank()) {
 //                userRepository.findOneByLogin(this).apply {
 //                    if (this != null) {
@@ -27,7 +28,7 @@ class PasswordService(context: ApplicationContext) {
 //                    }
 //                }
 //            }
-//        }
+        }
     }
     suspend fun completePasswordReset(newPassword: String, key: String): User? =null
 //        accountRepository.findOneByResetKey(key).run {

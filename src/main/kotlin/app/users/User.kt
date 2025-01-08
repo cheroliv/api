@@ -134,12 +134,18 @@ data class User(
                     "$LOGIN_FIELD", "$EMAIL_FIELD",
                     "$PASSWORD_FIELD", "$LANG_KEY_FIELD",
                     "$VERSION_FIELD"
-                ) values ( 
-                :$LOGIN_ATTR, 
-                :$EMAIL_ATTR, 
-                :$PASSWORD_ATTR, 
-                :$LANG_KEY_ATTR, 
+                ) values (
+                :$LOGIN_ATTR,
+                :$EMAIL_ATTR,
+                :$PASSWORD_ATTR,
+                :$LANG_KEY_ATTR,
                 :$VERSION_ATTR);"""
+
+        const val UPDATE_PASSWORD = """
+                UPDATE "$TABLE_NAME"
+                SET "$PASSWORD_FIELD" = :$PASSWORD_ATTR,
+                    "$VERSION_FIELD" = :$VERSION_ATTR
+                WHERE "$ID_FIELD" = :$ID_ATTR;"""
 
         const val FIND_USER_BY_LOGIN = """
                 SELECT u."$ID_FIELD" 

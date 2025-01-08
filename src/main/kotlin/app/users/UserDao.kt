@@ -2,21 +2,8 @@
 
 package app.users
 
-import app.core.database.EntityModel
 import app.core.Constants.ROLE_USER
-import arrow.core.Either
-import arrow.core.left
-import arrow.core.right
-import jakarta.validation.ConstraintViolation
-import jakarta.validation.Validator
-import org.springframework.beans.factory.getBean
-import org.springframework.context.ApplicationContext
-import org.springframework.dao.EmptyResultDataAccessException
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
-import org.springframework.r2dbc.core.*
-import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.transaction.reactive.TransactionalOperator
-import org.springframework.transaction.reactive.executeAndAwait
+import app.core.database.EntityModel
 import app.users.User.Attributes.EMAILORLOGIN
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.ID_ATTR
@@ -44,16 +31,31 @@ import app.users.User.Relations.INSERT
 import app.users.User.Relations.LOGIN_AND_EMAIL_AVAILABLE_COLUMN
 import app.users.User.Relations.LOGIN_AVAILABLE_COLUMN
 import app.users.User.Relations.SELECT_SIGNUP_AVAILABILITY
+import app.users.User.Relations.UPDATE_PASSWORD
 import app.users.security.UserRoleDao.signup
 import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Companion.USERACTIVATIONCLASS
 import app.users.signup.UserActivationDao.save
+import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
+import jakarta.validation.ConstraintViolation
+import jakarta.validation.Validator
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import org.springframework.beans.factory.getBean
+import org.springframework.context.ApplicationContext
+import org.springframework.dao.EmptyResultDataAccessException
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
+import org.springframework.r2dbc.core.*
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
+import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.transaction.reactive.TransactionalOperator
+import org.springframework.transaction.reactive.executeAndAwait
 import reactor.core.publisher.Mono
 import java.lang.Boolean.parseBoolean
 import java.lang.Long.getLong
@@ -110,6 +112,7 @@ object UserDao {
         .toString()
         .toInt()
 
+
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<User, ApplicationContext>.save(): Either<Throwable, UUID> = try {
         INSERT
@@ -128,6 +131,26 @@ object UserDao {
     } catch (e: Throwable) {
         e.left()
     }
+
+    @Throws(EmptyResultDataAccessException::class)
+    suspend fun Pair<User, ApplicationContext>.updatePassword(): Either<Throwable, Long> =
+        try {
+            UPDATE_PASSWORD
+                .trimIndent()
+                .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .bind(ID_ATTR, first.id)
+                .bind(PASSWORD_ATTR, first.password.run(second.getBean<PasswordEncoder>()::encode))
+                .bind(VERSION_ATTR, first.version)
+                .fetch()
+                .rowsUpdated()
+                .awaitSingle()
+//            .awaitOne()[ID_ATTR]
+//            .toString()
+//            .run(UUID::fromString)
+                .right()
+        } catch (e: Throwable) {
+            e.left()
+        }
 
     suspend fun ApplicationContext.deleteAllUsersOnly(): Unit = DELETE_USER
         .trimIndent()
@@ -294,7 +317,7 @@ object UserDao {
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<User, ApplicationContext>.signupDao(): Either<Throwable, Pair<UUID, String>> = try {
         second.getBean<TransactionalOperator>().executeAndAwait {
-            (first to second).save()
+            (first.copy(password = second.getBean<PasswordEncoder>().encode(first.password)) to second).save()
         }
         second.findOneByEmail<User>(first.email).mapLeft {
             return Exception("Unable to find user by email").left()
