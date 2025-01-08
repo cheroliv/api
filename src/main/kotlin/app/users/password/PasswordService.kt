@@ -3,7 +3,7 @@ package app.users.password
 import app.core.Loggers.d
 import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.User
-import app.users.UserDao.findOne
+import app.users.UserDao.findOneWithAuths
 import app.users.UserDao.updatePassword
 import arrow.core.getOrElse
 import org.springframework.beans.factory.getBean
@@ -14,18 +14,20 @@ import org.springframework.stereotype.Service
 @Service
 class PasswordService(val context: ApplicationContext) {
 
-    suspend fun update(currentClearTextPassword: String, newPassword: String):Long {
+    suspend fun update(currentClearTextPassword: String, newPassword: String): Long {
         getCurrentUserLogin().apply {
+            d("Current security context user.login : $this")
             when {
-                !isNullOrBlank() -> {
-                    context.findOne<User>(this).map {
+                isNotBlank() -> {
+                    // TODO: use findOne instead, but it needs to be fixed!!!
+                    context.findOneWithAuths<User>(this).map {
                         when {
                             context.getBean<PasswordEncoder>().matches(
                                 currentClearTextPassword,
                                 it.password
                             ) -> return (it.copy(password = newPassword) to context)
                                 .updatePassword()
-                                .getOrElse { 0 }
+                                .getOrElse { throw InvalidPasswordException() }
                                 .apply { d("Changed password for User: ${it.login}") }
 
                             else -> throw InvalidPasswordException()
@@ -34,7 +36,7 @@ class PasswordService(val context: ApplicationContext) {
                 }
             }
         }
-        return 0
+        throw InvalidPasswordException()
     }
 
     suspend fun completePasswordReset(newPassword: String, key: String): User? = null

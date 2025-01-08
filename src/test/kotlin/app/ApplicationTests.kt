@@ -44,6 +44,7 @@ import app.core.database.EntityModel.Members.withId
 import app.core.mail.MailConfiguration.GoogleAuthConfig
 import app.core.security.SecurityUtils.generateActivationKey
 import app.core.security.SecurityUtils.generateResetKey
+import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.core.web.HttpUtils.validator
 import app.users.User
 import app.users.User.Attributes.EMAIL_ATTR
@@ -1622,20 +1623,21 @@ class ApplicationTests {
                     )
 
                     "*updatedPassword123".run {
+                        assertEquals(user.login, getCurrentUserLogin())
                         assertEquals(
                             ONE_ROW_UPDATED, context.getBean<PasswordService>().update(user.password, this)
                         )
-                        assertTrue (
-                                context.getBean<PasswordEncoder>().matches(
-                                    this, FIND_ALL_USERS
-                                        .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                                        .fetch()
-                                        .awaitSingle()[PASSWORD_FIELD]
-                                        .toString()
-                                        .also { i("password retrieved after user update: $it") }
-                                ).apply { "passwords matches : ${toString()}".run(::i) },
-                        message = "password should be updated"
+                        assertTrue(
+                            context.getBean<PasswordEncoder>().matches(
+                                this, FIND_ALL_USERS
+                                    .trimIndent()
+                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .fetch()
+                                    .awaitSingle()[PASSWORD_FIELD]
+                                    .toString()
+                                    .also { i("password retrieved after user update: $it") }
+                            ).apply { "passwords matches : ${toString()}".run(::i) },
+                            message = "password should be updated"
                         )
                     }
                 }
