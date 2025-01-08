@@ -4,24 +4,18 @@ import app.core.Loggers.i
 import app.core.database.EntityModel.Members.withId
 import app.core.web.HttpUtils.badResponse
 import app.users.User
-import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE
-import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE_PATH
-import app.users.signup.SignupController.UserRestApiRoutes.API_USERS
-import app.users.UserDao.signupAvailability
+import app.users.signup.SignupEndPoint.activateProblems
+import app.users.signup.SignupEndPoint.badResponseEmailIsNotAvailable
+import app.users.signup.SignupEndPoint.badResponseLoginAndEmailIsNotAvailable
+import app.users.signup.SignupEndPoint.badResponseLoginIsNotAvailable
+import app.users.signup.SignupEndPoint.exceptionProblem
 import app.users.UserDao.signup
+import app.users.UserDao.signupAvailability
+import app.users.signup.SignupEndPoint.signupProblems
 import app.users.UserDao.signupToUser
-import app.users.UserUtils.ONE_ROW_UPDATED
-import app.users.UserUtils.SIGNUP_EMAIL_NOT_AVAILABLE
-import app.users.UserUtils.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
-import app.users.UserUtils.SIGNUP_LOGIN_NOT_AVAILABLE
-import app.users.UserUtils.activateProblems
-import app.users.UserUtils.badResponseEmailIsNotAvailable
-import app.users.UserUtils.badResponseLoginAndEmailIsNotAvailable
-import app.users.UserUtils.badResponseLoginIsNotAvailable
-import app.users.UserUtils.exceptionProblem
-import app.users.UserUtils.signupProblems
-import app.users.UserUtils.validate
+import app.users.signup.SignupEndPoint.validate
 import app.users.signup.UserActivationDao.activateDao
+import app.users.signup.UserActivationDao.validate
 import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.left
@@ -37,6 +31,34 @@ import java.util.UUID.randomUUID
 
 @Service
 class SignupService(private val context: ApplicationContext) {
+    companion object {
+        const val ONE_ROW_UPDATED = 1L
+
+        @JvmStatic
+        val SIGNUP_AVAILABLE = Triple(true, true, true)
+
+        @JvmStatic
+        val SIGNUP_LOGIN_NOT_AVAILABLE = Triple(false, true, false)
+
+        @JvmStatic
+        val SIGNUP_EMAIL_NOT_AVAILABLE = Triple(false, false, true)
+
+        @JvmStatic
+        val SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE = Triple(false, false, false)
+        const val API_AUTHORITY = "/api/authorities"
+        const val API_USERS = "/api/users"
+        const val API_SIGNUP = "/signup"
+        const val API_SIGNUP_PATH = "$API_USERS$API_SIGNUP"
+        const val API_ACTIVATE = "/activate"
+        const val API_ACTIVATE_PATH = "$API_USERS$API_ACTIVATE?key="
+        const val API_ACTIVATE_PARAM = "{activationKey}"
+        const val API_ACTIVATE_KEY = "key"
+        const val API_RESET_INIT = "/reset-password/init"
+        const val API_RESET_FINISH = "/reset-password/finish"
+        const val API_CHANGE = "/change-password"
+        const val API_CHANGE_PATH = "$API_USERS$API_CHANGE"
+    }
+
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
         context.signupToUser(signup).run {
             (this to context).signup().mapLeft {
@@ -44,7 +66,7 @@ class SignupService(private val context: ApplicationContext) {
             }.map {
                 return apply {
                     i("Activation key: ${it.second}")
-                    i("Activation link : http://localhost$API_ACTIVATE_PATH${it.second}")
+                    i("Activation link : http://localhost:8080/$API_ACTIVATE_PATH${it.second}")
                 }.withId(it.first).right()
             }
         }
@@ -81,6 +103,11 @@ class SignupService(private val context: ApplicationContext) {
             }
             SERVICE_UNAVAILABLE.run(::ResponseEntity)
         }
+
+    suspend fun activate(key: String): Long = context.activateDao(key)
+        .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
+        .takeIf { it == ONE_ROW_UPDATED }
+        ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")
 
     suspend fun activate(
         key: String,
@@ -123,10 +150,4 @@ class SignupService(private val context: ApplicationContext) {
                 )
         }
     }
-
-    suspend fun activate(key: String): Long = context.activateDao(key)
-        .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
-        .takeIf { it == ONE_ROW_UPDATED }
-        ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")
-
 }

@@ -5,30 +5,14 @@ import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ServerWebExchange
-import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE
-import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE_KEY
-import app.users.signup.SignupController.UserRestApiRoutes.API_SIGNUP
-import app.users.signup.SignupController.UserRestApiRoutes.API_USERS
+import app.users.signup.SignupService.Companion.API_ACTIVATE
+import app.users.signup.SignupService.Companion.API_ACTIVATE_KEY
+import app.users.signup.SignupService.Companion.API_SIGNUP
+import app.users.signup.SignupService.Companion.API_USERS
 
 @RestController
 @RequestMapping(API_USERS)
 class SignupController(private val service: SignupService) {
-
-    /** User REST API URIs */
-    object UserRestApiRoutes {
-        const val API_AUTHORITY = "/api/authorities"
-        const val API_USERS = "/api/users"
-        const val API_SIGNUP = "/signup"
-        const val API_SIGNUP_PATH = "$API_USERS$API_SIGNUP"
-        const val API_ACTIVATE = "/activate"
-        const val API_ACTIVATE_PATH = "$API_USERS$API_ACTIVATE?key="
-        const val API_ACTIVATE_PARAM = "{activationKey}"
-        const val API_ACTIVATE_KEY = "key"
-        const val API_RESET_INIT = "/reset-password/init"
-        const val API_RESET_FINISH = "/reset-password/finish"
-        const val API_CHANGE = "/change-password"
-        const val API_CHANGE_PATH = "$API_USERS$API_CHANGE"
-    }
 
     /**
      * Handles user signup requests. This method processes the incoming signup data and

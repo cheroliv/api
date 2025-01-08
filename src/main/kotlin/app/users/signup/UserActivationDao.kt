@@ -2,6 +2,9 @@
 
 package app.users.signup
 
+import app.core.Loggers
+import app.core.database.EntityModel
+import app.core.web.HttpUtils.validator
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR
@@ -17,6 +20,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.*
+import org.springframework.web.server.ServerWebExchange
 import java.util.*
 
 object UserActivationDao {
@@ -62,5 +66,23 @@ object UserActivationDao {
             .right()
     } catch (e: Throwable) {
         e.left()
+    }
+
+    @JvmStatic
+    fun UserActivation.validate(
+        exchange: ServerWebExchange
+    ): Set<Map<String, String?>> = exchange.validator.run {
+        "Validate UserActivation : ${this@validate}".run(Loggers::i)
+        setOf(UserActivation.Attributes.ACTIVATION_KEY_ATTR)
+            .map { it to validateProperty(this@validate, it) }
+            .flatMap { (first, second) ->
+                second.map {
+                    mapOf<String, String?>(
+                        EntityModel.MODEL_FIELD_OBJECTNAME to UserActivation.objectName,
+                        EntityModel.MODEL_FIELD_FIELD to first,
+                        EntityModel.MODEL_FIELD_MESSAGE to it.message
+                    )
+                }
+            }.toSet()
     }
 }
