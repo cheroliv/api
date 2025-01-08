@@ -1,4 +1,4 @@
-@file:Suppress("MemberVisibilityCanBePrivate")
+@file:Suppress("MemberVisibilityCanBePrivate", "RemoveRedundantQualifierName")
 
 package app.users
 
@@ -134,24 +134,21 @@ object UserDao {
     }
 
     @Throws(EmptyResultDataAccessException::class)
-    suspend fun Pair<User, ApplicationContext>.updatePassword(): Either<Throwable, Long> =
-        try {
-            UPDATE_PASSWORD
-                .trimIndent()
-                .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                .bind(ID_ATTR, first.id)
-                .bind(PASSWORD_ATTR, first.password.run(second.getBean<PasswordEncoder>()::encode))
-                .bind(VERSION_ATTR, first.version)
-                .fetch()
-                .rowsUpdated()
-                .awaitSingle()
-//            .awaitOne()[ID_ATTR]
-//            .toString()
-//            .run(UUID::fromString)
-                .right()
-        } catch (e: Throwable) {
-            e.left()
-        }
+    suspend fun Pair<User, ApplicationContext>.updatePassword()
+            : Either<Throwable, Long> = try {
+        UPDATE_PASSWORD
+            .trimIndent()
+            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .bind(ID_ATTR, first.id)
+            .bind(PASSWORD_ATTR, first.password.run(second.getBean<PasswordEncoder>()::encode))
+            .bind(VERSION_ATTR, first.version)
+            .fetch()
+            .rowsUpdated()
+            .awaitSingle()
+            .right()
+    } catch (e: Throwable) {
+        e.left()
+    }
 
     suspend fun ApplicationContext.deleteAllUsersOnly(): Unit = DELETE_USER
         .trimIndent()
