@@ -42,7 +42,7 @@ class UserController(private val service: UserService) {
      */
     @PostMapping(API_SIGNUP, produces = [APPLICATION_PROBLEM_JSON_VALUE])
     suspend fun signup(@RequestBody signup: Signup, exchange: ServerWebExchange)
-            : ResponseEntity<ProblemDetail> = service.signupRequest(signup, exchange)
+            : ResponseEntity<ProblemDetail> = service.signup(signup, exchange)
 
     /**
      * Activates a user account using a provided activation key. This method processes
@@ -57,5 +57,5 @@ class UserController(private val service: UserService) {
         @RequestParam(API_ACTIVATE_KEY)
         key: String,
         exchange: ServerWebExchange
-    ) = service.activateRequest(key, exchange)
+    ) = service.activate(key, exchange)
 }

@@ -32,6 +32,7 @@ import app.users.User.Relations.LOGIN_AND_EMAIL_AVAILABLE_COLUMN
 import app.users.User.Relations.LOGIN_AVAILABLE_COLUMN
 import app.users.User.Relations.SELECT_SIGNUP_AVAILABILITY
 import app.users.User.Relations.UPDATE_PASSWORD
+import app.users.security.UserRole
 import app.users.security.UserRoleDao.signup
 import app.users.signup.Signup
 import app.users.signup.UserActivation
@@ -315,14 +316,14 @@ object UserDao {
         }
 
     @Throws(EmptyResultDataAccessException::class)
-    suspend fun Pair<User, ApplicationContext>.signupDao(): Either<Throwable, Pair<UUID, String>> = try {
+    suspend fun Pair<User, ApplicationContext>.signup(): Either<Throwable, Pair<UUID, String>> = try {
         second.getBean<TransactionalOperator>().executeAndAwait {
             (first.copy(password = second.getBean<PasswordEncoder>().encode(first.password)) to second).save()
         }
         second.findOneByEmail<User>(first.email).mapLeft {
             return Exception("Unable to find user by email").left()
         }.map {
-            (app.users.security.UserRole(userId = it, role = ROLE_USER) to second).signup()
+            (UserRole(userId = it, role = ROLE_USER) to second).signup()
             val userActivation = UserActivation(id = it)
             (userActivation to second).save()
             return (it to userActivation.activationKey).right()

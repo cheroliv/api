@@ -7,7 +7,7 @@ import app.users.UserController.UserRestApiRoutes.API_ACTIVATE
 import app.users.UserController.UserRestApiRoutes.API_ACTIVATE_PATH
 import app.users.UserController.UserRestApiRoutes.API_USERS
 import app.users.UserDao.signupAvailability
-import app.users.UserDao.signupDao
+import app.users.UserDao.signup
 import app.users.UserDao.signupToUser
 import app.users.UserUtils.ONE_ROW_UPDATED
 import app.users.UserUtils.SIGNUP_EMAIL_NOT_AVAILABLE
@@ -38,9 +38,9 @@ import java.util.UUID.randomUUID
 
 @Service
 class UserService(private val context: ApplicationContext) {
-    suspend fun signupService(signup: Signup): Either<Throwable, User> = try {
+    suspend fun signup(signup: Signup): Either<Throwable, User> = try {
         context.signupToUser(signup).run {
-            (this to context).signupDao().mapLeft {
+            (this to context).signup().mapLeft {
                 return Exception("Unable to sign up user with this value : $signup", it).left()
             }.map {
                 return apply {
@@ -63,7 +63,7 @@ class UserService(private val context: ApplicationContext) {
         ex.left()
     }
 
-    suspend fun signupRequest(signup: Signup, exchange: ServerWebExchange)
+    suspend fun signup(signup: Signup, exchange: ServerWebExchange)
             : ResponseEntity<ProblemDetail> = signup
         .validate(exchange)
         .run {
@@ -76,14 +76,14 @@ class UserService(private val context: ApplicationContext) {
                     SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
                     SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
                     else -> {
-                        signupService(signup).run { CREATED.run(::ResponseEntity) }
+                        signup(signup).run { CREATED.run(::ResponseEntity) }
                     }
                 }
             }
             SERVICE_UNAVAILABLE.run(::ResponseEntity)
         }
 
-    suspend fun activateRequest(
+    suspend fun activate(
         key: String,
         exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = UserActivation(
@@ -97,7 +97,7 @@ class UserService(private val context: ApplicationContext) {
     }.run {
         try {
             when (ONE_ROW_UPDATED) {
-                activateService(key) -> OK.run(::ResponseEntity)
+                activate(key) -> OK.run(::ResponseEntity)
                 else -> signupProblems
                     .copy(path = "$API_USERS$API_ACTIVATE")
                     .exceptionProblem(
@@ -125,7 +125,7 @@ class UserService(private val context: ApplicationContext) {
         }
     }
 
-    suspend fun activateService(key: String): Long = context.activateDao(key)
+    suspend fun activate(key: String): Long = context.activateDao(key)
         .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
         .takeIf { it == ONE_ROW_UPDATED }
         ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")
