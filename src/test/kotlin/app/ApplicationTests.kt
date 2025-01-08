@@ -1591,39 +1591,54 @@ class ApplicationTests {
         }
     }
 
-    //TODO : test password service
-    @Ignore
     @Test
     @WithMockUser(
         username = USER,
-
+        roles=[USER]
     )
-    fun `test password service`(): Unit = runBlocking {
-        val countUserBefore = context.countUsers()
-        assertEquals(0, countUserBefore)
+    fun `test service update user password`(): Unit = runBlocking {
+        user.id.run(::assertNull)
 
-        // Save a user with a password
-        val userWithPassword = user.copy(password = "securePassword123")
-        (userWithPassword to context).save()
-        assertEquals(countUserBefore + 1, context.countUsers())
+        context.tripleCounts().run {
+            val uuid: UUID = (user to context).signup()
+                .getOrNull()!!.first
+                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-        // Retrieve the user and check the password
-        val retrievedUser = context.findOne<User>(userWithPassword.email).getOrNull()
-        assertNotNull(retrievedUser)
-        assertEquals("securePassword123", retrievedUser?.password)
+            assertEquals(first + 1, context.countUsers())
+            assertEquals(second + 1, context.countUserActivation())
+            assertEquals(third + 1, context.countUserAuthority())
 
-        // Update the user's password using the password service
-        val updatedPassword = "newSecurePassword456"
-        context.getBean<PasswordService>().changePassword(retrievedUser.password, updatedPassword)
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .fetch().awaitSingle().run {
+                    (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
+                }.run {
+                    "user.id retrieved before update password: $first".apply(::i)
+                    assertEquals(uuid, first, "user.id should be the same")
+                    assertNotEquals(user.password, second, "password should be different")
+                    assertTrue(
+                        context.getBean<PasswordEncoder>().matches(user.password, second),
+                        message = "password should be encoded"
+                    )
 
-        // Retrieve the user again and check the updated password
-        val retrievedUpdatedUser = context.findOne<User>(userWithPassword.email).getOrNull()
-        assertNotNull(retrievedUpdatedUser)
-        assertEquals(updatedPassword, retrievedUpdatedUser?.password)
-
-        // Clean up
-        context.delete(retrievedUser.id!!)
-        assertEquals(countUserBefore, context.countUsers())
+                    "updatedPassword123".run {
+                        context.getBean<PasswordService>().changePassword(user.password,this)
+                        assertTrue(
+                            context.getBean<PasswordEncoder>().matches(
+                                this, FIND_ALL_USERS
+                                    .trimIndent()
+                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .fetch()
+                                    .awaitSingle()[PASSWORD_FIELD]
+                                    .toString()
+                                    .also { "password retrieved after user update: $it".run(::i) }
+                            ).apply { "passwords matches : ${toString()}".run(::i) },
+                            message = "password should be updated"
+                        )
+                    }
+                }
+        }
     }
 
     @Test
