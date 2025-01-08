@@ -21,6 +21,7 @@ import app.core.Constants.STARTUP_LOG_MSG_KEY
 import app.workspace.Workspace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
 import java.net.InetAddress.getLocalHost
 import java.net.UnknownHostException
 import java.util.Locale.getDefault

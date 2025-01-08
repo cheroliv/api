@@ -77,6 +77,7 @@ import app.users.signup.SignupService
 import app.users.signup.SignupService.Companion.API_ACTIVATE_PARAM
 import app.users.signup.SignupService.Companion.API_ACTIVATE_PATH
 import app.users.signup.SignupService.Companion.API_SIGNUP_PATH
+import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
 import app.users.signup.SignupService.Companion.SIGNUP_AVAILABLE
 import app.users.signup.SignupService.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
 import app.users.signup.SignupService.Companion.SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE
@@ -1570,10 +1571,11 @@ class ApplicationTests {
                     "*updatedPassword123".run {
                         (user.copy(id = first, password = this) to context)
                             .updatePassword()
-                            .apply { assertTrue(isRight()) }
-                            .getOrNull()!!
-                            .run { "row updated : $this".apply(::i) }
-
+                            .apply { assertFalse(isLeft()) }
+                            .map {
+                                i("row updated : $it")
+                                assertEquals(ONE_ROW_UPDATED, it)
+                            }
                         assertTrue(
                             context.getBean<PasswordEncoder>().matches(
                                 this, FIND_ALL_USERS
@@ -1592,7 +1594,6 @@ class ApplicationTests {
     }
 
     @Test
-    @Ignore
     @WithMockUser(username = USER, roles = [ROLE_USER])
     fun `test service update user password`(): Unit = runBlocking {
         user.id.run(::assertNull)
@@ -1621,18 +1622,20 @@ class ApplicationTests {
                     )
 
                     "*updatedPassword123".run {
-                        context.getBean<PasswordService>().update(user.password, this)
-                        assertTrue(
-                            context.getBean<PasswordEncoder>().matches(
-                                this, FIND_ALL_USERS
-                                    .trimIndent()
-                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                                    .fetch()
-                                    .awaitSingle()[PASSWORD_FIELD]
-                                    .toString()
-                                    .also { "password retrieved after user update: $it".run(::i) }
-                            ).apply { "passwords matches : ${toString()}".run(::i) },
-                            message = "password should be updated"
+                        assertEquals(
+                            ONE_ROW_UPDATED, context.getBean<PasswordService>().update(user.password, this)
+                        )
+                        assertTrue (
+                                context.getBean<PasswordEncoder>().matches(
+                                    this, FIND_ALL_USERS
+                                        .trimIndent()
+                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .fetch()
+                                        .awaitSingle()[PASSWORD_FIELD]
+                                        .toString()
+                                        .also { i("password retrieved after user update: $it") }
+                                ).apply { "passwords matches : ${toString()}".run(::i) },
+                        message = "password should be updated"
                         )
                     }
                 }

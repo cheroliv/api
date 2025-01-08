@@ -1,22 +1,19 @@
 package app.core.security
 
-import app.core.Constants
 import app.core.Constants.ROLE_ADMIN
 import app.core.Loggers
+import app.core.Loggers.d
 import app.core.Properties
-import app.core.web.Web
 import app.core.web.Web.SpaWebFilter
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpMethod
 import org.springframework.http.HttpMethod.OPTIONS
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
-import org.springframework.security.config.web.server.SecurityWebFiltersOrder
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHENTICATION
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder.HTTP_BASIC
 import org.springframework.security.config.web.server.ServerHttpSecurity
@@ -24,15 +21,11 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.server.SecurityWebFilterChain
-import org.springframework.security.web.server.header.ContentSecurityPolicyServerHttpHeadersWriter
 import org.springframework.security.web.server.header.ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY
-import org.springframework.security.web.server.header.FeaturePolicyServerHttpHeadersWriter
 import org.springframework.security.web.server.header.FeaturePolicyServerHttpHeadersWriter.FEATURE_POLICY
-import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter
 import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers
 import org.springframework.web.cors.reactive.CorsWebFilter
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
@@ -135,7 +128,7 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         context.getBean<Properties>().cors.apply config@{
             when {
                 allowedOrigins != null && allowedOrigins!!.isNotEmpty() -> this@source.apply {
-                    Loggers.d("Registering CORS filter")
+                    d("Registering CORS filter")
                     setOf(
                         "/api/**",
                         "/management/**",
