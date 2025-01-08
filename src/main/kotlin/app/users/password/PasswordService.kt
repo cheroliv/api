@@ -27,16 +27,17 @@ class PasswordService(val context: ApplicationContext) {
                                 it.password
                             ) -> return (it.copy(password = newPassword) to context)
                                 .updatePassword()
+                                //invalid update password persistence
                                 .getOrElse { throw InvalidPasswordException() }
                                 .apply { d("Changed password for User: ${it.login}") }
 
-                            else -> throw InvalidPasswordException()
+                            else -> throw InvalidPasswordException()//invalid security context login
                         }
                     }
                 }
             }
         }
-        throw InvalidPasswordException()
+        throw InvalidPasswordException()//invalid security authorization
     }
 
     suspend fun completePasswordReset(newPassword: String, key: String): User? = null

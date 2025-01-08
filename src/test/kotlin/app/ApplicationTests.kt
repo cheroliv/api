@@ -163,6 +163,7 @@ import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
+import org.springframework.core.env.get
 import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
@@ -203,6 +204,7 @@ import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.*
 
+
 @ActiveProfiles("test")
 @TestInstance(PER_CLASS)
 @SpringBootTest(
@@ -223,15 +225,17 @@ class ApplicationTests {
     lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
 
 
-    val gmailConfig = GoogleAuthConfig(
-        clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
-        projectId = "gmail-tester-444502",
-        authUri = "https://accounts.google.com/o/oauth2/auth",
-        tokenUri = "https://oauth2.googleapis.com/token",
-        authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
-        clientSecret = "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t",
-        redirectUris = listOf("http://localhost:8080/oauth2/callback/google")
-    )
+    val gmailConfig by lazy {
+        GoogleAuthConfig(
+            clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
+            projectId = "gmail-tester-444502",
+            authUri = "https://accounts.google.com/o/oauth2/auth",
+            tokenUri = "https://oauth2.googleapis.com/token",
+            authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
+            clientSecret = "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t",
+            redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
+        )
+    }
 
     @BeforeTest
     fun setUp(context: ApplicationContext) {
@@ -249,7 +253,7 @@ class ApplicationTests {
     }
 
     @AfterTest
-    fun cleanUp(context: ApplicationContext) = runBlocking { context.deleteAllUsersOnly() }
+    fun cleanUp(context: ApplicationContext): Unit = runBlocking { context.deleteAllUsersOnly() }
 
     @Test
     fun `DataTestsChecks - display some json`(): Unit = run {
@@ -1647,6 +1651,8 @@ class ApplicationTests {
     @Test
     @WithMockUser("change-password-wrong-existing-password")
     fun testChangePasswordWrongExistingPassword() {
+        context.environment["server.port"].toString().run(::i)
+
 //            val currentPassword = RandomStringUtils.random(60)
 //            val user = User(
 //                password = passwordEncoder.encode(currentPassword),

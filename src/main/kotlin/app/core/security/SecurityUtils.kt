@@ -1,6 +1,7 @@
 package app.core.security
 
 import app.core.Constants
+import app.core.Constants.BLANK
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.apache.commons.lang3.RandomStringUtils.random
@@ -49,17 +50,19 @@ object SecurityUtils {
 
     private fun extractPrincipal(authentication: Authentication?): String =
         when (authentication) {
-            null -> ""
+            null -> BLANK
             else -> when (val principal = authentication.principal) {
                 is UserDetails -> principal.username
                 is String -> principal
-                else -> ""
+                else -> BLANK
             }
         }
 
-    suspend fun getCurrentUserLogin(): String = extractPrincipal(
-        getContext().awaitSingle().authentication
-    )
+    suspend fun getCurrentUserLogin(): String = getContext()
+        .awaitSingle()
+        .authentication
+        .run(SecurityUtils::extractPrincipal)
+
 
     suspend fun getCurrentUserJwt(): String = getContext()
         .map(SecurityContext::getAuthentication)
@@ -79,12 +82,12 @@ object SecurityUtils {
     suspend fun isCurrentUserInRole(authority: String): Boolean =
         @Suppress("ReactiveStreamsTooLongSameOperatorsChain")
         getContext()
-        .map(SecurityContext::getAuthentication)
-        .map(Authentication::getAuthorities)
-        .map { roles: Collection<GrantedAuthority> ->
-            roles.map(GrantedAuthority::getAuthority)
-                .any { it == authority }
-        }.awaitSingle()!!
+            .map(SecurityContext::getAuthentication)
+            .map(Authentication::getAuthorities)
+            .map { roles: Collection<GrantedAuthority> ->
+                roles.map(GrantedAuthority::getAuthority)
+                    .any { it == authority }
+            }.awaitSingle()!!
 
 
     private val exchangeMatcher: NegatedServerWebExchangeMatcher
