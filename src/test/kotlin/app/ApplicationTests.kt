@@ -1593,10 +1593,7 @@ class ApplicationTests {
 
     @Test
     @Ignore
-    @WithMockUser(
-        username = USER,
-        roles = [USER]
-    )
+    @WithMockUser(username = USER, roles = [ROLE_USER])
     fun `test service update user password`(): Unit = runBlocking {
         user.id.run(::assertNull)
 
@@ -1624,7 +1621,7 @@ class ApplicationTests {
                     )
 
                     "*updatedPassword123".run {
-                        context.getBean<PasswordService>().updatePassword(user.password, this)
+                        context.getBean<PasswordService>().update(user.password, this)
                         assertTrue(
                             context.getBean<PasswordEncoder>().matches(
                                 this, FIND_ALL_USERS
