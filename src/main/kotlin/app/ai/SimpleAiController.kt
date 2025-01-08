@@ -1,7 +1,9 @@
+@file:Suppress("MemberVisibilityCanBePrivate")
+
 package app.ai
 
-import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_EN
-import dev.langchain4j.model.chat.ChatLanguageModel
+import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_FR
+import app.ai.SimpleAiController.PromptManager.USER_MSG_FR
 import dev.langchain4j.service.SystemMessage
 import dev.langchain4j.service.spring.AiService
 import org.springframework.web.bind.annotation.GetMapping
@@ -10,33 +12,37 @@ import org.springframework.web.bind.annotation.RestController
 
 
 @RestController
-class SimpleAiController(private val chat: ChatLanguageModel) {
+class SimpleAiController(private val chat: Assistant) {
 
     @AiService
     interface Assistant {
-        @SystemMessage(SYSTEM_MSG_EN)
+        @SystemMessage(SYSTEM_MSG_FR)
         fun chat(userMessage: String?): String?
     }
 
     @GetMapping("/api/ai/simple")
     suspend fun completion(
-        @RequestParam(value = "message", defaultValue = "Tell me a joke")
+        @RequestParam(value = "message", defaultValue = USER_MSG_FR)
         message: String?
     ) = "simple api : $message"
-
     //            : Map<String, String> = java.util.Map.of("generation", chatClient.call(message))
+
     object PromptManager {
         const val ASSISTANT_NAME = "E-3PO"
         val userName = System.getProperty("user.name")!!
-        val SYSTEM_MSG_FR = """config```--lang=fr;```. 
-            | Salut je suis $userName,
-            | toi tu es $ASSISTANT_NAME, tu es mon assistant.
-            | Le cœur de métier de ${System.getProperty("user.name")} est le développement logiciel dans l'EdTech
+        const val USER_MSG_FR = """Montre moi un exemple de code 
+            |en Kotlin qui utilise une monade Either. 
+            |Tu me répondra au format asciidoc 
+            |et tu mettra le code dans des balises de code"""
+        const val SYSTEM_MSG_FR = """config```--lang=fr;```. 
+            | Salut je suis cheroliv,
+            | toi tu es E-3PO, tu es mon assistant.
+            | Le cœur de métier de cheroliv est le développement logiciel dans l'EdTech
             | et la formation professionnelle pour adulte.
-            | La spécialisation de ${System.getProperty("user.name")} est dans l'ingénierie de la pédagogie pour adulte,
+            | La spécialisation de cheroliv est dans l'ingénierie de la pédagogie pour adulte,
             | et le software craftmanship avec les méthodes agiles.
-            | $ASSISTANT_NAME ta mission est d'aider ${System.getProperty("user.name")} dans l'activité d'écriture de formation et génération de code.
-            | Réponds moi à ce premier échange uniquement en maximum 120 mots""".trimMargin()
+            | E-3PO ta mission est d'aider cheroliv dans l'activité d'écriture de formation et génération de code.
+            | Réponds moi à ce premier échange uniquement en maximum 120 mots"""
         const val SYSTEM_MSG_EN = """config```--lang=en;```.
         | You are E-3PO, an AI assistant specialized in EdTech and professional training. 
         | Your primary user is cheroliv, a software craftsman and adult education expert 
@@ -48,5 +54,15 @@ class SimpleAiController(private val chat: ChatLanguageModel) {
         | 4. Provide guidance on instructional design for adult education
         | Please communicate clearly and concisely, focusing on practical solutions.
         | Keep initial responses under 120 words."""
+
+//        val SYSTEM_MSG_FR = """config```--lang=fr;```.
+//            | Salut je suis $userName,
+//            | toi tu es $ASSISTANT_NAME, tu es mon assistant.
+//            | Le cœur de métier de ${System.getProperty("user.name")} est le développement logiciel dans l'EdTech
+//            | et la formation professionnelle pour adulte.
+//            | La spécialisation de ${System.getProperty("user.name")} est dans l'ingénierie de la pédagogie pour adulte,
+//            | et le software craftmanship avec les méthodes agiles.
+//            | $ASSISTANT_NAME ta mission est d'aider ${System.getProperty("user.name")} dans l'activité d'écriture de formation et génération de code.
+//            | Réponds moi à ce premier échange uniquement en maximum 120 mots""".trimMargin()
     }
 }

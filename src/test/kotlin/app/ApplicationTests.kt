@@ -67,6 +67,7 @@ import app.users.UserDao.signupAvailability
 import app.users.UserDao.updatePassword
 import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
+import app.users.password.InvalidPasswordException
 import app.users.password.PasswordService
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
@@ -1650,9 +1651,77 @@ class ApplicationTests {
 
     @Test
     @WithMockUser("change-password-wrong-existing-password")
-    fun testChangePasswordWrongExistingPassword() {
-        context.environment["server.port"].toString().run(::i)
+    fun testChangePasswordWrongExistingPassword(): Unit = runBlocking {
+        user.id.run(::assertNull)
 
+        context.tripleCounts().run {
+            val uuid: UUID = (user to context).signup()
+                .getOrNull()!!.first
+                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+
+            assertEquals(first + 1, context.countUsers())
+            assertEquals(second + 1, context.countUserActivation())
+            assertEquals(third + 1, context.countUserAuthority())
+
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .fetch().awaitSingle().run {
+                    (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
+                }.run {
+                    "user.id retrieved before update password: $first".apply(::i)
+                    assertEquals(uuid, first, "user.id should be the same")
+                    assertNotEquals(user.password, second, "password should be different")
+                    assertTrue(
+                        context.getBean<PasswordEncoder>().matches(user.password, second),
+                        message = "password should be encoded"
+                    )
+
+                    "*updatedPassword123".run {
+                        assertNotEquals(user.login, getCurrentUserLogin())
+                        assertThrows<InvalidPasswordException> {
+                            context.getBean<PasswordService>().update(user.password, this)
+                        }
+                    }
+                }
+        }
+    }
+
+    @Test
+    @WithMockUser("change-password-wrong-existing-password")
+    fun testControllerChangePasswordWrongExistingPassword(): Unit = runBlocking {
+        user.id.run(::assertNull)
+
+        context.tripleCounts().run {
+            val uuid: UUID = (user to context).signup()
+                .getOrNull()!!.first
+                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+
+            assertEquals(first + 1, context.countUsers())
+            assertEquals(second + 1, context.countUserActivation())
+            assertEquals(third + 1, context.countUserAuthority())
+
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .fetch().awaitSingle().run {
+                    (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
+                }.run {
+                    "user.id retrieved before update password: $first".apply(::i)
+                    assertEquals(uuid, first, "user.id should be the same")
+                    assertNotEquals(user.password, second, "password should be different")
+                    assertTrue(
+                        context.getBean<PasswordEncoder>().matches(user.password, second),
+                        message = "password should be encoded"
+                    )
+
+                    "*updatedPassword123".run {
+                        assertNotEquals(user.login, getCurrentUserLogin())
+                        assertThrows<InvalidPasswordException> {
+                            context.getBean<PasswordService>().update(user.password, this)
+                        }
+                    }
+                }
 //            val currentPassword = RandomStringUtils.random(60)
 //            val user = User(
 //                password = passwordEncoder.encode(currentPassword),
@@ -1672,6 +1741,7 @@ class ApplicationTests {
 //            val updatedUser = userRepository.findOneByLogin("change-password-wrong-existing-password").block()
 //            assertThat(passwordEncoder.matches("new password", updatedUser.password)).isFalse
 //            assertThat(passwordEncoder.matches(currentPassword, updatedUser.password)).isTrue
+        }
     }
 
     @Test
