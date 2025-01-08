@@ -37,6 +37,15 @@ app:
     allow-credentials: true
     max-age: 1800
 ##############################################################################
+langchain4j:
+  ollama:
+    chat-model:
+      base-url: http://localhost:11434
+      model-name: llama3.2:3b-instruct-q8_0
+    streaming-chat-model:
+      base-url: http://localhost:11434
+      model-name: llama3.2:3b-instruct-q8_0
+
 spring:
   profiles:
     default: dev

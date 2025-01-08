@@ -48,7 +48,7 @@ extra["springShellVersion"] = "3.3.3"
 object Constants {
     const val langchain4jVersion = "0.36.2"
     const val testcontainersVersion = "1.20.1"
-    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
+//    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
     const val commonsIoVersion = "2.13.0"
     const val jacksonVersion = "2.17.2"//2.18.0
     const val arrowKtVersion = "1.2.4"
@@ -180,13 +180,16 @@ dependencies {
     testRuntimeOnly("com.tngtech.archunit:archunit-junit5-engine:${properties["archunit_junit5.version"]}")
 
     // Langchain4j
+
+    implementation("dev.langchain4j:langchain4j-reactor:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-spring-boot-starter:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-ollama-spring-boot-starter:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-hugging-face:${properties["langchain4j.version"]}")
+    implementation("dev.langchain4j:langchain4j-mistral-ai:${properties["langchain4j.version"]}")
+    implementation("dev.langchain4j:langchain4j-web-search-engine-google-custom:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-google-ai-gemini:${properties["langchain4j.version"]}")
     implementation("dev.langchain4j:langchain4j-pgvector:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-document-parser-apache-pdfbox:${properties["langchain4j.version"]}")
-//    implementation("dev.langchain4j:langchain4j-web-search-engine-google-custom:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-easy-rag:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini-spring-boot-starter:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai:${properties["langchain4j.version"]}")

@@ -1,7 +1,7 @@
 package app.ai.translator
 
-import app.ai.translator.AiTranslatorController.AssistantManager.PromptManager.userMessageEn
-import app.ai.translator.AiTranslatorController.AssistantManager.PromptManager.userMessageFr
+import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_EN
+import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_FR
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
@@ -46,9 +46,9 @@ class AiTranslatorController(service: ChatModelService) {
     object AssistantManager {
         @JvmStatic
         fun main(args: Array<String>) {
-            userMessageFr.run { "userMessageFr : $this" }.run(::println)
+            SYSTEM_MSG_FR.run { "userMessageFr : $this" }.run(::println)
             println()
-            userMessageEn.run { "userMessageEn : $this" }.run(::println)
+            SYSTEM_MSG_EN.run { "userMessageEn : $this" }.run(::println)
         }
 
         @JvmStatic
@@ -106,13 +106,13 @@ class AiTranslatorController(service: ChatModelService) {
 
         fun ApplicationContext.runChat(model: String) {
             createOllamaChatModel(model = model)
-                .run { userMessageFr.run(::generate).let(::println) }
+                .run { SYSTEM_MSG_FR.run(::generate).let(::println) }
         }
 
         fun ApplicationContext.runStreamChat(model: String) {
             runBlocking {
                 createOllamaStreamingChatModel(model).run {
-                    when (val answer = generateStreamingResponse(this, userMessageFr)) {
+                    when (val answer = generateStreamingResponse(this, SYSTEM_MSG_FR)) {
                         is Right -> "Complete response received:\n${
                             answer.value.content().text()
                         }".run(::println)
@@ -145,29 +145,5 @@ class AiTranslatorController(service: ChatModelService) {
 //        val ApplicationContext.openAIapiKey: String
 //            get() = privateProps["OPENAI_API_KEY"] as String
 
-        object PromptManager {
-            const val ASSISTANT_NAME = "E-3PO"
-            val userName = System.getProperty("user.name")!!
-            val userMessageFr = """config```--lang=fr;```. 
-            | Salut je suis $userName,
-            | toi tu es $ASSISTANT_NAME, tu es mon assistant.
-            | Le cœur de métier de ${System.getProperty("user.name")} est le développement logiciel dans l'EdTech
-            | et la formation professionnelle pour adulte.
-            | La spécialisation de ${System.getProperty("user.name")} est dans l'ingénierie de la pédagogie pour adulte,
-            | et le software craftmanship avec les méthodes agiles.
-            | $ASSISTANT_NAME ta mission est d'aider ${System.getProperty("user.name")} dans l'activité d'écriture de formation et génération de code.
-            | Réponds moi à ce premier échange uniquement en maximum 120 mots""".trimMargin()
-            val userMessageEn = """config```--lang=en;```.
-        | You are E-3PO, an AI assistant specialized in EdTech and professional training. 
-        | Your primary user is cheroliv, a software craftsman and adult education expert 
-        | who focuses on EdTech development and agile methodologies.
-        | Your base responsibilities:
-        | 1. Assist with creating educational content for adult learners
-        | 2. Help with code generation and software development tasks
-        | 3. Support application of agile and software craftsmanship principles
-        | 4. Provide guidance on instructional design for adult education
-        | Please communicate clearly and concisely, focusing on practical solutions.
-        | Keep initial responses under 120 words.""".trimMargin()
-        }
     }
 }
