@@ -8,6 +8,7 @@ import app.core.web.HttpUtils.validator
 import app.core.web.ProblemsModel
 import app.users.signup.Signup
 import app.users.signup.UserActivation
+import app.users.signup.SignupController
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
@@ -71,11 +72,11 @@ object UserUtils {
 
     @JvmStatic
     val signupProblems: ProblemsModel =
-        Constants.defaultProblems.copy(path = "${UserController.UserRestApiRoutes.API_USERS}${UserController.UserRestApiRoutes.API_SIGNUP}")
+        Constants.defaultProblems.copy(path = "${SignupController.UserRestApiRoutes.API_USERS}${SignupController.UserRestApiRoutes.API_SIGNUP}")
 
     @JvmStatic
     val activateProblems: ProblemsModel =
-        Constants.defaultProblems.copy(path = "${UserController.UserRestApiRoutes.API_USERS}${UserController.UserRestApiRoutes.API_ACTIVATE}")
+        Constants.defaultProblems.copy(path = "${SignupController.UserRestApiRoutes.API_USERS}${SignupController.UserRestApiRoutes.API_ACTIVATE}")
 
     @JvmStatic
     fun ProblemsModel.exceptionProblem(

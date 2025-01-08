@@ -59,7 +59,7 @@ object SecurityUtils {
 
     suspend fun getCurrentUserLogin(): String = extractPrincipal(
         getContext().awaitSingle().authentication
-    )!!
+    )
 
     suspend fun getCurrentUserJwt(): String = getContext()
         .map(SecurityContext::getAuthentication)

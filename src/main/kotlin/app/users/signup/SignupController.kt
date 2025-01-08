@@ -1,19 +1,18 @@
-package app.users
+package app.users.signup
 
 import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ServerWebExchange
-import app.users.UserController.UserRestApiRoutes.API_ACTIVATE
-import app.users.UserController.UserRestApiRoutes.API_ACTIVATE_KEY
-import app.users.UserController.UserRestApiRoutes.API_SIGNUP
-import app.users.UserController.UserRestApiRoutes.API_USERS
-import app.users.signup.Signup
+import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE
+import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE_KEY
+import app.users.signup.SignupController.UserRestApiRoutes.API_SIGNUP
+import app.users.signup.SignupController.UserRestApiRoutes.API_USERS
 
 @RestController
 @RequestMapping(API_USERS)
-class UserController(private val service: UserService) {
+class SignupController(private val service: SignupService) {
 
     /** User REST API URIs */
     object UserRestApiRoutes {

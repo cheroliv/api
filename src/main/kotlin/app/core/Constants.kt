@@ -30,7 +30,7 @@ object Constants {
         )
     }
 
-    //UserController
+    //SignupController
     val ALLOWED_ORDERED_PROPERTIES by lazy {
         arrayOf(
             "id",

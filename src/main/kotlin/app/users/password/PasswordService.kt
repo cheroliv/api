@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 @Service
 class PasswordService(context: ApplicationContext) {
 
-    suspend fun changePassword(currentClearTextPassword: String, newPassword: String) {
+    suspend fun updatePassword(currentClearTextPassword: String, newPassword: String) {
         getCurrentUserLogin().apply {
 //            if (!isNullOrBlank()) {
 //                userRepository.findOneByLogin(this).apply {

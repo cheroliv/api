@@ -1,11 +1,12 @@
-package app.users
+package app.users.signup
 
 import app.core.Loggers.i
 import app.core.database.EntityModel.Members.withId
 import app.core.web.HttpUtils.badResponse
-import app.users.UserController.UserRestApiRoutes.API_ACTIVATE
-import app.users.UserController.UserRestApiRoutes.API_ACTIVATE_PATH
-import app.users.UserController.UserRestApiRoutes.API_USERS
+import app.users.User
+import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE
+import app.users.signup.SignupController.UserRestApiRoutes.API_ACTIVATE_PATH
+import app.users.signup.SignupController.UserRestApiRoutes.API_USERS
 import app.users.UserDao.signupAvailability
 import app.users.UserDao.signup
 import app.users.UserDao.signupToUser
@@ -20,8 +21,6 @@ import app.users.UserUtils.badResponseLoginIsNotAvailable
 import app.users.UserUtils.exceptionProblem
 import app.users.UserUtils.signupProblems
 import app.users.UserUtils.validate
-import app.users.signup.Signup
-import app.users.signup.UserActivation
 import app.users.signup.UserActivationDao.activateDao
 import arrow.core.Either
 import arrow.core.getOrElse
@@ -37,7 +36,7 @@ import java.nio.channels.AlreadyBoundException
 import java.util.UUID.randomUUID
 
 @Service
-class UserService(private val context: ApplicationContext) {
+class SignupService(private val context: ApplicationContext) {
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
         context.signupToUser(signup).run {
             (this to context).signup().mapLeft {
