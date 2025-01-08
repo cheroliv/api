@@ -416,7 +416,7 @@ class ApplicationTests {
                 }
                 assertEquals(expectedUserResult.roles.first().id, ROLE_USER)
                 assertEquals(userResult.roles.first().id, ROLE_USER)
-                assertEquals(userResult.roles.size,1)
+                assertEquals(userResult.roles.size, 1)
 
             }
     }
@@ -1543,7 +1543,6 @@ class ApplicationTests {
         user.id.run(::assertNull)
 
         context.tripleCounts().run {
-
             val uuid: UUID = (user to context).signupDao()
                 .getOrNull()!!.first
                 .apply { "user.id from signupDao: ${toString()}".apply(::i) }
@@ -1558,20 +1557,16 @@ class ApplicationTests {
                 .fetch().awaitSingle().run {
                     (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
                 }.run {
-
                     "user.id retrieved before update password: $first".apply(::i)
                     assertEquals(uuid, first, "user.id should be the same")
                     assertNotEquals(user.password, second, "password should be different")
                     assertTrue(
                         context.getBean<PasswordEncoder>().matches(user.password, second),
-                        "password should be encoded"
+                        message = "password should be encoded"
                     )
 
                     "updatedPassword123".run {
-                        (user.copy(
-                            id = first,
-                            password = this
-                        ) to context)
+                        (user.copy(id = first, password = this) to context)
                             .updatePassword()
                             .apply { assertTrue(isRight()) }
                             .getOrNull()!!
@@ -1587,7 +1582,7 @@ class ApplicationTests {
                                     .toString()
                                     .also { "password retrieved after user update: $it".run(::i) }
                             ).apply { "passwords matches : ${toString()}".run(::i) },
-                            "password should be updated"
+                            message = "password should be updated"
                         )
                     }
                 }
