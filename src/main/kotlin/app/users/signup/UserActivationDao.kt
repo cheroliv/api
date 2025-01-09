@@ -2,7 +2,7 @@
 
 package app.users.signup
 
-import app.core.Loggers
+import app.core.Loggers.i
 import app.core.database.EntityModel
 import app.core.web.HttpUtils.validator
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
@@ -24,8 +24,8 @@ import org.springframework.web.server.ServerWebExchange
 import java.util.*
 
 object UserActivationDao {
-    suspend fun ApplicationContext.countUserActivation()
-            : Int = COUNT.trimIndent()
+    suspend fun ApplicationContext.countUserActivation(): Int = COUNT
+        .trimIndent()
         .run(getBean<DatabaseClient>()::sql)
         .fetch()
         .awaitSingle()
@@ -68,12 +68,11 @@ object UserActivationDao {
         e.left()
     }
 
-    @JvmStatic
     fun UserActivation.validate(
         exchange: ServerWebExchange
     ): Set<Map<String, String?>> = exchange.validator.run {
-        "Validate UserActivation : ${this@validate}".run(Loggers::i)
-        setOf(UserActivation.Attributes.ACTIVATION_KEY_ATTR)
+        i("Validate UserActivation : ${this@validate}")
+        setOf(ACTIVATION_KEY_ATTR)
             .map { it to validateProperty(this@validate, it) }
             .flatMap { (first, second) ->
                 second.map {

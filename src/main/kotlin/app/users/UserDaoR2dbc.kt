@@ -69,7 +69,12 @@ import java.util.UUID.fromString
 //import org.springframework.context.annotation.Configuration
 //import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration
 
-object UserDao {
+
+interface UserDao
+
+class UserDaoR2dbcImpl
+
+object UserDaoR2dbc {
 
     //@Configuration
 //class UserDaoConfig(val context:ApplicationContext) : AbstractR2dbcConfiguration() {

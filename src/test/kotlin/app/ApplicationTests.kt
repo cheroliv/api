@@ -55,16 +55,16 @@ import app.users.User.Fields.LOGIN_FIELD
 import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Relations.FIND_ALL_USERS
 import app.users.User.Relations.FIND_USER_BY_LOGIN
-import app.users.UserDao.countUsers
-import app.users.UserDao.delete
-import app.users.UserDao.deleteAllUsersOnly
-import app.users.UserDao.findOne
-import app.users.UserDao.findOneByEmail
-import app.users.UserDao.findOneWithAuths
-import app.users.UserDao.save
-import app.users.UserDao.signup
-import app.users.UserDao.signupAvailability
-import app.users.UserDao.updatePassword
+import app.users.UserDaoR2dbc.countUsers
+import app.users.UserDaoR2dbc.delete
+import app.users.UserDaoR2dbc.deleteAllUsersOnly
+import app.users.UserDaoR2dbc.findOne
+import app.users.UserDaoR2dbc.findOneByEmail
+import app.users.UserDaoR2dbc.findOneWithAuths
+import app.users.UserDaoR2dbc.save
+import app.users.UserDaoR2dbc.signup
+import app.users.UserDaoR2dbc.signupAvailability
+import app.users.UserDaoR2dbc.updatePassword
 import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
@@ -270,41 +270,34 @@ class ApplicationTests {
     @Test
     fun `ConfigurationsTests - MessageSource test email_activation_greeting message fr`(): Unit =
         "artisan-logiciel".run {
-            assertEquals(
-                expected = "Cher $this",
-                actual = context
-                    .getBean<MessageSource>()
-                    .getMessage(
-                        "email.activation.greeting",
-                        arrayOf(this),
-                        FRENCH
-                    )
+            assertThat("Cher $this").isEqualTo(
+                context.getBean<MessageSource>().getMessage(
+                    "email.activation.greeting",
+                    arrayOf(this),
+                    FRENCH
+                )
             )
         }
 
 
     @Test
-    fun `ConfigurationsTests - MessageSource test message startupLog`(): Unit = context
-        .getBean<MessageSource>()
-        .getMessage(
-            STARTUP_LOG_MSG_KEY,
-            arrayOf(DEVELOPMENT, PRODUCTION),
-            getDefault()
-        ).run {
-            i(this)
-            assertEquals(buildString {
-                append("You have misconfigured your application!\n")
-                append("It should not run with both the $DEVELOPMENT\n")
-                append("and $PRODUCTION profiles at the same time.")
-            }, this)
-        }
-
+    fun `ConfigurationsTests - MessageSource test message startupLog`(): Unit {
+        assertThat(buildString {
+            append("You have misconfigured your application!\n")
+            append("It should not run with both the $DEVELOPMENT\n")
+            append("and $PRODUCTION profiles at the same time.")
+        }).isEqualTo(
+            context.getBean<MessageSource>().getMessage(
+                STARTUP_LOG_MSG_KEY,
+                arrayOf(DEVELOPMENT, PRODUCTION),
+                getDefault()
+            ).apply { i(this) })
+    }
 
     @Test
-    fun `ConfigurationsTests - test go visit message`(): Unit = assertEquals(
-        OFFICIAL_SITE,
-        context.getBean<Properties>().goVisitMessage
-    )
+    fun `ConfigurationsTests - test go visit message`(): Unit {
+        assertThat(OFFICIAL_SITE).isEqualTo(context.getBean<Properties>().goVisitMessage)
+    }
 
     @Test
     fun `test lsWorkingDir & lsWorkingDirProcess`(): Unit = "build".let {
@@ -336,12 +329,14 @@ class ApplicationTests {
 
     @Test
     fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit = runBlocking {
-        assertEquals(0, context.countUsers())
+        assertThat(context.countUsers()).isEqualTo(0)
         (user to context).signup().onRight {
             //Because 36 == UUID.toString().length
-            it.toString().apply { assertEquals(36, it.first.toString().length) }.apply(::i)
+            it.toString()
+                .apply { assertThat(it.first.toString().length).isEqualTo(36) }
+                .apply(::i)
         }
-        assertEquals(1, context.countUsers())
+        assertThat(context.countUsers()).isEqualTo(1)
         assertDoesNotThrow {
             FIND_ALL_USERS
                 .trimIndent()
@@ -1347,23 +1342,27 @@ class ApplicationTests {
                 null,
                 SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
             )).run {
-            "UserActivation : ${toString()}".run(::i)
-            assertTrue(activationKey.length > ACTIVATION_KEY_SIZE)
+            i("UserActivation : ${toString()}")
             validate(mock<ServerWebExchange>()).run {
-                assertTrue(isNotEmpty())
-                assertTrue(size == 1)
+                assertTrue {
+                    activationKey.length > ACTIVATION_KEY_SIZE
+                    isNotEmpty()
+                    size == 1
+                }
                 first().run {
-                    assertTrue(keys.contains("objectName"))
-                    assertTrue(values.contains(UserActivation.objectName))
-                    assertTrue(keys.contains("field"))
-                    assertTrue(values.contains(ACTIVATION_KEY_ATTR))
-                    assertTrue(keys.contains("message"))
-                    assertTrue(values.contains("size must be between 0 and 20"))
+                    assertTrue {
+                        keys.contains("objectName")
+                        values.contains(UserActivation.objectName)
+                        keys.contains("field")
+                        values.contains(ACTIVATION_KEY_ATTR)
+                        keys.contains("message")
+                        values.contains("size must be between 0 and 20")
+                    }
                 }
             }
             context.activateDao(activationKey).run {
                 isRight().run(::assertTrue)
-                assertEquals(0, getOrNull()!!)
+                onRight { assertThat(it).isEqualTo(0) }
             }
             assertThrows<IllegalArgumentException>("Activation failed: No user was activated for key: $activationKey") {
                 context.getBean<SignupService>().activate(activationKey)
@@ -2385,7 +2384,7 @@ class ApplicationTests {
     }
 
     //@org.junit.jupiter.api.extension.ExtendWith
-    //@org.junit.jupiter.api.TestInstance(PER_CLASS)
+//@org.junit.jupiter.api.TestInstance(PER_CLASS)
     class GUITest {
         private lateinit var window: FrameFixture
 

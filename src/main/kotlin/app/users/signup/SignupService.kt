@@ -9,10 +9,10 @@ import app.users.signup.SignupEndPoint.badResponseEmailIsNotAvailable
 import app.users.signup.SignupEndPoint.badResponseLoginAndEmailIsNotAvailable
 import app.users.signup.SignupEndPoint.badResponseLoginIsNotAvailable
 import app.users.signup.SignupEndPoint.exceptionProblem
-import app.users.UserDao.signup
-import app.users.UserDao.signupAvailability
+import app.users.UserDaoR2dbc.signup
+import app.users.UserDaoR2dbc.signupAvailability
 import app.users.signup.SignupEndPoint.signupProblems
-import app.users.UserDao.signupToUser
+import app.users.UserDaoR2dbc.signupToUser
 import app.users.signup.SignupEndPoint.validate
 import app.users.signup.UserActivationDao.activateDao
 import app.users.signup.UserActivationDao.validate

@@ -41,10 +41,14 @@ langchain4j:
   ollama:
     chat-model:
       base-url: http://localhost:11434
-      model-name: llama3.2:3b-instruct-q8_0
+      model-name: llama3.2:3b
+#      model-name: llama3.2:3b-instruct-q8_0
+#      model-name: dolphin3:8b
     streaming-chat-model:
       base-url: http://localhost:11434
-      model-name: llama3.2:3b-instruct-q8_0
+      model-name: llama3.2:3b
+#      model-name: llama3.2:3b-instruct-q8_0
+#      model-name: dolphin3:8b
 
 spring:
   profiles:
