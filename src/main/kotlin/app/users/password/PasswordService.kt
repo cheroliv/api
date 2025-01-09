@@ -3,8 +3,8 @@ package app.users.password
 import app.core.Loggers.d
 import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.User
-import app.users.UserDaoR2dbc.findOneWithAuths
-import app.users.UserDaoR2dbc.updatePassword
+import app.users.UserDao.findOneWithAuths
+import app.users.UserDao.updatePassword
 import arrow.core.getOrElse
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext

@@ -15,7 +15,7 @@ import app.core.database.EntityModel.Members.withId
 import app.users.User
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
-import app.users.UserDaoR2dbc.countUsers
+import app.users.UserDao.countUsers
 import app.users.security.Role
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup

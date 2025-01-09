@@ -55,19 +55,20 @@ import app.users.User.Fields.LOGIN_FIELD
 import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Relations.FIND_ALL_USERS
 import app.users.User.Relations.FIND_USER_BY_LOGIN
-import app.users.UserDaoR2dbc.countUsers
-import app.users.UserDaoR2dbc.delete
-import app.users.UserDaoR2dbc.deleteAllUsersOnly
-import app.users.UserDaoR2dbc.findOne
-import app.users.UserDaoR2dbc.findOneByEmail
-import app.users.UserDaoR2dbc.findOneWithAuths
-import app.users.UserDaoR2dbc.save
-import app.users.UserDaoR2dbc.signup
-import app.users.UserDaoR2dbc.signupAvailability
-import app.users.UserDaoR2dbc.updatePassword
+import app.users.UserDao.countUsers
+import app.users.UserDao.delete
+import app.users.UserDao.deleteAllUsersOnly
+import app.users.UserDao.findOne
+import app.users.UserDao.findOneByEmail
+import app.users.UserDao.findOneWithAuths
+import app.users.UserDao.save
+import app.users.UserDao.signup
+import app.users.UserDao.signupAvailability
+import app.users.UserDao.updatePassword
 import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
+import app.users.password.PasswordChange
 import app.users.password.PasswordService
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
@@ -344,7 +345,7 @@ class ApplicationTests {
                 .fetch()
                 .all()
                 .collect {
-                    it[User.Fields.ID_FIELD]
+                    it[ID_FIELD]
                         .toString()
                         .run(UUID::fromString)
                 }
@@ -389,7 +390,7 @@ class ApplicationTests {
             ?.run {
                 toString().run(::i)
                 val expectedUserResult = User(
-                    id = fromString(get(User.Fields.ID_FIELD).toString()),
+                    id = fromString(get(ID_FIELD).toString()),
                     email = get(User.Fields.EMAIL_FIELD).toString(),
                     login = get(LOGIN_FIELD).toString(),
                     roles = get(User.Members.ROLES_MEMBER)
@@ -397,7 +398,7 @@ class ApplicationTests {
                         .split(",")
                         .map { Role(it) }
                         .toSet(),
-                    password = get(User.Fields.PASSWORD_FIELD).toString(),
+                    password = get(PASSWORD_FIELD).toString(),
                     langKey = get(User.Fields.LANG_KEY_FIELD).toString(),
                     version = get(User.Fields.VERSION_FIELD).toString().toLong(),
                 )
@@ -925,7 +926,7 @@ class ApplicationTests {
                 user.run {
                     mapOf(
                         LOGIN_FIELD to login,
-                        User.Fields.PASSWORD_FIELD to password,
+                        PASSWORD_FIELD to password,
                         User.Fields.EMAIL_FIELD to email,
                         //FIRST_NAME_FIELD to firstName,
                         //LAST_NAME_FIELD to lastName,
@@ -1692,7 +1693,10 @@ class ApplicationTests {
         user.id.run(::assertNull)
 
         context.tripleCounts().run {
-            val uuid: UUID = (user to context).signup()
+            val uuid: UUID = (user.copy(
+                password = "change-password-wrong-existing-password",
+                login = "change-password-wrong-existing-password"
+            ) to context).signup()
                 .getOrNull()!!.first
                 .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -1713,33 +1717,35 @@ class ApplicationTests {
                         context.getBean<PasswordEncoder>().matches(user.password, second),
                         message = "password should be encoded"
                     )
-
-                    "*updatedPassword123".run {
+                    "*updatedPassword123".run updatedPassword@{
                         assertNotEquals(user.login, getCurrentUserLogin())
-                        assertThrows<InvalidPasswordException> {
-                            context.getBean<PasswordService>().update(user.password, this)
+                        context.getBean<PasswordService>().update(user.password, this)
+
+                        client.post().uri("/api/account/change-password")
+                            .contentType(APPLICATION_PROBLEM_JSON)
+                            .bodyValue(PasswordChange("change-password-wrong-existing-password", random(60)))
+                            .exchange()
+                            .expectStatus()
+                            .isBadRequest
+
+                        context.findOneWithAuths<User>(
+                            "change-password-wrong-existing-password"
+                        ).getOrNull()!!.run {
+                            assertThat(
+                                context.getBean<PasswordEncoder>().matches(
+                                    "change-password-wrong-existing-password",
+                                    password
+                                )
+                            ).isFalse
+                            assertThat(
+                                context.getBean<PasswordEncoder>().matches(
+                                    this@updatedPassword,
+                                    password
+                                )
+                            ).isTrue
                         }
                     }
                 }
-//            val currentPassword = RandomStringUtils.random(60)
-//            val user = User(
-//                password = passwordEncoder.encode(currentPassword),
-//                login = "change-password-wrong-existing-password",
-//                createdBy = SYSTEM_ACCOUNT,
-//                email = "change-password-wrong-existing-password@example.com"
-//            )
-//
-//            userRepository.save(user).block()
-//
-//            accountWebTestClient.post().uri("/api/account/change-password")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .bodyValue(convertObjectToJsonBytes(PasswordChangeDTO("1$currentPassword", "new password")))
-//                .exchange()
-//                .expectStatus().isBadRequest
-//
-//            val updatedUser = userRepository.findOneByLogin("change-password-wrong-existing-password").block()
-//            assertThat(passwordEncoder.matches("new password", updatedUser.password)).isFalse
-//            assertThat(passwordEncoder.matches(currentPassword, updatedUser.password)).isTrue
         }
     }
 

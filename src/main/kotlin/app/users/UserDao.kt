@@ -70,16 +70,13 @@ import java.util.UUID.fromString
 //import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration
 
 
-object UserDaoR2dbc {
-
+object UserDao {
     //@Configuration
 //class UserDaoConfig(val context:ApplicationContext) : AbstractR2dbcConfiguration() {
 //    override fun connectionFactory(): ConnectionFactory {
 //        return context.getBean<ConnectionFactory>()
 //    }
 //}
-
-
     fun ApplicationContext.userDetailsMono(
         emailOrLogin: String
     ): Mono<UserDetails> = getBean<Validator>().run {
