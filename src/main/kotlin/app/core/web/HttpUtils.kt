@@ -20,7 +20,7 @@ import java.util.Locale.ENGLISH
 import java.util.Locale.forLanguageTag
 
 object HttpUtils {
-    @Suppress("unused", "MemberVisibilityCanBePrivate")
+    @Suppress("MemberVisibilityCanBePrivate", "unused")
     val ServerWebExchange.spaExchange: ServerWebExchange
         get() = request.uri.path.run {
             when {

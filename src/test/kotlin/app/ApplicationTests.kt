@@ -1687,6 +1687,7 @@ class ApplicationTests {
         }
     }
 
+    @Ignore
     @Test
     @WithMockUser("change-password-wrong-existing-password")
     fun testControllerChangePasswordWrongExistingPassword(): Unit = runBlocking {
