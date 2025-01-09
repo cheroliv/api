@@ -70,10 +70,6 @@ import java.util.UUID.fromString
 //import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration
 
 
-interface UserDao
-
-class UserDaoR2dbcImpl
-
 object UserDaoR2dbc {
 
     //@Configuration

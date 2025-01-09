@@ -21,6 +21,7 @@ import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.right
 import org.springframework.context.ApplicationContext
+import org.springframework.core.env.get
 import org.springframework.http.HttpStatus.*
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
@@ -66,7 +67,7 @@ class SignupService(private val context: ApplicationContext) {
             }.map {
                 return apply {
                     i("Activation key: ${it.second}")
-                    i("Activation link : http://localhost:8080/$API_ACTIVATE_PATH${it.second}")
+                    i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
                 }.withId(it.first).right()
             }
         }

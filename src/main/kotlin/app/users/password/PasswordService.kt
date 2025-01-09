@@ -6,12 +6,13 @@ import app.users.User
 import app.users.UserDaoR2dbc.findOneWithAuths
 import app.users.UserDaoR2dbc.updatePassword
 import arrow.core.getOrElse
+import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 
 @Service
-class PasswordService(val context: ApplicationContext, val encoder: PasswordEncoder) {
+class PasswordService(val context: ApplicationContext) {
 
     suspend fun update(currentClearTextPassword: String, newPassword: String): Long {
         getCurrentUserLogin().apply {
@@ -21,7 +22,7 @@ class PasswordService(val context: ApplicationContext, val encoder: PasswordEnco
                     // TODO: use findOne instead, but it needs to be fixed!!!
                     context.findOneWithAuths<User>(this).map {
                         when {
-                            encoder.matches(
+                            context.getBean<PasswordEncoder>().matches(
                                 currentClearTextPassword,
                                 it.password
                             ) -> return (it.copy(password = newPassword) to context)
