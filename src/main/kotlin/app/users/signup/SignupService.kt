@@ -10,9 +10,9 @@ import app.users.signup.SignupEndPoint.badResponseLoginAndEmailIsNotAvailable
 import app.users.signup.SignupEndPoint.badResponseLoginIsNotAvailable
 import app.users.signup.SignupEndPoint.exceptionProblem
 import app.users.UserDao.signup
-import app.users.UserDao.signupAvailability
+import app.users.UserDao.availability
 import app.users.signup.SignupEndPoint.signupProblems
-import app.users.UserDao.signupToUser
+import app.users.UserDao.user
 import app.users.signup.SignupEndPoint.API_ACTIVATE
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
 import app.users.User.EndPoint.API_USERS
@@ -52,7 +52,7 @@ class SignupService(private val context: ApplicationContext) {
     }
 
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
-        context.signupToUser(signup).run {
+        context.user(signup).run {
             (this to context).signup().mapLeft {
                 return Exception("Unable to sign up user with this value : $signup", it).left()
             }.map {
@@ -69,7 +69,7 @@ class SignupService(private val context: ApplicationContext) {
     suspend fun availability(signup: Signup)
             : Either<Throwable, Triple<Boolean, Boolean, Boolean>> = try {
         (signup to context)
-            .signupAvailability()
+            .availability()
             .onRight { it.right() }
             .onLeft { it.left() }
     } catch (ex: Throwable) {

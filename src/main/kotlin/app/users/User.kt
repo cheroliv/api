@@ -35,8 +35,8 @@ import java.util.Locale.ENGLISH
 
 data class User(
     override val id: UUID? = null,
-    @NotNull
-    @Pattern(regexp = LOGIN_REGEX)
+    @field:NotNull
+    @field:Pattern(regexp = LOGIN_REGEX)
     @field:Size(min = 1, max = 50)
     val login: String = EMPTY_STRING,
     @field:JsonIgnore

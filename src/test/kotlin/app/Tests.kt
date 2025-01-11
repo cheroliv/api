@@ -7,8 +7,6 @@
 
 package app
 
-import app.TestTools.logBody
-import app.TestTools.responseToString
 import app.TestUtils.Data.DEFAULT_USER_JSON
 import app.TestUtils.Data.OFFICIAL_SITE
 import app.TestUtils.Data.admin
@@ -20,6 +18,8 @@ import app.TestUtils.findAuthsByEmail
 import app.TestUtils.findAuthsByLogin
 import app.TestUtils.findUserActivationByKey
 import app.TestUtils.findUserById
+import app.TestUtils.logBody
+import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
 import app.core.Constants.DEFAULT_LANGUAGE
 import app.core.Constants.DEVELOPMENT
@@ -55,16 +55,16 @@ import app.users.User.Fields.LOGIN_FIELD
 import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Relations.FIND_ALL_USERS
 import app.users.User.Relations.FIND_USER_BY_LOGIN
-import app.users.UserDao.countUsers
-import app.users.UserDao.delete
-import app.users.UserDao.deleteAllUsersOnly
-import app.users.UserDao.findOne
-import app.users.UserDao.findOneByEmail
+import app.users.UserDao.change
+import app.TestUtils.countUsers
+import app.TestUtils.delete
+import app.TestUtils.deleteAllUsersOnly
+import app.TestUtils.findOne
+import app.TestUtils.findOneByEmail
 import app.users.UserDao.findOneWithAuths
 import app.users.UserDao.save
 import app.users.UserDao.signup
-import app.users.UserDao.signupAvailability
-import app.users.UserDao.change
+import app.users.UserDao.availability
 import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
@@ -77,8 +77,8 @@ import app.users.security.UserRole
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
-import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PARAM
+import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
 import app.users.signup.SignupEndPoint.API_SIGNUP_PATH
 import app.users.signup.SignupService
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
@@ -813,7 +813,7 @@ class Tests {
                 "password",
                 "password",
                 "testuser@example.com"
-            ) to context).signupAvailability().run {
+            ) to context).availability().run {
                 isRight().run(::assertTrue)
                 assertEquals(SIGNUP_AVAILABLE, getOrNull()!!)
             }
@@ -825,7 +825,7 @@ class Tests {
             assertEquals(0, context.countUsers())
             (user to context).save()
             assertEquals(1, context.countUsers())
-            (signup to context).signupAvailability().run {
+            (signup to context).availability().run {
                 assertEquals(
                     SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE,
                     getOrNull()!!
@@ -844,7 +844,7 @@ class Tests {
                 "password",
                 "password",
                 user.email
-            ) to context).signupAvailability().run {
+            ) to context).availability().run {
                 assertEquals(SIGNUP_EMAIL_NOT_AVAILABLE, getOrNull()!!)
             }
         }
@@ -860,7 +860,7 @@ class Tests {
                 "password",
                 "password",
                 "testuser@example.com"
-            ) to context).signupAvailability().run {
+            ) to context).availability().run {
                 assertEquals(SIGNUP_LOGIN_NOT_AVAILABLE, getOrNull()!!)
             }
         }
