@@ -1,7 +1,5 @@
 package app.users.password
 
-//import jakarta.validation.Validator
-//import jakarta.validation.constraints.Email
 import app.users.User.EndPoint.API_USERS
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
 import org.springframework.web.bind.annotation.PostMapping
