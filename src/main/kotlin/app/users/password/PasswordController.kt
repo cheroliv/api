@@ -2,55 +2,56 @@ package app.users.password
 
 //import jakarta.validation.Validator
 //import jakarta.validation.constraints.Email
-//import org.springframework.web.bind.annotation.PostMapping
-//import org.springframework.web.bind.annotation.RequestBody
-//import org.springframework.web.bind.annotation.RequestMapping
-//import org.springframework.web.bind.annotation.RestController
-//import webapp.*
-//import webapp.accounts.exceptions.InvalidPasswordException
-//import webapp.accounts.models.AccountCredentials
-//import webapp.accounts.models.KeyAndPassword
-//import webapp.accounts.models.PasswordChange
-//import webapp.core.logging.w
-//import webapp.core.mail.MailService
-//import webapp.core.property.*
-//
-///*=================================================================================*/
-//@Suppress("unused")
-//@RestController
-//@RequestMapping(ACCOUNT_API)
-//class PasswordController(
-//    private val passwordService: PasswordService,
-//    private val mailService: MailService,
-//    private val validator: Validator
-//) {
-//    internal class PasswordException(message: String) : RuntimeException(message)
-//
-//    /**
-//     * {@code POST  /account/change-password} : changes the current user's password.
-//     *
-//     * @param passwordChange current and new password.
-//     * @throws InvalidPasswordProblem {@code 400 (Bad Request)} if the new password is incorrect.
-//     */
-//    @PostMapping(CHANGE_PASSWORD_API)//TODO: retourner des problemDetails
-//    suspend fun changePassword(@RequestBody passwordChange: PasswordChange): Unit =
-//        InvalidPasswordException().run {
-//            when {
-//                validator
-//                    .validateProperty(
-//                        AccountCredentials(password = passwordChange.newPassword),
-//                        PASSWORD_FIELD
-//                    ).isNotEmpty() -> throw this
-//
-//                passwordChange.currentPassword != null
-//                        && passwordChange.newPassword != null -> passwordService.changePassword(
-//                    passwordChange.currentPassword,
-//                    passwordChange.newPassword
-//                )
-//            }
-//
-//        }
-//
+import app.core.web.HttpUtils.validator
+import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.ProblemDetail
+import org.springframework.http.ProblemDetail.forStatusAndDetail
+import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.badRequest
+import org.springframework.http.ResponseEntity.ok
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.server.ServerWebExchange
+
+@RestController
+@RequestMapping
+class PasswordController(private val passwordService: PasswordService) {
+    /**
+     * {@code POST  API_CHANGE_PASSWORD} : changes the current user's password.
+     *
+     * @param passwordChange current and new password.
+     * @throws InvalidPasswordProblem {@code 400 (Bad Request)} if the new password is incorrect.
+     */
+    @PostMapping(API_CHANGE_PASSWORD)
+    suspend fun changePassword(
+        @RequestBody passwordChange: PasswordChange,
+        exchange: ServerWebExchange
+    ): ResponseEntity<ProblemDetail> {
+        InvalidPasswordException().run {
+            badRequest().body(forStatusAndDetail(BAD_REQUEST, message)).run {
+                when {
+                    exchange.validator.validateProperty(
+                        passwordChange,
+                        "newPassword"
+                    ).isNotEmpty() -> return this
+
+                    else -> try {
+                        passwordService.update(
+                            passwordChange.currentPassword,
+                            passwordChange.newPassword
+                        )
+                        return ok().build()
+                    } catch (t: Throwable) {
+                        return this
+                    }
+                }
+            }
+        }
+    }
+}
 //    /**
 //     * {@code POST   /account/reset-password/init} : Send an email to reset the password of the user.
 //     *
