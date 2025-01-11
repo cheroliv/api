@@ -18,7 +18,7 @@ import org.springframework.web.server.ServerWebExchange
 class PasswordController(private val service: PasswordService) {
 
     @PostMapping(API_CHANGE_PASSWORD)
-    suspend fun changePassword(
+    suspend fun change(
         @RequestBody passwordChange: PasswordChange,
         exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = service.change(passwordChange, exchange)
