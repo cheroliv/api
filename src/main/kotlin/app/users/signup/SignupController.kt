@@ -5,10 +5,10 @@ import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ServerWebExchange
-import app.users.signup.SignupService.Companion.API_ACTIVATE
-import app.users.signup.SignupService.Companion.API_ACTIVATE_KEY
-import app.users.signup.SignupService.Companion.API_SIGNUP
-import app.users.signup.SignupService.Companion.API_USERS
+import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
+import app.users.signup.SignupEndPoint.API_ACTIVATE_KEY
+import app.users.signup.SignupEndPoint.API_SIGNUP_PATH
+import app.users.User.EndPoint.API_USERS
 
 @RestController
 @RequestMapping(API_USERS)
@@ -23,7 +23,7 @@ class SignupController(private val service: SignupService) {
      * @param exchange The server web exchange instance, which provides access to the
      *                 request and response context during the signup process.
      */
-    @PostMapping(API_SIGNUP, produces = [APPLICATION_PROBLEM_JSON_VALUE])
+    @PostMapping(API_SIGNUP_PATH, produces = [APPLICATION_PROBLEM_JSON_VALUE])
     suspend fun signup(@RequestBody signup: Signup, exchange: ServerWebExchange)
             : ResponseEntity<ProblemDetail> = service.signup(signup, exchange)
 
@@ -35,7 +35,7 @@ class SignupController(private val service: SignupService) {
      * @param exchange The server web exchange instance, which provides access to the
      *                 request and response context during the activation process.
      */
-    @GetMapping(API_ACTIVATE)
+    @GetMapping(API_ACTIVATE_PATH)
     suspend fun activate(
         @RequestParam(API_ACTIVATE_KEY)
         key: String,

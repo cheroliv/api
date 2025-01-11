@@ -1,12 +1,10 @@
+@file:Suppress("MemberVisibilityCanBePrivate")
+
 package app.users
 
 import app.core.Constants.EMPTY_STRING
+import app.core.Loggers.i
 import app.core.database.EntityModel
-import com.fasterxml.jackson.annotation.JsonIgnore
-import jakarta.validation.constraints.Email
-import jakarta.validation.constraints.NotNull
-import jakarta.validation.constraints.Pattern
-import jakarta.validation.constraints.Size
 import app.users.User.Attributes.EMAILORLOGIN
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.ID_ATTR
@@ -27,7 +25,11 @@ import app.users.security.UserRole
 import app.users.security.UserRole.Fields.ROLE_FIELD
 import app.users.security.UserRole.Fields.USER_ID_FIELD
 import app.users.signup.UserActivation
-import app.core.Loggers.i
+import com.fasterxml.jackson.annotation.JsonIgnore
+import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
 import java.util.*
 import java.util.Locale.ENGLISH
 
@@ -51,6 +53,7 @@ data class User(
     @field:JsonIgnore
     val version: Long = 0,
 ) : EntityModel<UUID>() {
+
     companion object {
         @JvmStatic
         fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(::i)
@@ -68,6 +71,11 @@ data class User(
                     first().lowercaseChar()
                 )
             }
+    }
+
+    object EndPoint {
+        const val API_USERS = "/api/users"
+        const val API_AUTHORITY_PATH = "/api/authorities"
     }
 
     object Constraints {

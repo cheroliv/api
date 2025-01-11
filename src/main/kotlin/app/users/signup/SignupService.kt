@@ -13,6 +13,9 @@ import app.users.UserDao.signup
 import app.users.UserDao.signupAvailability
 import app.users.signup.SignupEndPoint.signupProblems
 import app.users.UserDao.signupToUser
+import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
+import app.users.signup.SignupEndPoint.API_ACTIVATE
+import app.users.User.EndPoint.API_USERS
 import app.users.signup.SignupEndPoint.validate
 import app.users.signup.UserActivationDao.activateDao
 import app.users.signup.UserActivationDao.validate
@@ -46,18 +49,6 @@ class SignupService(private val context: ApplicationContext) {
 
         @JvmStatic
         val SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE = Triple(false, false, false)
-        const val API_AUTHORITY = "/api/authorities"
-        const val API_USERS = "/api/users"
-        const val API_SIGNUP = "/signup"
-        const val API_SIGNUP_PATH = "$API_USERS$API_SIGNUP"
-        const val API_ACTIVATE = "/activate"
-        const val API_ACTIVATE_PATH = "$API_USERS$API_ACTIVATE?key="
-        const val API_ACTIVATE_PARAM = "{activationKey}"
-        const val API_ACTIVATE_KEY = "key"
-        const val API_RESET_INIT = "/reset-password/init"
-        const val API_RESET_FINISH = "/reset-password/finish"
-        const val API_CHANGE = "/change-password"
-        const val API_CHANGE_PATH = "$API_USERS$API_CHANGE"
     }
 
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
@@ -67,7 +58,7 @@ class SignupService(private val context: ApplicationContext) {
             }.map {
                 return apply {
                     i("Activation key: ${it.second}")
-                    i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
+                    i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE${it.second}")
                 }.withId(it.first).right()
             }
         }
@@ -119,14 +110,14 @@ class SignupService(private val context: ApplicationContext) {
     ).validate(exchange).run {
         "User activation attempt with key: $this".run(::i)
         if (isNotEmpty()) return activateProblems
-            .copy(path = "$API_USERS$API_ACTIVATE")
+            .copy(path = "$API_USERS$API_ACTIVATE_PATH")
             .badResponse(this)
     }.run {
         try {
             when (ONE_ROW_UPDATED) {
                 activate(key) -> OK.run(::ResponseEntity)
                 else -> signupProblems
-                    .copy(path = "$API_USERS$API_ACTIVATE")
+                    .copy(path = "$API_USERS$API_ACTIVATE_PATH")
                     .exceptionProblem(
                         AlreadyBoundException(),
                         UNPROCESSABLE_ENTITY,
@@ -135,7 +126,7 @@ class SignupService(private val context: ApplicationContext) {
             }
         } catch (ise: IllegalStateException) {
             signupProblems
-                .copy(path = "$API_USERS$API_ACTIVATE")
+                .copy(path = "$API_USERS$API_ACTIVATE_PATH")
                 .exceptionProblem(
                     ise,
                     EXPECTATION_FAILED,
@@ -143,7 +134,7 @@ class SignupService(private val context: ApplicationContext) {
                 )
         } catch (iae: IllegalArgumentException) {
             signupProblems
-                .copy(path = "$API_USERS$API_ACTIVATE")
+                .copy(path = "$API_USERS$API_ACTIVATE_PATH")
                 .exceptionProblem(
                     iae,
                     PRECONDITION_FAILED,

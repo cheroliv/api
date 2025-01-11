@@ -69,6 +69,7 @@ import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
+import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
 import app.users.password.PasswordService
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
@@ -77,9 +78,9 @@ import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.SignupService
-import app.users.signup.SignupService.Companion.API_ACTIVATE_PARAM
-import app.users.signup.SignupService.Companion.API_ACTIVATE_PATH
-import app.users.signup.SignupService.Companion.API_SIGNUP_PATH
+import app.users.signup.SignupEndPoint.API_ACTIVATE_PARAM
+import app.users.signup.SignupEndPoint.API_ACTIVATE
+import app.users.signup.SignupEndPoint.API_SIGNUP
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
 import app.users.signup.SignupService.Companion.SIGNUP_AVAILABLE
 import app.users.signup.SignupService.Companion.SIGNUP_EMAIL_NOT_AVAILABLE
@@ -977,7 +978,7 @@ class ApplicationTests {
         context.tripleCounts().run {
             client
                 .post()
-                .uri(API_SIGNUP_PATH)
+                .uri(API_SIGNUP)
                 .contentType(APPLICATION_JSON)
                 .bodyValue(signup)
                 .exchange()
@@ -998,7 +999,7 @@ class ApplicationTests {
             tripleCounts().run {
                 client
                     .post()
-                    .uri(API_SIGNUP_PATH)
+                    .uri(API_SIGNUP)
                     .contentType(APPLICATION_PROBLEM_JSON)
                     .header(ACCEPT_LANGUAGE, FRENCH.language)
                     .bodyValue(signup.copy(login = "funky-log(n"))
@@ -1021,7 +1022,7 @@ class ApplicationTests {
         assertEquals(0, countBefore)
         client
             .post()
-            .uri(API_SIGNUP_PATH)
+            .uri(API_SIGNUP)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(password = "inv"))
             .exchange()
@@ -1039,7 +1040,7 @@ class ApplicationTests {
         assertEquals(0, context.countUsers())
         client
             .post()
-            .uri(API_SIGNUP_PATH)
+            .uri(API_SIGNUP)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(password = "123"))
             .exchange()
@@ -1079,7 +1080,7 @@ class ApplicationTests {
         }
         client
             .post()
-            .uri(API_SIGNUP_PATH)
+            .uri(API_SIGNUP)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(login = admin.login))
             .exchange()
@@ -1114,7 +1115,7 @@ class ApplicationTests {
         }
         client
             .post()
-            .uri(API_SIGNUP_PATH)
+            .uri(API_SIGNUP)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(email = "foo@localhost"))
             .exchange()
@@ -1201,7 +1202,7 @@ class ApplicationTests {
             assertEquals(0, context.countUsers())
             client
                 .post()
-                .uri(API_SIGNUP_PATH)
+                .uri(API_SIGNUP)
                 .contentType(APPLICATION_PROBLEM_JSON)
                 .header(ACCEPT_LANGUAGE, FRENCH.language)
                 .bodyValue(signup.copy(password = "123"))
@@ -1423,7 +1424,7 @@ class ApplicationTests {
         //user does not exist
         //user_activation does not exist
         //TODO: is wrong valid key?
-        (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
+        (API_ACTIVATE + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
             client.get()
                 .uri(first, second)
                 .exchange()
@@ -1473,7 +1474,7 @@ class ApplicationTests {
                     .run(::assertNull)
 
                 client.get().uri(
-                    API_ACTIVATE_PATH + API_ACTIVATE_PARAM,
+                    API_ACTIVATE + API_ACTIVATE_PARAM,
                     second
                 ).exchange()
                     .expectStatus()
@@ -1529,7 +1530,7 @@ class ApplicationTests {
             assertEquals(0, context.countUsers())
             client
                 .post()
-                .uri(API_SIGNUP_PATH)
+                .uri(API_SIGNUP)
                 .contentType(APPLICATION_PROBLEM_JSON)
                 .header(ACCEPT_LANGUAGE, FRENCH.language)
                 .bodyValue(signup.copy(password = "123"))
@@ -1687,7 +1688,16 @@ class ApplicationTests {
         }
     }
 
-    @Ignore
+//    @Test
+//    fun `test requestPasswordReset`(): Unit = runBlocking {
+////        client.post().uri(API_CHANGE_PASSWORD_PATH)
+////            .contentType(APPLICATION_PROBLEM_JSON)
+////            .bodyValue(PasswordChange("change-password-wrong-existing-password", random(60)))
+////            .exchange()
+////            .expectStatus()
+////            .isBadRequest
+//    }
+
     @Test
     @WithMockUser("change-password-wrong-existing-password")
     fun testControllerChangePasswordWrongExistingPassword(): Unit = runBlocking {
@@ -1722,7 +1732,7 @@ class ApplicationTests {
                         assertNotEquals(user.login, getCurrentUserLogin())
                         context.getBean<PasswordService>().update(user.password, this)
 
-                        client.post().uri("/api/account/change-password")
+                        client.post().uri(API_CHANGE_PASSWORD)
                             .contentType(APPLICATION_PROBLEM_JSON)
                             .bodyValue(PasswordChange("change-password-wrong-existing-password", random(60)))
                             .exchange()
