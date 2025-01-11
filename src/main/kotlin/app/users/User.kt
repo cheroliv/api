@@ -155,11 +155,6 @@ data class User(
                     "$VERSION_FIELD" = :$VERSION_ATTR
                 WHERE "$ID_FIELD" = :$ID_ATTR;"""
 
-        const val FIND_USER_BY_LOGIN = """
-                SELECT u."$ID_FIELD" 
-                FROM "$TABLE_NAME" AS u 
-                WHERE u."$LOGIN_FIELD" = LOWER(:$LOGIN_ATTR);
-                """
         const val FIND_USER_BY_LOGIN_OR_EMAIL = """
                 SELECT u."$LOGIN_FIELD" 
                 FROM "$TABLE_NAME" AS u 
@@ -196,7 +191,6 @@ data class User(
                         ) AS login_available;
         """
         const val DELETE_USER_BY_ID = """DELETE FROM "$TABLE_NAME" AS u WHERE u."$ID_FIELD" = :$ID_ATTR;"""
-        const val DELETE_USER = """DELETE FROM "$TABLE_NAME";"""
         const val FIND_USER_WITH_AUTHS_BY_EMAILOGIN = """
                             SELECT 
                                 u."id",
@@ -219,11 +213,6 @@ data class User(
                                 u."$ID_FIELD", u."$EMAIL_FIELD", u."$LOGIN_FIELD";
                         """
 
-        const val COUNT = """SELECT COUNT(*) FROM "$TABLE_NAME";"""
 
-        const val FIND_USER_BY_EMAIL = """
-            SELECT u."$ID_FIELD" 
-            FROM "$TABLE_NAME" as u 
-            WHERE LOWER(u."$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)"""
     }
 }

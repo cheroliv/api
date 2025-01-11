@@ -9,7 +9,6 @@ import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ID_ATTR
-import app.users.signup.UserActivation.Relations.COUNT
 import app.users.signup.UserActivation.Relations.INSERT
 import app.users.signup.UserActivation.Relations.UPDATE_ACTIVATION_BY_KEY
 import arrow.core.Either
@@ -24,15 +23,6 @@ import org.springframework.web.server.ServerWebExchange
 import java.util.*
 
 object UserActivationDao {
-    suspend fun ApplicationContext.countUserActivation(): Int = COUNT
-        .trimIndent()
-        .run(getBean<DatabaseClient>()::sql)
-        .fetch()
-        .awaitSingle()
-        .values
-        .first()
-        .toString()
-        .toInt()
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<UserActivation, ApplicationContext>.save()
@@ -56,7 +46,7 @@ object UserActivationDao {
      * If the Right value (the result of the database operation) is not equal to 1,
      * then either the key doesn't exist, or the user is already activated.
      */
-    suspend fun ApplicationContext.activateDao(key: String): Either<Throwable, Long> = try {
+    suspend fun ApplicationContext.activate(key: String): Either<Throwable, Long> = try {
         UPDATE_ACTIVATION_BY_KEY
             .trimIndent()
             .run(getBean<R2dbcEntityTemplate>().databaseClient::sql)

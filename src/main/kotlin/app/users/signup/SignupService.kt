@@ -17,7 +17,7 @@ import app.users.signup.SignupEndPoint.API_ACTIVATE
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
 import app.users.User.EndPoint.API_USERS
 import app.users.signup.SignupEndPoint.validate
-import app.users.signup.UserActivationDao.activateDao
+import app.users.signup.UserActivationDao.activate
 import app.users.signup.UserActivationDao.validate
 import arrow.core.Either
 import arrow.core.getOrElse
@@ -96,7 +96,7 @@ class SignupService(private val context: ApplicationContext) {
             SERVICE_UNAVAILABLE.run(::ResponseEntity)
         }
 
-    suspend fun activate(key: String): Long = context.activateDao(key)
+    suspend fun activate(key: String): Long = context.activate(key)
         .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
         .takeIf { it == ONE_ROW_UPDATED }
         ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")

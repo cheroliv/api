@@ -54,7 +54,7 @@ import app.users.User.Fields.ID_FIELD
 import app.users.User.Fields.LOGIN_FIELD
 import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Relations.FIND_ALL_USERS
-import app.users.User.Relations.FIND_USER_BY_LOGIN
+import app.TestUtils.FIND_USER_BY_LOGIN
 import app.users.UserDao.change
 import app.TestUtils.countUsers
 import app.TestUtils.delete
@@ -74,7 +74,7 @@ import app.users.password.PasswordService
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
 import app.users.security.UserRole
-import app.users.security.UserRoleDao.countUserAuthority
+import app.TestUtils.countUserAuthority
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PARAM
@@ -92,10 +92,10 @@ import app.users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
 import app.users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
-import app.users.signup.UserActivation.Relations.FIND_ALL_USERACTIVATION
-import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
-import app.users.signup.UserActivationDao.activateDao
-import app.users.signup.UserActivationDao.countUserActivation
+import app.TestUtils.FIND_ALL_USERACTIVATION
+import app.TestUtils.FIND_BY_ACTIVATION_KEY
+import app.users.signup.UserActivationDao.activate
+import app.TestUtils.countUserActivation
 import app.users.signup.UserActivationDao.validate
 import app.workspace.Installer
 import app.workspace.Workspace
@@ -1311,7 +1311,7 @@ class Tests {
                 "activation key : $second".run(::i)
                 assertEquals(
                     1,
-                    context.activateDao(second).getOrNull()!!
+                    context.activate(second).getOrNull()!!
                 )
                 assertEquals(this@counts.first + 1, context.countUsers())
                 assertEquals(this@counts.second + 1, context.countUserAuthority())
@@ -1362,7 +1362,7 @@ class Tests {
                     }
                 }
             }
-            context.activateDao(activationKey).run {
+            context.activate(activationKey).run {
                 isRight().run(::assertTrue)
                 onRight { assertThat(it).isEqualTo(0) }
             }

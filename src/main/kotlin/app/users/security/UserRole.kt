@@ -2,10 +2,10 @@
 
 package app.users.security
 
-import jakarta.validation.constraints.NotNull
 import app.users.User
 import app.users.security.UserRole.Fields.ROLE_FIELD
 import app.users.security.UserRole.Fields.USER_ID_FIELD
+import jakarta.validation.constraints.NotNull
 import java.util.*
 
 @JvmRecord
@@ -52,15 +52,5 @@ data class UserRole(
             INSERT INTO "$TABLE_NAME" ("$USER_ID_FIELD","${Role.Fields.ID_FIELD}")
             VALUES (:${Attributes.USER_ID_ATTR}, :${Attributes.ROLE_ATTR})
             """
-        const val COUNT = """SELECT COUNT(*) FROM "user_authority";"""
-        const val DELETE = """DELETE FROM "user_authority";"""
-
-        const val DELETE_USER_AUTHORITIES_BY_USER_ID =
-            """delete from "user_authority" as ua where ua."user_id" = :userId;"""
-
-        const val DELETE_USER_AUTHORITIES_BY_LOGIN = """delete from "user_authority" 
-                    |where "user_id" = (
-                    |select u."id" from "user" as u where u."login" = :login
-                    |);"""
     }
 }

@@ -26,17 +26,14 @@ import app.users.User.Fields.LANG_KEY_FIELD
 import app.users.User.Fields.LOGIN_FIELD
 import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Fields.VERSION_FIELD
-import app.users.User.Relations.COUNT
-import app.users.User.Relations.DELETE_USER
 import app.users.User.Relations.DELETE_USER_BY_ID
-import app.users.User.Relations.FIND_USER_BY_EMAIL
 import app.users.User.Relations.FIND_USER_BY_ID
-import app.users.User.Relations.FIND_USER_BY_LOGIN
 import app.users.User.Relations.FIND_USER_BY_LOGIN_OR_EMAIL
+import app.users.User.Relations.TABLE_NAME
 import app.users.UserDao.isEmail
 import app.users.UserDao.isLogin
 import app.users.security.Role
-import app.users.security.UserRoleDao.countUserAuthority
+import app.users.security.UserRole.Attributes.USER_ID_ATTR
 import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
@@ -45,8 +42,7 @@ import app.users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ID_FIELD
-import app.users.signup.UserActivation.Relations.FIND_BY_ACTIVATION_KEY
-import app.users.signup.UserActivationDao.countUserActivation
+import app.users.signup.UserActivation.Relations
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -133,6 +129,87 @@ object TestUtils {
         .getBean<Validator>()
         .validateValue(USERACTIVATIONCLASS, ACTIVATION_KEY_ATTR, first)
 
+    const val DELETE_USER = """DELETE FROM "$TABLE_NAME";"""
+    const val COUNT = """SELECT COUNT(*) FROM "$TABLE_NAME";"""
+    const val FIND_USER_BY_EMAIL = """
+            SELECT u."${Fields.ID_FIELD}" 
+            FROM "$TABLE_NAME" as u 
+            WHERE LOWER(u."$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)"""
+
+    suspend fun ApplicationContext.countUserActivation(): Int = COUNT_USER_ACTIVATION
+        .trimIndent()
+        .run(getBean<DatabaseClient>()::sql)
+        .fetch()
+        .awaitSingle()
+        .values
+        .first()
+        .toString()
+        .toInt()
+    const val COUNT_USER_ACTIVATION = """SELECT COUNT(*) FROM "${Relations.TABLE_NAME}";"""
+
+    const val FIND_BY_ACTIVATION_KEY = """
+        SELECT * FROM "${Relations.TABLE_NAME}" as ua
+        WHERE ua."$ACTIVATION_KEY_FIELD" = :$ACTIVATION_KEY_ATTR;
+        """
+
+    const val FIND_ALL_USERACTIVATION = """SELECT * FROM "${Relations.TABLE_NAME}";"""
+
+    suspend fun ApplicationContext.deleteAllUserAuthorities(): Unit = DELETE_USER_AUTHORITIES
+        .trimIndent()
+        .let(getBean<DatabaseClient>()::sql)
+        .await()
+
+    suspend fun ApplicationContext.deleteAllUserAuthorityByUserId(id: UUID) = DELETE_USER_AUTHORITIES_BY_USER_ID
+        .let(getBean<DatabaseClient>()::sql)
+        .bind(USER_ID_ATTR, id)
+        .await()
+
+    suspend fun ApplicationContext.deleteUserByIdWithAuthorities_(id: UUID) =
+        getBean<DatabaseClient>().run {
+            DELETE_USER_AUTHORITIES_BY_USER_ID
+                .trimIndent()
+                .let(::sql)
+                .bind(USER_ID_ATTR, id)
+                .await()
+            DELETE_USER_BY_ID
+                .trimIndent()
+                .let(::sql)
+                .bind(USER_ID_ATTR, id)
+                .await()
+        }
+
+    const val COUNT_USER_AUTH = """SELECT COUNT(*) FROM "user_authority";"""
+    const val DELETE_USER_AUTHORITIES = """DELETE FROM "user_authority";"""
+
+    const val DELETE_USER_AUTHORITIES_BY_USER_ID =
+        """delete from "user_authority" as ua where ua."user_id" = :userId;"""
+
+    const val DELETE_USER_AUTHORITIES_BY_LOGIN = """delete from "user_authority" 
+                    |where "user_id" = (
+                    |select u."id" from "user" as u where u."login" = :login
+                    |);"""
+
+    suspend fun ApplicationContext.countUserAuthority(): Int = COUNT_USER_AUTH
+        .trimIndent()
+        .let(getBean<DatabaseClient>()::sql)
+        .fetch()
+        .awaitSingle()
+        .values
+        .first()
+        .toString()
+        .toInt()
+
+    val ApplicationContext.queryDeleteAllUserAuthorityByUserLogin
+        get() = DELETE_USER_AUTHORITIES_BY_LOGIN
+            .trimIndent()
+
+    suspend fun ApplicationContext.deleteAllUserAuthorityByUserLogin(
+        login: String
+    ) = getBean<DatabaseClient>()
+        .sql(queryDeleteAllUserAuthorityByUserLogin)
+        .bind(LOGIN_ATTR, login)
+        .await()
+
     suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
         id: UUID
     ): Either<Throwable, User> = when (T::class) {
@@ -185,6 +262,12 @@ object TestUtils {
 
             else -> IllegalArgumentException("Unsupported type: ${T::class.simpleName}").left()
         }
+
+    const val FIND_USER_BY_LOGIN = """
+                SELECT u."${Fields.ID_FIELD}" 
+                FROM "$TABLE_NAME" AS u 
+                WHERE u."$LOGIN_FIELD" = LOWER(:$LOGIN_ATTR);
+                """
 
     suspend fun ApplicationContext.deleteAllUsersOnly(): Unit = DELETE_USER
         .trimIndent()

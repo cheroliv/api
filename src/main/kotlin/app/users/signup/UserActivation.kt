@@ -86,8 +86,6 @@ data class UserActivation(
         CREATE INDEX IF NOT EXISTS idx_user_activation_creation_date
         ON "$TABLE_NAME" ("$CREATED_DATE_FIELD");
         """
-        const val COUNT = """SELECT COUNT(*) FROM "$TABLE_NAME";"""
-
         const val INSERT = """
         INSERT INTO "$TABLE_NAME" (
             "$ID_FIELD", "$ACTIVATION_KEY_FIELD", 
@@ -96,13 +94,6 @@ data class UserActivation(
             :$ID_ATTR, :$ACTIVATION_KEY_ATTR, 
             :$CREATED_DATE_ATTR, :$ACTIVATION_DATE_ATTR);
         """
-
-        const val FIND_BY_ACTIVATION_KEY = """
-        SELECT * FROM "$TABLE_NAME" as ua
-        WHERE ua."$ACTIVATION_KEY_FIELD" = :$ACTIVATION_KEY_ATTR;
-        """
-
-        const val FIND_ALL_USERACTIVATION = """SELECT * FROM "$TABLE_NAME";"""
 
         const val UPDATE_ACTIVATION_BY_KEY = """
         UPDATE "$TABLE_NAME" 
