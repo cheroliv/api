@@ -64,12 +64,12 @@ import app.users.UserDao.findOneWithAuths
 import app.users.UserDao.save
 import app.users.UserDao.signup
 import app.users.UserDao.signupAvailability
-import app.users.UserDao.updatePassword
+import app.users.UserDao.change
 import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
-import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
+import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.PasswordService
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
@@ -77,9 +77,9 @@ import app.users.security.UserRole
 import app.users.security.UserRoleDao.countUserAuthority
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
-import app.users.signup.SignupEndPoint.API_ACTIVATE
+import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PARAM
-import app.users.signup.SignupEndPoint.API_SIGNUP
+import app.users.signup.SignupEndPoint.API_SIGNUP_PATH
 import app.users.signup.SignupService
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
 import app.users.signup.SignupService.Companion.SIGNUP_AVAILABLE
@@ -214,7 +214,7 @@ import kotlin.test.*
     classes = [API::class],
     properties = ["spring.main.web-application-type=reactive"],
 )
-class ApplicationTests {
+class Tests {
 
     @Inject
     lateinit var context: ApplicationContext
@@ -978,7 +978,7 @@ class ApplicationTests {
         context.tripleCounts().run {
             client
                 .post()
-                .uri(API_SIGNUP)
+                .uri(API_SIGNUP_PATH)
                 .contentType(APPLICATION_JSON)
                 .bodyValue(signup)
                 .exchange()
@@ -999,7 +999,7 @@ class ApplicationTests {
             tripleCounts().run {
                 client
                     .post()
-                    .uri(API_SIGNUP)
+                    .uri(API_SIGNUP_PATH)
                     .contentType(APPLICATION_PROBLEM_JSON)
                     .header(ACCEPT_LANGUAGE, FRENCH.language)
                     .bodyValue(signup.copy(login = "funky-log(n"))
@@ -1022,7 +1022,7 @@ class ApplicationTests {
         assertEquals(0, countBefore)
         client
             .post()
-            .uri(API_SIGNUP)
+            .uri(API_SIGNUP_PATH)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(password = "inv"))
             .exchange()
@@ -1040,7 +1040,7 @@ class ApplicationTests {
         assertEquals(0, context.countUsers())
         client
             .post()
-            .uri(API_SIGNUP)
+            .uri(API_SIGNUP_PATH)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(password = "123"))
             .exchange()
@@ -1080,7 +1080,7 @@ class ApplicationTests {
         }
         client
             .post()
-            .uri(API_SIGNUP)
+            .uri(API_SIGNUP_PATH)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(login = admin.login))
             .exchange()
@@ -1115,7 +1115,7 @@ class ApplicationTests {
         }
         client
             .post()
-            .uri(API_SIGNUP)
+            .uri(API_SIGNUP_PATH)
             .contentType(APPLICATION_PROBLEM_JSON)
             .bodyValue(signup.copy(email = "foo@localhost"))
             .exchange()
@@ -1202,7 +1202,7 @@ class ApplicationTests {
             assertEquals(0, context.countUsers())
             client
                 .post()
-                .uri(API_SIGNUP)
+                .uri(API_SIGNUP_PATH)
                 .contentType(APPLICATION_PROBLEM_JSON)
                 .header(ACCEPT_LANGUAGE, FRENCH.language)
                 .bodyValue(signup.copy(password = "123"))
@@ -1424,7 +1424,7 @@ class ApplicationTests {
         //user does not exist
         //user_activation does not exist
         //TODO: is wrong valid key?
-        (API_ACTIVATE + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
+        (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
             client.get()
                 .uri(first, second)
                 .exchange()
@@ -1474,7 +1474,7 @@ class ApplicationTests {
                     .run(::assertNull)
 
                 client.get().uri(
-                    API_ACTIVATE + API_ACTIVATE_PARAM,
+                    API_ACTIVATE_PATH + API_ACTIVATE_PARAM,
                     second
                 ).exchange()
                     .expectStatus()
@@ -1530,7 +1530,7 @@ class ApplicationTests {
             assertEquals(0, context.countUsers())
             client
                 .post()
-                .uri(API_SIGNUP)
+                .uri(API_SIGNUP_PATH)
                 .contentType(APPLICATION_PROBLEM_JSON)
                 .header(ACCEPT_LANGUAGE, FRENCH.language)
                 .bodyValue(signup.copy(password = "123"))
@@ -1577,7 +1577,7 @@ class ApplicationTests {
 
                     "*updatedPassword123".run {
                         (user.copy(id = first, password = this) to context)
-                            .updatePassword()
+                            .change()
                             .apply { assertFalse(isLeft()) }
                             .map {
                                 i("row updated : $it")
@@ -1631,7 +1631,7 @@ class ApplicationTests {
                     "*updatedPassword123".run {
                         assertEquals(user.login, getCurrentUserLogin())
                         assertEquals(
-                            ONE_ROW_UPDATED, context.getBean<PasswordService>().update(user.password, this)
+                            ONE_ROW_UPDATED, context.getBean<PasswordService>().change(user.password, this)
                         )
                         assertTrue(
                             context.getBean<PasswordEncoder>().matches(
@@ -1681,7 +1681,7 @@ class ApplicationTests {
                     "*updatedPassword123".run {
                         assertNotEquals(user.login, getCurrentUserLogin())
                         assertThrows<InvalidPasswordException> {
-                            context.getBean<PasswordService>().update(user.password, this)
+                            context.getBean<PasswordService>().change(user.password, this)
                         }
                     }
                 }
@@ -1723,7 +1723,7 @@ class ApplicationTests {
                         assertThat(getCurrentUserLogin())
                             .isNotEqualTo(this@updatedPassword)
                             .isEqualTo(testLogin)
-                        context.getBean<PasswordService>().update(
+                        context.getBean<PasswordService>().change(
                             currentClearTextPassword = testPassword,
                             newPassword = this
                         )
@@ -1745,7 +1745,7 @@ class ApplicationTests {
 
                                 client
                                     .post()
-                                    .uri(API_CHANGE_PASSWORD)
+                                    .uri(API_CHANGE_PASSWORD_PATH)
                                     .contentType(APPLICATION_PROBLEM_JSON)
                                     .bodyValue(
                                         PasswordChange(

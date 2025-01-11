@@ -21,21 +21,21 @@ import java.net.URI
 
 /** SignupEndPoint REST API URIs */
 object SignupEndPoint {
-    const val API_SIGNUP_PATH = "/signup"
-    const val API_SIGNUP = "$API_USERS$API_SIGNUP_PATH"
+    const val API_SIGNUP = "/signup"
+    const val API_SIGNUP_PATH = "$API_USERS$API_SIGNUP"
 
-    const val API_ACTIVATE_PATH = "/activate"
+    const val API_ACTIVATE = "/activate"
     const val API_ACTIVATE_KEY = "key"
     const val API_ACTIVATE_PARAM = "{activationKey}"
-    const val API_ACTIVATE = "$API_USERS$API_ACTIVATE_PATH?$API_ACTIVATE_KEY="
+    const val API_ACTIVATE_PATH = "$API_USERS$API_ACTIVATE?$API_ACTIVATE_KEY="
 
     @JvmStatic
     val signupProblems: ProblemsModel =
-        Constants.defaultProblems.copy(path = "$API_USERS$API_SIGNUP_PATH")
+        Constants.defaultProblems.copy(path = "$API_USERS$API_SIGNUP")
 
     @JvmStatic
     val activateProblems: ProblemsModel =
-        Constants.defaultProblems.copy(path = "$API_USERS$API_ACTIVATE_PATH")
+        Constants.defaultProblems.copy(path = "$API_USERS$API_ACTIVATE")
 
     @JvmStatic
     fun ProblemsModel.exceptionProblem(

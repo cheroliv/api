@@ -2,15 +2,10 @@ package app.users.password
 
 //import jakarta.validation.Validator
 //import jakarta.validation.constraints.Email
-import app.core.web.HttpUtils.validator
-import app.users.password.PasswordChange.Companion.NEW_PASSWORD_ATTR
+import app.users.User.EndPoint.API_USERS
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
-import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.ProblemDetail
-import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
-import org.springframework.http.ResponseEntity.badRequest
-import org.springframework.http.ResponseEntity.ok
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -19,43 +14,15 @@ import org.springframework.web.server.ServerWebExchange
 
 
 @RestController
-@RequestMapping
-class PasswordController(private val passwordService: PasswordService) {
+@RequestMapping(API_USERS)
+class PasswordController(private val service: PasswordService) {
 
     @PostMapping(API_CHANGE_PASSWORD)
     suspend fun changePassword(
         @RequestBody passwordChange: PasswordChange,
         exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = exchange
-        .validator
-        .validateProperty(
-            passwordChange,
-            NEW_PASSWORD_ATTR
-        ).run {
-            when {
-                isNotEmpty() -> badRequest().body(
-                    forStatusAndDetail(
-                        BAD_REQUEST,
-                        iterator().next().message
-                    )
-                )
+    ): ResponseEntity<ProblemDetail> = service.change(passwordChange, exchange)
 
-                else -> try {
-                    passwordService.update(
-                        passwordChange.currentPassword,
-                        passwordChange.newPassword
-                    )
-                    ok().build()
-                } catch (t: Throwable) {
-                    badRequest().body(
-                        forStatusAndDetail(
-                            BAD_REQUEST,
-                            t.message
-                        )
-                    )
-                }
-            }
-        }
 }
 
 //    /**

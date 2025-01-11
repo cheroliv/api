@@ -11,9 +11,9 @@ data class PasswordChange(
     @field:NotNull
     @field:Size(min = 4, max = 20)
     val newPassword: String
-){
-    companion object{
-         const val NEW_PASSWORD_ATTR = "newPassword"
-
+) {
+    object Attributes {
+        const val NEW_PASSWORD_ATTR = "newPassword"
+        const val CURRENT_PASSWORD_ATTR = "currentPassword"
     }
 }

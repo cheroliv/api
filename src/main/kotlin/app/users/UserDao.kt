@@ -146,7 +146,7 @@ object UserDao {
     }
 
     @Throws(EmptyResultDataAccessException::class)
-    suspend fun Pair<User, ApplicationContext>.updatePassword()
+    suspend fun Pair<User, ApplicationContext>.change()
             : Either<Throwable, Long> = try {
         UPDATE_PASSWORD
             .trimIndent()

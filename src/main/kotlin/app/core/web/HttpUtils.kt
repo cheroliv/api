@@ -31,7 +31,6 @@ object HttpUtils {
             }
         }
 
-
     val ServerWebExchange.validator: Validator
         get() = byProvider(HibernateValidator::class.java)
             .configure()

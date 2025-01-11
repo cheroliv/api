@@ -2,19 +2,26 @@ package app.users.password
 
 import app.core.Loggers.d
 import app.core.security.SecurityUtils.getCurrentUserLogin
+import app.core.web.HttpUtils.validator
 import app.users.User
+import app.users.UserDao.change
 import app.users.UserDao.findOneWithAuths
-import app.users.UserDao.updatePassword
+import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import arrow.core.getOrElse
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.ProblemDetail.forStatusAndDetail
+import org.springframework.http.ResponseEntity.badRequest
+import org.springframework.http.ResponseEntity.ok
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.web.server.ServerWebExchange
 
 @Service
 class PasswordService(val context: ApplicationContext) {
 
-    suspend fun update(currentClearTextPassword: String, newPassword: String): Long {
+    suspend fun change(currentClearTextPassword: String, newPassword: String): Long {
         getCurrentUserLogin().apply {
             d("Current security context user.login : $this")
             when {
@@ -25,8 +32,7 @@ class PasswordService(val context: ApplicationContext) {
                             context.getBean<PasswordEncoder>().matches(
                                 currentClearTextPassword,
                                 it.password
-                            ) -> return (it.copy(password = newPassword) to context)
-                                .updatePassword()
+                            ) -> return (it.copy(password = newPassword) to context).change()
                                 //invalid update password persistence
                                 .getOrElse { throw InvalidPasswordException() }
                                 .apply { d("Changed password for User: ${it.login}") }
@@ -39,6 +45,40 @@ class PasswordService(val context: ApplicationContext) {
         }
         throw InvalidPasswordException()//invalid security authorization
     }
+
+    suspend fun change(
+        passwordChange: PasswordChange,
+        exchange: ServerWebExchange
+    ) = exchange
+        .validator
+        .validateProperty(
+            passwordChange,
+            NEW_PASSWORD_ATTR
+        ).run {
+            when {
+                isNotEmpty() -> badRequest().body(
+                    forStatusAndDetail(
+                        BAD_REQUEST,
+                        iterator().next().message
+                    )
+                )
+
+                else -> try {
+                    change(
+                        passwordChange.currentPassword,
+                        passwordChange.newPassword
+                    )
+                    ok().build()
+                } catch (t: Throwable) {
+                    badRequest().body(
+                        forStatusAndDetail(
+                            BAD_REQUEST,
+                            t.message
+                        )
+                    )
+                }
+            }
+        }
 
     suspend fun completePasswordReset(newPassword: String, key: String): User? = null
 
