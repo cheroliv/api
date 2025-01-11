@@ -21,7 +21,7 @@ class PasswordController(private val service: PasswordService) {
     suspend fun change(
         @RequestBody passwordChange: PasswordChange,
         exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = service.change(passwordChange, exchange)
+    ) = service.change(passwordChange, exchange)
 
 }
 
