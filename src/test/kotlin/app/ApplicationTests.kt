@@ -1688,21 +1688,11 @@ class ApplicationTests {
         }
     }
 
-//    @Test
-//    fun `test requestPasswordReset`(): Unit = runBlocking {
-////        client.post().uri(API_CHANGE_PASSWORD_PATH)
-////            .contentType(APPLICATION_PROBLEM_JSON)
-////            .bodyValue(PasswordChange("change-password-wrong-existing-password", random(60)))
-////            .exchange()
-////            .expectStatus()
-////            .isBadRequest
-//    }
-
     @Test
     @WithMockUser("change-password-wrong-existing-password")
     fun testControllerChangePasswordWrongExistingPassword(): Unit = runBlocking {
         val testLogin = "change-password-wrong-existing-password"
-        @Suppress("UnnecessaryVariable", "RedundantSuppression") val testPassword = testLogin
+        val testPassword = "change-password-wrong-existing-password"
         assertThat(user.id).isNull()
         context.tripleCounts().run triple@{
             val uuid: UUID = (user.copy(
@@ -1712,9 +1702,9 @@ class ApplicationTests {
                 .getOrNull()!!.first
                 .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-            assertEquals(this@triple.first + 1, context.countUsers())
-            assertEquals(this@triple.second + 1, context.countUserActivation())
-            assertEquals(this@triple.third + 1, context.countUserAuthority())
+            assertThat(this@triple.first + 1).isEqualTo(context.countUsers())
+            assertThat(this@triple.second + 1).isEqualTo(context.countUserActivation())
+            assertThat(this@triple.third + 1).isEqualTo(context.countUserAuthority())
 
             FIND_ALL_USERS
                 .trimIndent()
@@ -1753,7 +1743,9 @@ class ApplicationTests {
                                     )
                                 ).isFalse
 
-                                client.post().uri(API_CHANGE_PASSWORD)
+                                client
+                                    .post()
+                                    .uri(API_CHANGE_PASSWORD)
                                     .contentType(APPLICATION_PROBLEM_JSON)
                                     .bodyValue(
                                         PasswordChange(
