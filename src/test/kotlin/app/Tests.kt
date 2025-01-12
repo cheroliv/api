@@ -24,7 +24,7 @@ import app.TestUtils.delete
 import app.TestUtils.deleteAllUsersOnly
 import app.TestUtils.findAuthsByEmail
 import app.TestUtils.findAuthsByLogin
-import app.TestUtils.findOne
+import app.TestUtils.findOneDraft
 import app.TestUtils.findOneByEmail
 import app.TestUtils.findUserActivationByKey
 import app.TestUtils.findUserById
@@ -66,7 +66,7 @@ import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Relations.FIND_ALL_USERS
 import app.users.UserDao.availability
 import app.users.UserDao.change
-import app.users.UserDao.findOneWithAuths
+import app.users.UserDao.findOne
 import app.users.UserDao.save
 import app.users.UserDao.signup
 import app.users.mail.MailService
@@ -404,7 +404,7 @@ class Tests {
                     version = get(User.Fields.VERSION_FIELD).toString().toLong(),
                 )
                 val userResult = context
-                    .findOneWithAuths<User>(user.login)
+                    .findOne<User>(user.login)
                     .getOrNull()!!
                 assertNotNull(expectedUserResult)
                 assertNotNull(expectedUserResult.id)
@@ -437,7 +437,7 @@ class Tests {
             .run(::println)
         assertEquals(1, context.countUsers())
         assertEquals(1, context.countUserAuthority())
-        context.findOneWithAuths<User>(user.email)
+        context.findOne<User>(user.email)
             .getOrNull()
             ?.apply {
                 run(::assertNotNull)
@@ -446,8 +446,8 @@ class Tests {
                 assertEquals(userId, id)
             }.run { "context.findOneWithAuths<User>(${user.email}).getOrNull() : $this" }
             .run(::i)
-        context.findOne<User>(user.email).getOrNull()
-            .run { "context.findOne<User>(user.email).getOrNull() : $this" }
+        context.findOneDraft<User>(user.email).getOrNull()
+            .run { "context.findOneDraft<User>(user.email).getOrNull() : $this" }
             .run(::i)
         context.findAuthsByEmail(user.email).getOrNull()
             .run { "context.findAuthsByEmail(${user.email}).getOrNull() : $this" }
@@ -459,10 +459,10 @@ class Tests {
         assertEquals(0, context.countUsers())
         (user to context).save()
         assertEquals(1, context.countUsers())
-        val findOneEmailResult: Either<Throwable, User> = context.findOne<User>(user.email)
+        val findOneEmailResult: Either<Throwable, User> = context.findOneDraft<User>(user.email)
         findOneEmailResult.map { assertDoesNotThrow { fromString(it.toString()) } }
         i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
-        context.findOne<User>(user.login).map { assertDoesNotThrow { fromString(it.toString()) } }
+        context.findOneDraft<User>(user.login).map { assertDoesNotThrow { fromString(it.toString()) } }
     }
 
     @Test
@@ -723,11 +723,11 @@ class Tests {
     @Test
     fun `test findOne with not existing email or login`(): Unit = runBlocking {
         assertEquals(0, context.countUsers())
-        context.findOne<User>(user.email).apply {
+        context.findOneDraft<User>(user.email).apply {
             assertFalse(isRight())
             assertTrue(isLeft())
         }
-        context.findOne<User>(user.login).apply {
+        context.findOneDraft<User>(user.login).apply {
             assertFalse(isRight())
             assertTrue(isLeft())
         }
@@ -1722,7 +1722,7 @@ class Tests {
                             currentClearTextPassword = testPassword,
                             newPassword = this
                         )
-                        context.findOneWithAuths<User>(testLogin)
+                        context.findOne<User>(testLogin)
                             .apply { assertThat(isRight()).isTrue }
                             .getOrNull()!!.run {
                                 assertThat(
@@ -1756,7 +1756,7 @@ class Tests {
                                     .run(::assertThat)
                                     .contains(InvalidPasswordException().message)
 
-                                context.findOneWithAuths<User>(testLogin)
+                                context.findOne<User>(testLogin)
                                     .getOrNull()!!
                                     .run {
                                         assertThat(
@@ -1840,7 +1840,7 @@ class Tests {
                             .isEmpty()
                             .run(::assertTrue)
 
-                        context.findOneWithAuths<User>(testLogin).getOrNull()!!.run {
+                        context.findOne<User>(testLogin).getOrNull()!!.run {
                             assertThat(
                                 context.getBean<PasswordEncoder>().matches(
                                     this@updatedPassword,

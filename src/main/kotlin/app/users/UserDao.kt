@@ -25,6 +25,7 @@ import app.users.User.Relations.LOGIN_AND_EMAIL_AVAILABLE_COLUMN
 import app.users.User.Relations.LOGIN_AVAILABLE_COLUMN
 import app.users.User.Relations.SELECT_SIGNUP_AVAILABILITY
 import app.users.User.Relations.UPDATE_PASSWORD
+import app.users.security.Role
 import app.users.security.UserRole
 import app.users.security.UserRoleDao.signup
 import app.users.signup.Signup
@@ -64,34 +65,15 @@ object UserDao {
 //        return context.getBean<ConnectionFactory>()
 //    }
 //}
-    fun ApplicationContext.userDetailsMono(
-        emailOrLogin: String
-    ): Mono<UserDetails> = getBean<Validator>().run {
-        when {
-            validateProperty(
-                User(email = emailOrLogin),
-                User.Fields.EMAIL_FIELD
-            ).isNotEmpty() && validateProperty(
-                User(login = emailOrLogin),
-                User.Fields.LOGIN_FIELD
-            ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
-
-            else -> mono {
-                findOneWithAuths<User>(emailOrLogin).map { user ->
-                    return@mono org.springframework.security.core.userdetails.User(
-                        user.login,
-                        user.password,
-                        user.roles.map { SimpleGrantedAuthority(it.id) })
-                }.getOrNull() ?: throw UsernameNotFoundException("User $emailOrLogin was not found")
-            }
-        }
-    }
-
     fun Pair<String, ApplicationContext>.isLogin(): Boolean = second
         .getBean<Validator>()
         .validateValue(User::class.java, LOGIN_ATTR, first)
         .isEmpty()
 
+    fun Pair<String, ApplicationContext>.isEmail(): Boolean = second
+        .getBean<Validator>()
+        .validateValue(User::class.java, EMAIL_ATTR, first)
+        .isEmpty()
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<User, ApplicationContext>.save(): Either<Throwable, UUID> = try {
@@ -112,62 +94,41 @@ object UserDao {
         e.left()
     }
 
-    @Throws(EmptyResultDataAccessException::class)
-    suspend fun Pair<User, ApplicationContext>.change()
-            : Either<Throwable, Long> = try {
-        UPDATE_PASSWORD
-            .trimIndent()
-            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-            .bind(ID_ATTR, first.id)
-            .bind(PASSWORD_ATTR, first.password.run(second.getBean<PasswordEncoder>()::encode))
-            .bind(VERSION_ATTR, first.version)
-            .fetch()
-            .rowsUpdated()
-            .awaitSingle()
-            .right()
-    } catch (e: Throwable) {
-        e.left()
-    }
-
-    fun Pair<String, ApplicationContext>.isEmail(): Boolean = second
-        .getBean<Validator>()
-        .validateValue(User::class.java, EMAIL_ATTR, first)
-        .isEmpty()
-
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneWithAuths(
+    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
         emailOrLogin: String
     ): Either<Throwable, User> = when (T::class) {
         User::class -> {
             try {
-                if (!((emailOrLogin to this).isEmail() || (emailOrLogin to this).isLogin()))
-                    "not a valid login or not a valid email"
+                when {
+                    !((emailOrLogin to this).isEmail() || (emailOrLogin to this).isLogin()) -> "not a valid login or not a valid email"
                         .run(::Exception)
                         .left()
 
-                FIND_USER_WITH_AUTHS_BY_EMAILOGIN
-                    .trimIndent()
-                    .run(getBean<DatabaseClient>()::sql)
-                    .bind(EMAILORLOGIN, emailOrLogin)
-                    .fetch()
-                    .awaitSingleOrNull()
-                    .run {
-                        when {
-                            this == null -> Exception("not able to retrieve user id and roles").left()
-                            else -> User(
-                                id = fromString(get(ID_FIELD).toString()),
-                                email = get(EMAIL_FIELD).toString(),
-                                login = get(LOGIN_FIELD).toString(),
-                                roles = get(ROLES_MEMBER)
-                                    .toString()
-                                    .split(",")
-                                    .map { app.users.security.Role(it) }
-                                    .toSet(),
-                                password = get(PASSWORD_FIELD).toString(),
-                                langKey = get(LANG_KEY_FIELD).toString(),
-                                version = get(VERSION_FIELD).toString().toLong(),
-                            ).right()
+                    else -> FIND_USER_WITH_AUTHS_BY_EMAILOGIN
+                        .trimIndent()
+                        .run(getBean<DatabaseClient>()::sql)
+                        .bind(EMAILORLOGIN, emailOrLogin)
+                        .fetch()
+                        .awaitSingleOrNull()
+                        .run {
+                            when {
+                                this == null -> Exception("not able to retrieve user id and roles").left()
+                                else -> User(
+                                    id = fromString(get(ID_FIELD).toString()),
+                                    email = get(EMAIL_FIELD).toString(),
+                                    login = get(LOGIN_FIELD).toString(),
+                                    roles = get(ROLES_MEMBER)
+                                        .toString()
+                                        .split(",")
+                                        .map { Role(it) }
+                                        .toSet(),
+                                    password = get(PASSWORD_FIELD).toString(),
+                                    langKey = get(LANG_KEY_FIELD).toString(),
+                                    version = get(VERSION_FIELD).toString().toLong(),
+                                ).right()
+                            }
                         }
-                    }
+                }
             } catch (e: Throwable) {
                 e.left()
             }
@@ -183,7 +144,7 @@ object UserDao {
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<User, ApplicationContext>.signup(): Either<Throwable, Pair<UUID, String>> = try {
         (first.copy(password = second.getBean<PasswordEncoder>().encode(first.password)) to second).save()
-        second.findOneWithAuths<User>(first.email).mapLeft {
+        second.findOne<User>(first.email).mapLeft {
             return Exception("Unable to find user by email").left()
         }.map {
             when {
@@ -232,5 +193,45 @@ object UserDao {
             }
     } catch (e: Throwable) {
         e.left()
+    }
+
+    @Throws(EmptyResultDataAccessException::class)
+    suspend fun Pair<User, ApplicationContext>.change()
+            : Either<Throwable, Long> = try {
+        UPDATE_PASSWORD
+            .trimIndent()
+            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .bind(ID_ATTR, first.id)
+            .bind(PASSWORD_ATTR, first.password.run(second.getBean<PasswordEncoder>()::encode))
+            .bind(VERSION_ATTR, first.version)
+            .fetch()
+            .rowsUpdated()
+            .awaitSingle()
+            .right()
+    } catch (e: Throwable) {
+        e.left()
+    }
+
+    fun ApplicationContext.userDetails(
+        emailOrLogin: String
+    ): Mono<UserDetails> = getBean<Validator>().run {
+        when {
+            validateProperty(
+                User(email = emailOrLogin),
+                User.Fields.EMAIL_FIELD
+            ).isNotEmpty() && validateProperty(
+                User(login = emailOrLogin),
+                User.Fields.LOGIN_FIELD
+            ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
+
+            else -> mono {
+                findOne<User>(emailOrLogin).map { user ->
+                    return@mono org.springframework.security.core.userdetails.User(
+                        user.login,
+                        user.password,
+                        user.roles.map { SimpleGrantedAuthority(it.id) })
+                }.getOrNull() ?: throw UsernameNotFoundException("User $emailOrLogin was not found")
+            }
+        }
     }
 }

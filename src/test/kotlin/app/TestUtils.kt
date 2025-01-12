@@ -210,7 +210,7 @@ object TestUtils {
         .bind(LOGIN_ATTR, login)
         .await()
 
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
+    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneDraft(
         id: UUID
     ): Either<Throwable, User> = when (T::class) {
         User::class -> try {
@@ -309,7 +309,7 @@ object TestUtils {
             else -> IllegalArgumentException("Unsupported type: ${T::class.simpleName}").left()
         }
 
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
+    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneDraft(
         emailOrLogin: String
     ): Either<Throwable, User> = when (T::class) {
         User::class -> try {

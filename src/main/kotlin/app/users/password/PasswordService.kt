@@ -5,7 +5,7 @@ import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.core.web.HttpUtils.validator
 import app.users.User
 import app.users.UserDao.change
-import app.users.UserDao.findOneWithAuths
+import app.users.UserDao.findOne
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import arrow.core.getOrElse
 import org.springframework.beans.factory.getBean
@@ -27,7 +27,7 @@ class PasswordService(val context: ApplicationContext) {
             when {
                 isNotBlank() -> {
                     // TODO: use findOne instead, but it needs to be fixed!!!
-                    context.findOneWithAuths<User>(this).map {
+                    context.findOne<User>(this).map {
                         when {
                             context.getBean<PasswordEncoder>().matches(
                                 currentClearTextPassword,

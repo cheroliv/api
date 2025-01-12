@@ -8,7 +8,7 @@ import app.core.Loggers.d
 import app.core.Loggers.i
 import app.core.Loggers.t
 import app.core.Properties
-import app.users.UserDao.userDetailsMono
+import app.users.UserDao.userDetails
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts.builder
 import io.jsonwebtoken.Jwts.parserBuilder
@@ -47,7 +47,7 @@ class SecurityService(
 
     @Transactional(readOnly = true)
     @Throws(UsernameNotFoundException::class)
-    override fun findByUsername(emailOrLogin: String): Mono<UserDetails> = context.userDetailsMono(emailOrLogin)
+    override fun findByUsername(emailOrLogin: String): Mono<UserDetails> = context.userDetails(emailOrLogin)
 
     @Throws(Exception::class)
     override fun afterPropertiesSet() {
