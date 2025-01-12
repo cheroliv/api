@@ -13,9 +13,19 @@ import app.TestUtils.Data.admin
 import app.TestUtils.Data.signup
 import app.TestUtils.Data.user
 import app.TestUtils.Data.users
+import app.TestUtils.FIND_ALL_USERACTIVATION
+import app.TestUtils.FIND_BY_ACTIVATION_KEY
+import app.TestUtils.FIND_USER_BY_LOGIN
+import app.TestUtils.countUserActivation
+import app.TestUtils.countUserAuthority
+import app.TestUtils.countUsers
 import app.TestUtils.defaultRoles
+import app.TestUtils.delete
+import app.TestUtils.deleteAllUsersOnly
 import app.TestUtils.findAuthsByEmail
 import app.TestUtils.findAuthsByLogin
+import app.TestUtils.findOne
+import app.TestUtils.findOneByEmail
 import app.TestUtils.findUserActivationByKey
 import app.TestUtils.findUserById
 import app.TestUtils.logBody
@@ -54,17 +64,11 @@ import app.users.User.Fields.ID_FIELD
 import app.users.User.Fields.LOGIN_FIELD
 import app.users.User.Fields.PASSWORD_FIELD
 import app.users.User.Relations.FIND_ALL_USERS
-import app.TestUtils.FIND_USER_BY_LOGIN
+import app.users.UserDao.availability
 import app.users.UserDao.change
-import app.TestUtils.countUsers
-import app.TestUtils.delete
-import app.TestUtils.deleteAllUsersOnly
-import app.TestUtils.findOne
-import app.TestUtils.findOneByEmail
 import app.users.UserDao.findOneWithAuths
 import app.users.UserDao.save
 import app.users.UserDao.signup
-import app.users.UserDao.availability
 import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
@@ -74,7 +78,6 @@ import app.users.password.PasswordService
 import app.users.security.Role
 import app.users.security.RoleDao.countRoles
 import app.users.security.UserRole
-import app.TestUtils.countUserAuthority
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PARAM
@@ -92,10 +95,7 @@ import app.users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
 import app.users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
-import app.TestUtils.FIND_ALL_USERACTIVATION
-import app.TestUtils.FIND_BY_ACTIVATION_KEY
 import app.users.signup.UserActivationDao.activate
-import app.TestUtils.countUserActivation
 import app.users.signup.UserActivationDao.validate
 import app.workspace.Installer
 import app.workspace.Workspace
@@ -1181,17 +1181,15 @@ class Tests {
             .validator
             .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_FIELD)
             .run viol@{
-                assertTrue(isNotEmpty())
+                assertThat(isNotEmpty()).isTrue
                 first().run {
                     assertEquals(
                         "{${Pattern::class.java.name}.message}",
                         messageTemplate
                     )
-                    assertEquals(false, message.contains("doit correspondre à"))
-                    assertContains(
-                        "deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"",
-                        message
-                    )
+                    assertThat(message)
+                        .contains("deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"")
+                        .doesNotContain("doit correspondre à")
                 }
             }
     }
@@ -1221,10 +1219,7 @@ class Tests {
     @Test
     fun `test create userActivation inside signup`(): Unit = runBlocking {
         context.tripleCounts().run {
-            (user to context).signup().apply {
-                assertTrue(isRight())
-                assertFalse(isLeft())
-            }
+            (user to context).signup().apply { assertThat(isRight()).isTrue }
             assertEquals(first + 1, context.countUsers())
             assertEquals(second + 1, context.countUserActivation())
             assertEquals(third + 1, context.countUserAuthority())

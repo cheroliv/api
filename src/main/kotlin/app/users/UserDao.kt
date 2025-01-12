@@ -45,8 +45,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.transaction.reactive.TransactionalOperator
-import org.springframework.transaction.reactive.executeAndAwait
 import reactor.core.publisher.Mono
 import java.lang.Boolean.parseBoolean
 import java.util.*
@@ -184,18 +182,21 @@ object UserDao {
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<User, ApplicationContext>.signup(): Either<Throwable, Pair<UUID, String>> = try {
-        second.getBean<TransactionalOperator>().executeAndAwait {
-            (first.copy(password = second.getBean<PasswordEncoder>().encode(first.password)) to second).save()
-        }
+        (first.copy(password = second.getBean<PasswordEncoder>().encode(first.password)) to second).save()
         second.findOneWithAuths<User>(first.email).mapLeft {
             return Exception("Unable to find user by email").left()
         }.map {
-            if (it.id != null) {
-                (UserRole(userId = it.id, role = ROLE_USER) to second).signup()
-                val userActivation = UserActivation(id = it.id)
-                (userActivation to second).save()
-                return (it.id to userActivation.activationKey).right()
-            } else return Exception("Unable to find user by email").left()
+            when {
+                it.id != null -> {
+                    (UserRole(userId = it.id, role = ROLE_USER) to second).signup()
+                    UserActivation(id = it.id).run {
+                        (this to second).save()
+                        return (it.id to activationKey).right()
+                    }
+                }
+
+                else -> return Exception("Unable to find user by email").left()
+            }
         }
     } catch (e: Throwable) {
         e.left()
