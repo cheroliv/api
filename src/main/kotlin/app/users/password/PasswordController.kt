@@ -2,6 +2,12 @@ package app.users.password
 
 import app.users.User.EndPoint.API_USERS
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
+import app.users.password.PasswordEndPoint.API_RESET_PASSWORD_INIT
+import jakarta.validation.constraints.Email
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.ProblemDetail
+import org.springframework.http.ProblemDetail.forStatusAndDetail
+import org.springframework.http.ResponseEntity.*
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -19,22 +25,25 @@ class PasswordController(private val service: PasswordService) {
         exchange: ServerWebExchange
     ) = service.change(passwordChange, exchange)
 
-}
+    @PostMapping(API_RESET_PASSWORD_INIT)
+    suspend fun reset(@RequestBody @Email mail: String) = try {
+        with(service.requestPasswordReset(mail)) {
+            when {
+                this == null -> of(
+                    forStatusAndDetail(
+                        BAD_REQUEST,
+                        "Password reset requested for non existing mail"
+                    )
+                ).build()
 
-//    /**
-//     * {@code POST   /account/reset-password/init} : Send an email to reset the password of the user.
-//     *
-//     * @param mail the mail of the user.
-//     */
-//    @PostMapping(RESET_PASSWORD_API_INIT)//TODO: retourner des problemDetails
-//    suspend fun requestPasswordReset(@RequestBody @Email mail: String) =
-//        with(passwordService.requestPasswordReset(mail)) {
-//            when {
-//                this == null -> w("Password reset requested for non existing mail")
-//                else -> mailService.sendPasswordResetMail(this)
-//            }
-//        }
-//
+                else -> service.sendPasswordResetMail(this).let { ok().build() }
+            }
+        }
+    } catch (t: Throwable) {
+        of(forStatusAndDetail(BAD_REQUEST, t.message)).build<ProblemDetail>()
+    }
+
+
 //    /**
 //     * {@code POST   /account/reset-password/finish} : Finish to reset the password of the user.
 //     *
@@ -60,7 +69,7 @@ class PasswordController(private val service: PasswordService) {
 //            }
 //        }
 //
-//}
+}
 
 /**
 @file:Suppress("unused")
@@ -116,29 +125,6 @@ else -> w("Password reset request caused unknoww error")
 }.first
 
 
-/**
- * authenticated
- *
- * {@code POST  /accounts/change-password} : changes the current user's password.
- *
- * @param passwords current and new password.
- * @return ProblemDetail
-*/
-@PostMapping(API_CHANGE)
-suspend fun changePassword(@RequestBody passwords: PasswordChange): ResponseEntity<ProblemDetail> =
-when {
-validator.validateProperty(
-Signup(account = Account(), password = passwords.new),
-PASSWORD_FIELD
-).isNotEmpty() ->
-validationProblems.badResponse(setOf(mapOf("" to "")))//TODO: fulfill reasons with serverExchange and local
-
-else -> {
-val (current, new) = passwords
-passwordService.change(current!!, new!!)
-ResponseEntity(OK)
-}
-}
 
 
 /**
@@ -165,6 +151,4 @@ passwordReset.key
 ) == null -> throw PasswordException("No user was found for this reset key")
 }
 }
-}
-
- */
+}*/

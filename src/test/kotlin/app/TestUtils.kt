@@ -1,4 +1,7 @@
-@file:Suppress("MemberVisibilityCanBePrivate")
+@file:Suppress(
+    "MemberVisibilityCanBePrivate",
+    "PLATFORM_CLASS_MAPPED_TO_KOTLIN"
+)
 
 package app
 
@@ -145,6 +148,7 @@ object TestUtils {
         .first()
         .toString()
         .toInt()
+
     const val COUNT_USER_ACTIVATION = """SELECT COUNT(*) FROM "${Relations.TABLE_NAME}";"""
 
     const val FIND_BY_ACTIVATION_KEY = """

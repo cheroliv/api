@@ -1,6 +1,7 @@
 package app.users.password
 
 import app.core.Loggers.d
+import app.core.Loggers.i
 import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.core.web.HttpUtils.validator
 import app.users.User
@@ -99,6 +100,10 @@ class PasswordService(val context: ApplicationContext) {
 //        }
 //
     suspend fun requestPasswordReset(mail: String): User? = null
+
+    fun sendPasswordResetMail(user: User) {
+        i("Not yet implemented")
+    }
 //        return userRepository
 //            .findOneByEmail(mail)
 //            .apply {
