@@ -65,15 +65,6 @@ object UserDao {
 //        return context.getBean<ConnectionFactory>()
 //    }
 //}
-    fun Pair<String, ApplicationContext>.isLogin(): Boolean = second
-        .getBean<Validator>()
-        .validateValue(User::class.java, LOGIN_ATTR, first)
-        .isEmpty()
-
-    fun Pair<String, ApplicationContext>.isEmail(): Boolean = second
-        .getBean<Validator>()
-        .validateValue(User::class.java, EMAIL_ATTR, first)
-        .isEmpty()
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<User, ApplicationContext>.save(): Either<Throwable, UUID> = try {
@@ -101,7 +92,17 @@ object UserDao {
         User::class -> {
             try {
                 when {
-                    !((emailOrLogin to this).isEmail() || (emailOrLogin to this).isLogin()) -> "not a valid login or not a valid email"
+                    !((emailOrLogin to this).run {
+                        second
+                            .getBean<Validator>()
+                            .validateValue(User::class.java, EMAIL_ATTR, first)
+                            .isEmpty()
+                    } || (emailOrLogin to this).run {
+                        second
+                            .getBean<Validator>()
+                            .validateValue(User::class.java, LOGIN_ATTR, first)
+                            .isEmpty()
+                    }) -> "not a valid login or not a valid email"
                         .run(::Exception)
                         .left()
 
