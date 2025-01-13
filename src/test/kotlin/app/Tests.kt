@@ -24,8 +24,7 @@ import app.TestUtils.delete
 import app.TestUtils.deleteAllUsersOnly
 import app.TestUtils.findAuthsByEmail
 import app.TestUtils.findAuthsByLogin
-import app.TestUtils.findOneByEmail
-import app.TestUtils.findOneDraft
+import app.TestUtils.findOne
 import app.TestUtils.findUserActivationByKey
 import app.TestUtils.findUserById
 import app.TestUtils.logBody
@@ -60,10 +59,11 @@ import app.users.User
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
-import app.users.User.Fields.ID_FIELD
-import app.users.User.Fields.LOGIN_FIELD
-import app.users.User.Fields.PASSWORD_FIELD
+import app.users.User.EndPoint.API_USERS
 import app.users.User.Relations.FIND_ALL_USERS
+import app.users.User.Relations.Fields.ID_FIELD
+import app.users.User.Relations.Fields.LOGIN_FIELD
+import app.users.User.Relations.Fields.PASSWORD_FIELD
 import app.users.UserDao.availability
 import app.users.UserDao.change
 import app.users.UserDao.findOne
@@ -393,7 +393,7 @@ class Tests {
                 toString().run(::i)
                 val expectedUserResult = User(
                     id = fromString(get(ID_FIELD).toString()),
-                    email = get(User.Fields.EMAIL_FIELD).toString(),
+                    email = get(User.Relations.Fields.EMAIL_FIELD).toString(),
                     login = get(LOGIN_FIELD).toString(),
                     roles = get(User.Members.ROLES_MEMBER)
                         .toString()
@@ -401,8 +401,8 @@ class Tests {
                         .map { Role(it) }
                         .toSet(),
                     password = get(PASSWORD_FIELD).toString(),
-                    langKey = get(User.Fields.LANG_KEY_FIELD).toString(),
-                    version = get(User.Fields.VERSION_FIELD).toString().toLong(),
+                    langKey = get(User.Relations.Fields.LANG_KEY_FIELD).toString(),
+                    version = get(User.Relations.Fields.VERSION_FIELD).toString().toLong(),
                 )
                 val userResult = context
                     .findOne<User>(user.login)
@@ -448,7 +448,7 @@ class Tests {
                 assertEquals(userId, id)
             }.run { "context.findOneWithAuths<User>(${user.email}).getOrNull() : $this" }
             .run(::i)
-        context.findOneDraft<User>(user.email).getOrNull()
+        context.findOne<User>(userId).getOrNull()
             .run { "context.findOneDraft<User>(user.email).getOrNull() : $this" }
             .run(::i)
         context.findAuthsByEmail(user.email).getOrNull()
@@ -461,11 +461,11 @@ class Tests {
         assertEquals(0, context.countUsers())
         (user to context).save()
         assertEquals(1, context.countUsers())
-        val findOneEmailResult: Either<Throwable, User> = context.findOneDraft<User>(user.email)
-        findOneEmailResult.map { assertDoesNotThrow { fromString(it.toString()) } }
+        val findOneEmailResult: Either<Throwable, User> = context.findOne<User>(user.email)
+        findOneEmailResult.map { assertDoesNotThrow { fromString(it.id.toString()) } }
         i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
-        context.findOneDraft<User>(user.login)
-            .map { assertDoesNotThrow { fromString(it.toString()) } }
+        context.findOne<User>(user.login)
+            .map { assertDoesNotThrow { fromString(it.id.toString()) } }
     }
 
     @Test
@@ -698,14 +698,14 @@ class Tests {
             context.countUsers(),
             "context should not have a user recorded in database"
         )
-        context.findOneByEmail<User>("user@dummy.com").apply {
+        context.findOne<User>("user@dummy.com").apply {
             assertFalse(isRight())
             assertTrue(isLeft())
-        }.mapLeft { assertTrue(it is EmptyResultDataAccessException) }
+        }.mapLeft { assertThat(it).isInstanceOf(Throwable::class.java) }
     }
 
     @Test
-    fun `check findOneByEmail with existing email`(): Unit = runBlocking {
+    fun `check findOne with existing email`(): Unit = runBlocking {
         assertEquals(
             0,
             context.countUsers(),
@@ -718,20 +718,20 @@ class Tests {
             "context should have only one user recorded in database"
         )
 
-        context.findOneByEmail<User>(user.email).apply {
+        context.findOne<User>(user.email).apply {
             assertTrue(isRight())
             assertFalse(isLeft())
-        }.map { assertDoesNotThrow { fromString(it.toString()) } }
+        }.map { assertDoesNotThrow { fromString(it.id.toString()) } }
     }
 
     @Test
     fun `test findOne with not existing email or login`(): Unit = runBlocking {
         assertEquals(0, context.countUsers())
-        context.findOneDraft<User>(user.email).apply {
+        context.findOne<User>(user.email).apply {
             assertFalse(isRight())
             assertTrue(isLeft())
         }
-        context.findOneDraft<User>(user.login).apply {
+        context.findOne<User>(user.login).apply {
             assertFalse(isRight())
             assertTrue(isLeft())
         }
@@ -932,7 +932,7 @@ class Tests {
                     mapOf(
                         LOGIN_FIELD to login,
                         PASSWORD_FIELD to password,
-                        User.Fields.EMAIL_FIELD to email,
+                        User.Relations.Fields.EMAIL_FIELD to email,
                         //FIRST_NAME_FIELD to firstName,
                         //LAST_NAME_FIELD to lastName,
                     ).map { (key, value) ->
@@ -953,7 +953,7 @@ class Tests {
         assertEquals(0, countUserAuthBefore)
         client
             .post()
-            .uri("/api/app.users/foobar")
+            .uri("$API_SIGNUP_PATH/foobar")
             .contentType(APPLICATION_JSON)
             .bodyValue(signup)
             .exchange()
@@ -965,14 +965,14 @@ class Tests {
             .logBody()
         assertEquals(countUserBefore, context.countUsers())
         assertEquals(countUserAuthBefore, context.countUserAuthority())
-        context.findOneByEmail<User>(user.email).run {
+        context.findOne<User>(user.email).run {
             when (this) {
                 is Left -> assertEquals(
-                    EmptyResultDataAccessException::class.java,
+                    Exception::class.java,
                     value::class.java
                 )
 
-                is Right -> assertEquals(user.id, value)
+                is Right -> assertEquals(user.id, value.id)
             }
         }
     }
@@ -2391,96 +2391,9 @@ class Tests {
 ////    .expectStatus().isOk
     }
 
-        @Test
-        @WithMockUser("change-password")
-    fun `test Request Password Reset Wrong Email`() :Unit =runBlocking {
-            val testLogin = "change-password"
-            val testPassword = "change-password"
-
-            user.id.run(::assertNull)
-
-            context.tripleCounts().run {
-                val uuid: UUID = (user.copy(
-                    login = testLogin,
-                    password = testPassword
-                ) to context).signup()
-                    .getOrNull()!!.first
-                    .apply { "user.id from signupDao: ${toString()}".apply(::i) }
-
-                assertEquals(first + 1, context.countUsers())
-                assertEquals(second + 1, context.countUserActivation())
-                assertEquals(third + 1, context.countUserAuthority())
-
-                FIND_ALL_USERS
-                    .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                    .fetch().awaitSingle().run {
-                        (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
-                    }.run {
-                        "user.id retrieved before update password: $first".apply(::i)
-                        assertEquals(uuid, first, "user.id should be the same")
-                        assertNotEquals(testPassword, second, "password should be encoded and not the same")
-                        assertTrue(
-                            context.getBean<PasswordEncoder>().matches(testPassword, second),
-                            message = "password should not be different"
-                        )
-
-                        "*updatedPassword123".run updatedPassword@{
-                            assertEquals(testLogin, getCurrentUserLogin())
-                            assertTrue(
-                                context.getBean<PasswordEncoder>().matches(
-                                    testPassword, FIND_ALL_USERS
-                                        .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                                        .fetch()
-                                        .awaitSingle()[PASSWORD_FIELD]
-                                        .toString()
-                                        .also { i("password retrieved after user update: $it") }
-                                ).apply { "passwords matches : ${toString()}".run(::i) },
-                                message = "password should be updated"
-                            )
-
-                            client
-                                .post()
-                                .uri(API_CHANGE_PASSWORD_PATH)
-                                .contentType(APPLICATION_PROBLEM_JSON)
-                                .bodyValue(PasswordChange(testPassword, this))
-                                .exchange()
-                                .expectStatus()
-                                .isOk
-                                .returnResult<ProblemDetail>()
-                                .responseBodyContent!!
-                                .isEmpty()
-                                .run(::assertTrue)
-
-                            context.findOne<User>(testLogin).getOrNull()!!.run {
-                                assertThat(
-                                    context.getBean<PasswordEncoder>().matches(
-                                        this@updatedPassword,
-                                        password
-                                    )
-                                ).isTrue
-                                assertThat(
-                                    context.getBean<PasswordEncoder>().matches(
-                                        testPassword,
-                                        password
-                                    )
-                                ).isFalse
-                            }
-                        }
-                    }
-            }
-
-////        accountWebTestClient.post().uri("/api/account/reset-password/init")
-////            .bodyValue("password-reset-wrong-email@example.com")
-////            .exchange()
-////            .expectStatus().isOk
-    }
-
     @Test
-//    @Throws(Exception::class)
     @WithMockUser("change-password")
-    fun `test Finish Password Reset`() :Unit =runBlocking {
+    fun `test Request Password Reset Wrong Email`(): Unit = runBlocking {
         val testLogin = "change-password"
         val testPassword = "change-password"
 
@@ -2506,7 +2419,102 @@ class Tests {
                 }.run {
                     "user.id retrieved before update password: $first".apply(::i)
                     assertEquals(uuid, first, "user.id should be the same")
-                    assertNotEquals(testPassword, second, "password should be encoded and not the same")
+                    assertNotEquals(
+                        testPassword,
+                        second,
+                        "password should be encoded and not the same"
+                    )
+                    assertTrue(
+                        context.getBean<PasswordEncoder>().matches(testPassword, second),
+                        message = "password should not be different"
+                    )
+
+                    "*updatedPassword123".run updatedPassword@{
+                        assertEquals(testLogin, getCurrentUserLogin())
+                        assertTrue(
+                            context.getBean<PasswordEncoder>().matches(
+                                testPassword, FIND_ALL_USERS
+                                    .trimIndent()
+                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .fetch()
+                                    .awaitSingle()[PASSWORD_FIELD]
+                                    .toString()
+                                    .also { i("password retrieved after user update: $it") }
+                            ).apply { "passwords matches : ${toString()}".run(::i) },
+                            message = "password should be updated"
+                        )
+
+                        client
+                            .post()
+                            .uri(API_CHANGE_PASSWORD_PATH)
+                            .contentType(APPLICATION_PROBLEM_JSON)
+                            .bodyValue(PasswordChange(testPassword, this))
+                            .exchange()
+                            .expectStatus()
+                            .isOk
+                            .returnResult<ProblemDetail>()
+                            .responseBodyContent!!
+                            .isEmpty()
+                            .run(::assertTrue)
+
+                        context.findOne<User>(testLogin).getOrNull()!!.run {
+                            assertThat(
+                                context.getBean<PasswordEncoder>().matches(
+                                    this@updatedPassword,
+                                    password
+                                )
+                            ).isTrue
+                            assertThat(
+                                context.getBean<PasswordEncoder>().matches(
+                                    testPassword,
+                                    password
+                                )
+                            ).isFalse
+                        }
+                    }
+                }
+        }
+
+////        accountWebTestClient.post().uri("/api/account/reset-password/init")
+////            .bodyValue("password-reset-wrong-email@example.com")
+////            .exchange()
+////            .expectStatus().isOk
+    }
+
+    @Test
+//    @Throws(Exception::class)
+    @WithMockUser("change-password")
+    fun `test Finish Password Reset`(): Unit = runBlocking {
+        val testLogin = "change-password"
+        val testPassword = "change-password"
+
+        user.id.run(::assertNull)
+
+        context.tripleCounts().run {
+            val uuid: UUID = (user.copy(
+                login = testLogin,
+                password = testPassword
+            ) to context).signup()
+                .getOrNull()!!.first
+                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+
+            assertEquals(first + 1, context.countUsers())
+            assertEquals(second + 1, context.countUserActivation())
+            assertEquals(third + 1, context.countUserAuthority())
+
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .fetch().awaitSingle().run {
+                    (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
+                }.run {
+                    "user.id retrieved before update password: $first".apply(::i)
+                    assertEquals(uuid, first, "user.id should be the same")
+                    assertNotEquals(
+                        testPassword,
+                        second,
+                        "password should be encoded and not the same"
+                    )
                     assertTrue(
                         context.getBean<PasswordEncoder>().matches(testPassword, second),
                         message = "password should not be different"

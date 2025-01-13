@@ -38,7 +38,7 @@ data class UserRole(
         "$USER_ID_FIELD"      UUID,
         "$ROLE_FIELD"       VARCHAR,
         FOREIGN KEY ("$USER_ID_FIELD") 
-        REFERENCES "${User.Relations.TABLE_NAME}" (${User.Fields.ID_FIELD})
+        REFERENCES "${User.Relations.TABLE_NAME}" (${User.Relations.Fields.ID_FIELD})
         ON DELETE CASCADE ON UPDATE CASCADE,
         FOREIGN KEY ("$ROLE_FIELD") 
         REFERENCES ${Role.Relations.TABLE_NAME} ("${Role.Fields.ID_FIELD}")

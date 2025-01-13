@@ -12,12 +12,12 @@ import app.users.User.Attributes.LANG_KEY_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
 import app.users.User.Attributes.VERSION_ATTR
-import app.users.User.Fields.EMAIL_FIELD
-import app.users.User.Fields.ID_FIELD
-import app.users.User.Fields.LANG_KEY_FIELD
-import app.users.User.Fields.LOGIN_FIELD
-import app.users.User.Fields.PASSWORD_FIELD
-import app.users.User.Fields.VERSION_FIELD
+import app.users.User.Relations.Fields.EMAIL_FIELD
+import app.users.User.Relations.Fields.ID_FIELD
+import app.users.User.Relations.Fields.LANG_KEY_FIELD
+import app.users.User.Relations.Fields.LOGIN_FIELD
+import app.users.User.Relations.Fields.PASSWORD_FIELD
+import app.users.User.Relations.Fields.VERSION_FIELD
 import app.users.User.Members.ROLES_MEMBER
 import app.users.User.Relations.CREATE_TABLES
 import app.users.security.Role
@@ -90,15 +90,6 @@ data class User(
         const val ROLES_MEMBER = "roles"
     }
 
-    object Fields {
-        const val ID_FIELD = "id"
-        const val LOGIN_FIELD = "login"
-        const val PASSWORD_FIELD = "password"
-        const val EMAIL_FIELD = "email"
-        const val LANG_KEY_FIELD = "lang_key"
-        const val VERSION_FIELD = "version"
-    }
-
     object Attributes {
         const val ID_ATTR = "id"
         const val LOGIN_ATTR = "login"
@@ -123,6 +114,14 @@ data class User(
             ).run(String::trimMargin)
 
         const val TABLE_NAME = "user"
+        object Fields {
+            const val ID_FIELD = "id"
+            const val LOGIN_FIELD = "login"
+            const val PASSWORD_FIELD = "password"
+            const val EMAIL_FIELD = "email"
+            const val LANG_KEY_FIELD = "lang_key"
+            const val VERSION_FIELD = "version"
+        }
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
         "$ID_FIELD"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -155,15 +154,6 @@ data class User(
                     "$VERSION_FIELD" = :$VERSION_ATTR
                 WHERE "$ID_FIELD" = :$ID_ATTR;"""
 
-        const val FIND_USER_BY_LOGIN_OR_EMAIL = """
-                SELECT u."$LOGIN_FIELD" 
-                FROM "$TABLE_NAME" AS u 
-                WHERE LOWER(u."$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR) OR 
-                LOWER(u."$LOGIN_FIELD") = LOWER(:$LOGIN_ATTR);
-                """
-
-        const val FIND_USER_BY_ID = """SELECT * FROM "$TABLE_NAME" AS u WHERE u.$ID_FIELD = :id;"""
-
         const val LOGIN_AND_EMAIL_AVAILABLE_COLUMN = "login_and_email_available"
         const val EMAIL_AVAILABLE_COLUMN = "email_available"
         const val LOGIN_AVAILABLE_COLUMN = "login_available"
@@ -190,7 +180,6 @@ data class User(
                             WHERE LOWER("$LOGIN_FIELD") = LOWER(:$LOGIN_ATTR)
                         ) AS login_available;
         """
-        const val DELETE_USER_BY_ID = """DELETE FROM "$TABLE_NAME" AS u WHERE u."$ID_FIELD" = :$ID_ATTR;"""
         const val FIND_USER_WITH_AUTHS_BY_EMAILOGIN = """
                             SELECT 
                                 u."$ID_FIELD",
@@ -210,30 +199,7 @@ data class User(
                                 OR 
                                 lower(u."$LOGIN_FIELD") = lower(:$EMAIL_OR_LOGIN)
                             GROUP BY 
-                                u."$ID_FIELD", u."$EMAIL_FIELD", u."$LOGIN_FIELD";
+                                u."$ID_FIELD", u."$LOGIN_FIELD",u."$EMAIL_FIELD";
                         """
-        const val FIND_USER_WITH_AUTHS_BY_ID = """
-                            SELECT 
-                                u."$ID_FIELD",
-                                u."$EMAIL_FIELD",
-                                u."$LOGIN_FIELD",
-                                u."$PASSWORD_FIELD",
-                                u.$LANG_KEY_FIELD,
-                                u.$VERSION_FIELD,
-                                STRING_AGG(DISTINCT a."${Role.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
-                            FROM "$TABLE_NAME" as u
-                            LEFT JOIN 
-                                user_authority ua ON u."$ID_FIELD" = ua."$USER_ID_FIELD"
-                            LEFT JOIN 
-                                authority as a ON UPPER(ua."$ROLE_FIELD") = UPPER(a."${Role.Attributes.ID_ATTR}")
-                            WHERE 
-                                lower(u."$EMAIL_FIELD") = lower(:$EMAIL_OR_LOGIN) 
-                                OR 
-                                lower(u."$LOGIN_FIELD") = lower(:$EMAIL_OR_LOGIN)
-                            GROUP BY 
-                                u."$ID_FIELD", u."$EMAIL_FIELD", u."$LOGIN_FIELD";
-                        """
-
-
     }
 }

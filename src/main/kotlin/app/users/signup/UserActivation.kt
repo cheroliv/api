@@ -49,7 +49,7 @@ data class UserActivation(
 
     object Fields {
         //SQL
-        const val ID_FIELD = User.Fields.ID_FIELD
+        const val ID_FIELD = User.Relations.Fields.ID_FIELD
         const val ACTIVATION_KEY_FIELD = "activation_key"
         const val ACTIVATION_DATE_FIELD = "activation_date"
         const val CREATED_DATE_FIELD = "created_date"

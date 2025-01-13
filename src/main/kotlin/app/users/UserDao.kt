@@ -4,22 +4,22 @@ package app.users
 
 import app.core.Constants.ROLE_USER
 import app.core.database.EntityModel
-import app.users.User.Attributes.EMAIL_OR_LOGIN
 import app.users.User.Attributes.EMAIL_ATTR
+import app.users.User.Attributes.EMAIL_OR_LOGIN
 import app.users.User.Attributes.ID_ATTR
 import app.users.User.Attributes.LANG_KEY_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
 import app.users.User.Attributes.VERSION_ATTR
-import app.users.User.Fields.EMAIL_FIELD
-import app.users.User.Fields.ID_FIELD
-import app.users.User.Fields.LANG_KEY_FIELD
-import app.users.User.Fields.LOGIN_FIELD
-import app.users.User.Fields.PASSWORD_FIELD
-import app.users.User.Fields.VERSION_FIELD
 import app.users.User.Members.ROLES_MEMBER
 import app.users.User.Relations.EMAIL_AVAILABLE_COLUMN
 import app.users.User.Relations.FIND_USER_WITH_AUTHS_BY_EMAILOGIN
+import app.users.User.Relations.Fields.EMAIL_FIELD
+import app.users.User.Relations.Fields.ID_FIELD
+import app.users.User.Relations.Fields.LANG_KEY_FIELD
+import app.users.User.Relations.Fields.LOGIN_FIELD
+import app.users.User.Relations.Fields.PASSWORD_FIELD
+import app.users.User.Relations.Fields.VERSION_FIELD
 import app.users.User.Relations.INSERT
 import app.users.User.Relations.LOGIN_AND_EMAIL_AVAILABLE_COLUMN
 import app.users.User.Relations.LOGIN_AVAILABLE_COLUMN
@@ -94,45 +94,6 @@ object UserDao {
         e.left()
     }
 
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
-        id: UUID
-    ): Either<Throwable, User> = when (T::class) {
-        User::class -> {
-            try {
-                FIND_USER_WITH_AUTHS_BY_EMAILOGIN
-                    .trimIndent()
-                    .run(getBean<DatabaseClient>()::sql)
-                    .bind(ID_ATTR, id)
-                    .fetch()
-                    .awaitSingleOrNull()
-                    .run {
-                        when {
-                            this == null -> Exception("Not been able to retrieve account.").left()
-                            else -> User(
-                                id = fromString(get(ID_FIELD).toString()),
-                                email = get(EMAIL_FIELD).toString(),
-                                login = get(LOGIN_FIELD).toString(),
-                                roles = get(ROLES_MEMBER)
-                                    .toString()
-                                    .split(",")
-                                    .map { Role(it) }
-                                    .toSet(),
-                                password = get(PASSWORD_FIELD).toString(),
-                                langKey = get(LANG_KEY_FIELD).toString(),
-                                version = get(VERSION_FIELD).toString().toLong(),
-                            ).right()
-                        }
-                    }
-            } catch (e: Throwable) {
-                e.left()
-            }
-        }
-
-        else -> (T::class.simpleName)
-            .run { "Unsupported type: $this" }
-            .run(::IllegalArgumentException)
-            .left()
-    }
 
     suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
         emailOrLogin: String
@@ -261,10 +222,10 @@ object UserDao {
         when {
             validateProperty(
                 User(email = emailOrLogin),
-                User.Fields.EMAIL_FIELD
+                User.Relations.Fields.EMAIL_FIELD
             ).isNotEmpty() && validateProperty(
                 User(login = emailOrLogin),
-                User.Fields.LOGIN_FIELD
+                User.Relations.Fields.LOGIN_FIELD
             ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
 
             else -> mono {

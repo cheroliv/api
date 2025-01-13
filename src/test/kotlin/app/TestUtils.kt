@@ -23,20 +23,18 @@ import app.users.User
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.ID_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
-import app.users.User.Fields
-import app.users.User.Fields.EMAIL_FIELD
-import app.users.User.Fields.LANG_KEY_FIELD
-import app.users.User.Fields.LOGIN_FIELD
-import app.users.User.Fields.PASSWORD_FIELD
-import app.users.User.Fields.VERSION_FIELD
-import app.users.User.Relations.DELETE_USER_BY_ID
-import app.users.User.Relations.FIND_USER_BY_ID
-import app.users.User.Relations.FIND_USER_BY_LOGIN_OR_EMAIL
+import app.users.User.Members.ROLES_MEMBER
+import app.users.User.Relations.Fields.EMAIL_FIELD
+import app.users.User.Relations.Fields.LANG_KEY_FIELD
+import app.users.User.Relations.Fields.LOGIN_FIELD
+import app.users.User.Relations.Fields.PASSWORD_FIELD
+import app.users.User.Relations.Fields.VERSION_FIELD
 import app.users.User.Relations.TABLE_NAME
-import app.users.UserDao.isEmail
-import app.users.UserDao.isLogin
 import app.users.security.Role
+import app.users.security.UserRole
 import app.users.security.UserRole.Attributes.USER_ID_ATTR
+import app.users.security.UserRole.Fields.ROLE_FIELD
+import app.users.security.UserRole.Fields.USER_ID_FIELD
 import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
@@ -45,7 +43,6 @@ import app.users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Fields.ID_FIELD
-import app.users.signup.UserActivation.Relations
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -73,7 +70,6 @@ import org.springframework.security.test.context.support.WithSecurityContext
 import org.springframework.security.test.context.support.WithSecurityContextFactory
 import java.io.IOException
 import java.lang.Byte
-import java.lang.Long.getLong
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneOffset.UTC
@@ -112,7 +108,6 @@ import kotlin.reflect.full.createInstance
 import kotlin.repeat
 import kotlin.run
 import kotlin.test.assertEquals
-import kotlin.to
 import kotlin.toString
 
 
@@ -131,6 +126,7 @@ object TestUtils {
         }
     }
 
+    //TODO: test if the activation key size is valid
     fun Pair<String, ApplicationContext>.isActivationKeySizeValid()
             : Set<ConstraintViolation<UserActivation>> = second
         .getBean<Validator>()
@@ -139,7 +135,7 @@ object TestUtils {
     const val DELETE_USER = """DELETE FROM "$TABLE_NAME";"""
     const val COUNT = """SELECT COUNT(*) FROM "$TABLE_NAME";"""
     const val FIND_USER_BY_EMAIL = """
-            SELECT u."${Fields.ID_FIELD}" 
+            SELECT u."${User.Relations.Fields.ID_FIELD}" 
             FROM "$TABLE_NAME" as u 
             WHERE LOWER(u."$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)"""
 
@@ -153,14 +149,14 @@ object TestUtils {
         .toString()
         .toInt()
 
-    const val COUNT_USER_ACTIVATION = """SELECT COUNT(*) FROM "${Relations.TABLE_NAME}";"""
+    const val COUNT_USER_ACTIVATION = """SELECT COUNT(*) FROM "${UserActivation.Relations.TABLE_NAME}";"""
 
     const val FIND_BY_ACTIVATION_KEY = """
-        SELECT * FROM "${Relations.TABLE_NAME}" as ua
+        SELECT * FROM "${UserActivation.Relations.TABLE_NAME}" as ua
         WHERE ua."$ACTIVATION_KEY_FIELD" = :$ACTIVATION_KEY_ATTR;
         """
 
-    const val FIND_ALL_USERACTIVATION = """SELECT * FROM "${Relations.TABLE_NAME}";"""
+    const val FIND_ALL_USERACTIVATION = """SELECT * FROM "${UserActivation.Relations.TABLE_NAME}";"""
 
     suspend fun ApplicationContext.deleteAllUserAuthorities(): Unit = DELETE_USER_AUTHORITIES
         .trimIndent()
@@ -197,6 +193,7 @@ object TestUtils {
                     |where "user_id" = (
                     |select u."id" from "user" as u where u."login" = :login
                     |);"""
+    const val DELETE_USER_BY_ID = """DELETE FROM "$TABLE_NAME" AS u WHERE u."${User.Relations.Fields.ID_FIELD}" = :$ID_ATTR;"""
 
     suspend fun ApplicationContext.countUserAuthority(): Int = COUNT_USER_AUTH
         .trimIndent()
@@ -219,31 +216,59 @@ object TestUtils {
         .bind(LOGIN_ATTR, login)
         .await()
 
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneDraft(
-        id: UUID
-    ): Either<Throwable, User> = when (T::class) {
-        User::class -> try {
-            FIND_USER_BY_ID
-                .trimIndent()
-                .run(getBean<DatabaseClient>()::sql)
-                .bind(EMAIL_ATTR, id)
-                .bind(LOGIN_ATTR, id)
-                .fetch()
-                .awaitSingleOrNull()
-                .let {
-                    User(
-                        id = it?.get(Fields.ID_FIELD)
-                            .toString()
-                            .run(UUID::fromString),
-                        email = it?.get(EMAIL_FIELD).toString(),
-                        login = it?.get(LOGIN_FIELD).toString(),
-                        password = it?.get(PASSWORD_FIELD).toString(),
-                        langKey = it?.get(LANG_KEY_FIELD).toString(),
-                        version = getLong(it?.get(VERSION_FIELD).toString()),
-                    )
-                }.right()
-        } catch (e: Throwable) {
-            e.left()
+    @Suppress("RemoveRedundantQualifierName")
+    const val FIND_USER_WITH_AUTHS_BY_ID = """
+                            SELECT
+                                u."${User.Relations.Fields.ID_FIELD}",
+                                u."$EMAIL_FIELD",
+                                u."$LOGIN_FIELD",
+                                u."$PASSWORD_FIELD",
+                                u.$LANG_KEY_FIELD,
+                                u.$VERSION_FIELD,
+                                STRING_AGG(DISTINCT a."${Role.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
+                            FROM "${User.Relations.TABLE_NAME}" as u
+                            LEFT JOIN 
+                                user_authority ua ON u."${UserRole.Fields.ID_FIELD}" = ua."$USER_ID_FIELD"
+                            LEFT JOIN 
+                                authority as a ON UPPER(ua."$ROLE_FIELD") = UPPER(a."${Role.Attributes.ID_ATTR}")
+                            WHERE 
+                                u."${User.Relations.Fields.ID_FIELD}" = :$ID_ATTR
+                            GROUP BY 
+                                u."${User.Relations.Fields.ID_FIELD}", u."$LOGIN_FIELD",u."$EMAIL_FIELD";
+                        """
+
+
+    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(id: UUID)
+            : Either<Throwable, User> = when (T::class) {
+        User::class -> {
+            try {
+                FIND_USER_WITH_AUTHS_BY_ID
+                    .trimIndent()
+                    .run(getBean<DatabaseClient>()::sql)
+                    .bind(ID_ATTR, id)
+                    .fetch()
+                    .awaitSingleOrNull()
+                    .run {
+                        when {
+                            this == null -> Exception("Not been able to retrieve account.").left()
+                            else -> User(
+                                id = fromString(get(User.Relations.Fields.ID_FIELD).toString()),
+                                email = get(EMAIL_FIELD).toString(),
+                                login = get(LOGIN_FIELD).toString(),
+                                roles = get(ROLES_MEMBER)
+                                    .toString()
+                                    .split(",")
+                                    .map { Role(it) }
+                                    .toSet(),
+                                password = get(PASSWORD_FIELD).toString(),
+                                langKey = get(LANG_KEY_FIELD).toString(),
+                                version = get(VERSION_FIELD).toString().toLong(),
+                            ).right()
+                        }
+                    }
+            } catch (e: Throwable) {
+                e.left()
+            }
         }
 
         else -> (T::class.simpleName)
@@ -252,28 +277,8 @@ object TestUtils {
             .left()
     }
 
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneByEmail(email: String): Either<Throwable, UUID> =
-        when (T::class) {
-            User::class -> {
-                try {
-                    FIND_USER_BY_EMAIL
-                        .trimIndent()
-                        .run(getBean<DatabaseClient>()::sql)
-                        .bind(EMAIL_ATTR, email)
-                        .fetch()
-                        .awaitOne()
-                        .let { fromString(it[ID_ATTR].toString()) }
-                        .right()
-                } catch (e: Throwable) {
-                    e.left()
-                }
-            }
-
-            else -> IllegalArgumentException("Unsupported type: ${T::class.simpleName}").left()
-        }
-
     const val FIND_USER_BY_LOGIN = """
-                SELECT u."${Fields.ID_FIELD}" 
+                SELECT u."${User.Relations.Fields.ID_FIELD}" 
                 FROM "$TABLE_NAME" AS u 
                 WHERE u."$LOGIN_FIELD" = LOWER(:$LOGIN_ATTR);
                 """
@@ -299,58 +304,7 @@ object TestUtils {
         .toString()
         .toInt()
 
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneByLogin(login: String): Either<Throwable, UUID> =
-        when (T::class) {
-            User::class -> {
-                try {
-                    FIND_USER_BY_LOGIN
-                        .trimIndent()
-                        .run(getBean<DatabaseClient>()::sql)
-                        .bind(LOGIN_ATTR, login)
-                        .fetch()
-                        .awaitOne()
-                        .let { fromString(it[Fields.ID_FIELD].toString()) }.right()
-                } catch (e: Throwable) {
-                    e.left()
-                }
-            }
 
-            else -> IllegalArgumentException("Unsupported type: ${T::class.simpleName}").left()
-        }
-
-    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOneDraft(
-        emailOrLogin: String
-    ): Either<Throwable, User> = when (T::class) {
-        User::class -> try {
-            FIND_USER_BY_LOGIN_OR_EMAIL
-                .trimIndent()
-                .run(getBean<DatabaseClient>()::sql)
-                .bind(EMAIL_ATTR, emailOrLogin)
-                .bind(LOGIN_ATTR, emailOrLogin)
-                .fetch()
-                .awaitSingle()
-                .let {
-                    User(
-                        id = fromString(it[Fields.ID_FIELD].toString()),
-                        email = if ((emailOrLogin to this).isEmail()) emailOrLogin
-                        else it[EMAIL_FIELD].toString(),
-                        login = if ((emailOrLogin to this).isLogin()) emailOrLogin
-                        else it[LOGIN_FIELD].toString(),
-                        password = it[PASSWORD_FIELD].toString(),
-                        langKey = it[LANG_KEY_FIELD].toString(),
-                        version = it[VERSION_FIELD].toString()
-                            .run(_root_ide_package_.java.lang.Long::getLong),
-                    )
-                }.right()
-        } catch (e: Throwable) {
-            e.left()
-        }
-
-        else -> (T::class.simpleName)
-            .run { "Unsupported type: $this" }
-            .run(::IllegalArgumentException)
-            .left()
-    }
 
     object Data {
         val writers = listOf(

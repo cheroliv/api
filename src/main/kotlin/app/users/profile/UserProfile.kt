@@ -4,7 +4,7 @@ import app.core.Constants
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import app.users.User
-import app.users.User.Fields.ID_FIELD
+import app.users.User.Relations.Fields.ID_FIELD
 import app.users.profile.UserProfile.Fields.FIRST_NAME_FIELD
 import app.users.profile.UserProfile.Fields.IMAGE_URL_FIELD
 import app.users.profile.UserProfile.Fields.LAST_NAME_FIELD

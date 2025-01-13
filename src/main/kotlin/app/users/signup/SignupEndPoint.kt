@@ -9,8 +9,8 @@ import app.core.web.HttpUtils.validator
 import app.core.web.ProblemsModel
 import app.users.User
 import app.users.User.EndPoint.API_USERS
-import app.users.User.Fields.EMAIL_FIELD
-import app.users.User.Fields.LOGIN_FIELD
+import app.users.User.Relations.Fields.EMAIL_FIELD
+import app.users.User.Relations.Fields.LOGIN_FIELD
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatus
