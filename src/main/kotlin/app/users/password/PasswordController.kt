@@ -4,9 +4,7 @@ import app.users.User.EndPoint.API_USERS
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
 import app.users.password.PasswordEndPoint.API_RESET_PASSWORD_INIT
 import jakarta.validation.constraints.Email
-import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.ProblemDetail
-import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -21,15 +19,16 @@ class PasswordController(private val service: PasswordService) {
 
     @PostMapping(API_CHANGE_PASSWORD)
     suspend fun change(
-        @RequestBody passwordChange: PasswordChange,
+        @RequestBody
+        passwordChange: PasswordChange,
         exchange: ServerWebExchange
-    ) = service.change(passwordChange, exchange)
+    ): ResponseEntity<ProblemDetail> = service.change(passwordChange, exchange)
 
     @PostMapping(API_RESET_PASSWORD_INIT)
     suspend fun reset(
         @RequestBody @Email mail: String,
         exchange: ServerWebExchange
-    ) = service.reset(mail, exchange)
+    ): ResponseEntity<ProblemDetail> = service.reset(mail, exchange)
 
 //    /**
 //     * {@code POST   /account/reset-password/finish} : Finish to reset the password of the user.
