@@ -98,7 +98,11 @@ import kotlin.Triple
 import kotlin.Unit
 import kotlin.also
 import kotlin.annotation.AnnotationRetention.RUNTIME
-import kotlin.annotation.AnnotationTarget.*
+import kotlin.annotation.AnnotationTarget.ANNOTATION_CLASS
+import kotlin.annotation.AnnotationTarget.CLASS
+import kotlin.annotation.AnnotationTarget.FUNCTION
+import kotlin.annotation.AnnotationTarget.PROPERTY_GETTER
+import kotlin.annotation.AnnotationTarget.PROPERTY_SETTER
 import kotlin.apply
 import kotlin.getValue
 import kotlin.lazy
@@ -163,10 +167,11 @@ object TestUtils {
         .let(getBean<DatabaseClient>()::sql)
         .await()
 
-    suspend fun ApplicationContext.deleteAllUserAuthorityByUserId(id: UUID) = DELETE_USER_AUTHORITIES_BY_USER_ID
-        .let(getBean<DatabaseClient>()::sql)
-        .bind(USER_ID_ATTR, id)
-        .await()
+    suspend fun ApplicationContext.deleteAllUserAuthorityByUserId(id: UUID) =
+        DELETE_USER_AUTHORITIES_BY_USER_ID
+            .let(getBean<DatabaseClient>()::sql)
+            .bind(USER_ID_ATTR, id)
+            .await()
 
     suspend fun ApplicationContext.deleteUserByIdWithAuthorities_(id: UUID) =
         getBean<DatabaseClient>().run {
@@ -333,7 +338,8 @@ object TestUtils {
                         else it[LOGIN_FIELD].toString(),
                         password = it[PASSWORD_FIELD].toString(),
                         langKey = it[LANG_KEY_FIELD].toString(),
-                        version = it[VERSION_FIELD].toString().run(_root_ide_package_.java.lang.Long::getLong),
+                        version = it[VERSION_FIELD].toString()
+                            .run(_root_ide_package_.java.lang.Long::getLong),
                     )
                 }.right()
         } catch (e: Throwable) {
@@ -453,8 +459,8 @@ object TestUtils {
         value: String,
         injectedValue: String
     ) = property.apply {
-        assertEquals(value, let(environment::getProperty))
-        assertEquals(injectedValue, let(environment::getProperty))
+        assertThat(value).isEqualTo(let(environment::getProperty))
+        assertThat(injectedValue).isEqualTo(let(environment::getProperty))
     }
 
 //    suspend fun ApplicationContext.findAllUsers()
@@ -518,43 +524,45 @@ object TestUtils {
         e.left()
     }
 
-    suspend fun ApplicationContext.findAuthsByEmail(email: String): Either<Throwable, Set<Role>> = try {
-        mutableSetOf<Role>().apply {
-            """
+    suspend fun ApplicationContext.findAuthsByEmail(email: String): Either<Throwable, Set<Role>> =
+        try {
+            mutableSetOf<Role>().apply {
+                """
             SELECT ua."role" 
             FROM "user" u 
             JOIN user_authority ua 
             ON u.id = ua.user_id 
             WHERE u."email" = :$EMAIL_ATTR;"""
-                .trimIndent()
-                .run(getBean<DatabaseClient>()::sql)
-                .bind(EMAIL_ATTR, email)
-                .fetch()
-                .all()
-                .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
-        }.toSet().right()
-    } catch (e: Throwable) {
-        e.left()
-    }
+                    .trimIndent()
+                    .run(getBean<DatabaseClient>()::sql)
+                    .bind(EMAIL_ATTR, email)
+                    .fetch()
+                    .all()
+                    .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
+            }.toSet().right()
+        } catch (e: Throwable) {
+            e.left()
+        }
 
-    suspend fun ApplicationContext.findAuthsByLogin(login: String): Either<Throwable, Set<Role>> = try {
-        mutableSetOf<Role>().apply {
-            """
+    suspend fun ApplicationContext.findAuthsByLogin(login: String): Either<Throwable, Set<Role>> =
+        try {
+            mutableSetOf<Role>().apply {
+                """
             SELECT ua."role" 
             FROM "user" u 
             JOIN user_authority ua 
             ON u.id = ua.user_id 
             WHERE u."login" = :$LOGIN_ATTR;"""
-                .trimIndent()
-                .run(getBean<DatabaseClient>()::sql)
-                .bind(LOGIN_ATTR, login)
-                .fetch()
-                .all()
-                .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
-        }.toSet().right()
-    } catch (e: Throwable) {
-        e.left()
-    }
+                    .trimIndent()
+                    .run(getBean<DatabaseClient>()::sql)
+                    .bind(LOGIN_ATTR, login)
+                    .fetch()
+                    .all()
+                    .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
+            }.toSet().right()
+        } catch (e: Throwable) {
+            e.left()
+        }
 
     suspend fun ApplicationContext.findUserById(id: UUID): Either<Throwable, User> = try {
         User().withId(id).copy(password = EMPTY_STRING).run user@{
@@ -675,7 +683,8 @@ object TestUtils {
      * @throws IOException
      */
     @Throws(IOException::class)
-    fun convertObjectToJsonBytes(`object`: Any): ByteArray = createObjectMapper().writeValueAsBytes(`object`)
+    fun convertObjectToJsonBytes(`object`: Any): ByteArray =
+        createObjectMapper().writeValueAsBytes(`object`)
 
     /**
      * Create a byte array with a specific size filled with specified data.
@@ -689,7 +698,8 @@ object TestUtils {
     /**
      * A matcher that tests that the examined string represents the same instant as the reference datetime.
      */
-    class ZonedDateTimeMatcher(private val date: ZonedDateTime) : TypeSafeDiagnosingMatcher<String>() {
+    class ZonedDateTimeMatcher(private val date: ZonedDateTime) :
+        TypeSafeDiagnosingMatcher<String>() {
 
         override fun matchesSafely(item: String, mismatchDescription: Description): Boolean {
             try {

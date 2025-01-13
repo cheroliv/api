@@ -2948,7 +2948,7 @@ class Tests {
         }
     }
 
-    private fun getJavaLocale(langKey: String): String {
+    fun getJavaLocale(langKey: String): String {
         var javaLangKey = langKey
         val matcher2 = PATTERN_LOCALE_2.matcher(langKey)
         if (matcher2.matches()) javaLangKey = "${
