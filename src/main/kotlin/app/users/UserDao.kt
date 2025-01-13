@@ -93,13 +93,11 @@ object UserDao {
             try {
                 when {
                     !((emailOrLogin to this).run {
-                        second
-                            .getBean<Validator>()
+                        second.getBean<Validator>()
                             .validateValue(User::class.java, EMAIL_ATTR, first)
                             .isEmpty()
                     } || (emailOrLogin to this).run {
-                        second
-                            .getBean<Validator>()
+                        second.getBean<Validator>()
                             .validateValue(User::class.java, LOGIN_ATTR, first)
                             .isEmpty()
                     }) -> "not a valid login or not a valid email"
