@@ -4,7 +4,7 @@ package app.users
 
 import app.core.Constants.ROLE_USER
 import app.core.database.EntityModel
-import app.users.User.Attributes.EMAILORLOGIN
+import app.users.User.Attributes.EMAIL_OR_LOGIN
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.ID_ATTR
 import app.users.User.Attributes.LANG_KEY_ATTR
@@ -95,6 +95,46 @@ object UserDao {
     }
 
     suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
+        id: UUID
+    ): Either<Throwable, User> = when (T::class) {
+        User::class -> {
+            try {
+                FIND_USER_WITH_AUTHS_BY_EMAILOGIN
+                    .trimIndent()
+                    .run(getBean<DatabaseClient>()::sql)
+                    .bind(ID_ATTR, id)
+                    .fetch()
+                    .awaitSingleOrNull()
+                    .run {
+                        when {
+                            this == null -> Exception("Not been able to retrieve account.").left()
+                            else -> User(
+                                id = fromString(get(ID_FIELD).toString()),
+                                email = get(EMAIL_FIELD).toString(),
+                                login = get(LOGIN_FIELD).toString(),
+                                roles = get(ROLES_MEMBER)
+                                    .toString()
+                                    .split(",")
+                                    .map { Role(it) }
+                                    .toSet(),
+                                password = get(PASSWORD_FIELD).toString(),
+                                langKey = get(LANG_KEY_FIELD).toString(),
+                                version = get(VERSION_FIELD).toString().toLong(),
+                            ).right()
+                        }
+                    }
+            } catch (e: Throwable) {
+                e.left()
+            }
+        }
+
+        else -> (T::class.simpleName)
+            .run { "Unsupported type: $this" }
+            .run(::IllegalArgumentException)
+            .left()
+    }
+
+    suspend inline fun <reified T : EntityModel<UUID>> ApplicationContext.findOne(
         emailOrLogin: String
     ): Either<Throwable, User> = when (T::class) {
         User::class -> {
@@ -107,7 +147,7 @@ object UserDao {
                     else -> FIND_USER_WITH_AUTHS_BY_EMAILOGIN
                         .trimIndent()
                         .run(getBean<DatabaseClient>()::sql)
-                        .bind(EMAILORLOGIN, emailOrLogin)
+                        .bind(EMAIL_OR_LOGIN, emailOrLogin)
                         .fetch()
                         .awaitSingleOrNull()
                         .run {
@@ -142,26 +182,29 @@ object UserDao {
 
 
     @Throws(EmptyResultDataAccessException::class)
-    suspend fun Pair<User, ApplicationContext>.signup(): Either<Throwable, Pair<UUID, String>> = try {
-        (first.copy(password = second.getBean<PasswordEncoder>().encode(first.password)) to second).save()
-        second.findOne<User>(first.email).mapLeft {
-            return Exception("Unable to find user by email").left()
-        }.map {
-            when {
-                it.id != null -> {
-                    (UserRole(userId = it.id, role = ROLE_USER) to second).signup()
-                    UserActivation(id = it.id).run {
-                        (this to second).save()
-                        return (it.id to activationKey).right()
+    suspend fun Pair<User, ApplicationContext>.signup(): Either<Throwable, Pair<UUID, String>> =
+        try {
+            (first.copy(
+                password = second.getBean<PasswordEncoder>().encode(first.password)
+            ) to second).save()
+            second.findOne<User>(first.email).mapLeft {
+                return Exception("Unable to find user by email").left()
+            }.map {
+                when {
+                    it.id != null -> {
+                        (UserRole(userId = it.id, role = ROLE_USER) to second).signup()
+                        UserActivation(id = it.id).run {
+                            (this to second).save()
+                            return (it.id to activationKey).right()
+                        }
                     }
-                }
 
-                else -> return Exception("Unable to find user by email").left()
+                    else -> return Exception("Unable to find user by email").left()
+                }
             }
+        } catch (e: Throwable) {
+            e.left()
         }
-    } catch (e: Throwable) {
-        e.left()
-    }
 
     fun ApplicationContext.user(signup: Signup): User = signup.apply {
         // Validation du mot de passe et de la confirmation

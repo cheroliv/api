@@ -5,6 +5,7 @@ import app.core.Loggers.i
 import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.core.web.HttpUtils.validator
 import app.users.User
+import app.users.UserDao
 import app.users.UserDao.change
 import app.users.UserDao.findOne
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
@@ -81,9 +82,8 @@ class PasswordService(val context: ApplicationContext) {
             }
         }
 
-    suspend fun completePasswordReset(newPassword: String, key: String): User? = null
-
-    //        accountRepository.findOneByResetKey(key).run {
+    suspend fun completePasswordReset(newPassword: String, key: String): User? {
+        //        accountRepository.findOneByResetKey(key).run {
 //            if (this != null && resetDate?.isAfter(Instant.now().minusSeconds(86400)) == true) {
 //                d("Reset account password for reset key $key")
 //                return@completePasswordReset toCredentialsModel
@@ -97,13 +97,13 @@ class PasswordService(val context: ApplicationContext) {
 //                d("$key is not a valid reset account password key")
 //                return@completePasswordReset null
 //            }
-//        }
-//
+        return null
+    }
+
     suspend fun requestPasswordReset(mail: String): User? = null
 
     fun sendPasswordResetMail(user: User) {
         i("Not yet implemented")
-    }
 //        return userRepository
 //            .findOneByEmail(mail)
 //            .apply {
@@ -113,7 +113,7 @@ class PasswordService(val context: ApplicationContext) {
 //                    saveUser(this)
 //                } else return null
 //            }
-//    }
+    }
 
 
     /*

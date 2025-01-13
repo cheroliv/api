@@ -5,7 +5,7 @@ package app.users
 import app.core.Constants.EMPTY_STRING
 import app.core.Loggers.i
 import app.core.database.EntityModel
-import app.users.User.Attributes.EMAILORLOGIN
+import app.users.User.Attributes.EMAIL_OR_LOGIN
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.ID_ATTR
 import app.users.User.Attributes.LANG_KEY_ATTR
@@ -106,7 +106,7 @@ data class User(
         const val EMAIL_ATTR = "email"
         const val LANG_KEY_ATTR = "langKey"
         const val VERSION_ATTR = "version"
-        const val EMAILORLOGIN = "emailOrLogin"
+        const val EMAIL_OR_LOGIN = "emailOrLogin"
     }
 
     object Relations {
@@ -193,7 +193,7 @@ data class User(
         const val DELETE_USER_BY_ID = """DELETE FROM "$TABLE_NAME" AS u WHERE u."$ID_FIELD" = :$ID_ATTR;"""
         const val FIND_USER_WITH_AUTHS_BY_EMAILOGIN = """
                             SELECT 
-                                u."id",
+                                u."$ID_FIELD",
                                 u."$EMAIL_FIELD",
                                 u."$LOGIN_FIELD",
                                 u."$PASSWORD_FIELD",
@@ -206,9 +206,30 @@ data class User(
                             LEFT JOIN 
                                 authority as a ON UPPER(ua."$ROLE_FIELD") = UPPER(a."${Role.Attributes.ID_ATTR}")
                             WHERE 
-                                lower(u."$EMAIL_FIELD") = lower(:$EMAILORLOGIN) 
+                                lower(u."$EMAIL_FIELD") = lower(:$EMAIL_OR_LOGIN) 
                                 OR 
-                                lower(u."$LOGIN_FIELD") = lower(:$EMAILORLOGIN)
+                                lower(u."$LOGIN_FIELD") = lower(:$EMAIL_OR_LOGIN)
+                            GROUP BY 
+                                u."$ID_FIELD", u."$EMAIL_FIELD", u."$LOGIN_FIELD";
+                        """
+        const val FIND_USER_WITH_AUTHS_BY_ID = """
+                            SELECT 
+                                u."$ID_FIELD",
+                                u."$EMAIL_FIELD",
+                                u."$LOGIN_FIELD",
+                                u."$PASSWORD_FIELD",
+                                u.$LANG_KEY_FIELD,
+                                u.$VERSION_FIELD,
+                                STRING_AGG(DISTINCT a."${Role.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
+                            FROM "$TABLE_NAME" as u
+                            LEFT JOIN 
+                                user_authority ua ON u."$ID_FIELD" = ua."$USER_ID_FIELD"
+                            LEFT JOIN 
+                                authority as a ON UPPER(ua."$ROLE_FIELD") = UPPER(a."${Role.Attributes.ID_ATTR}")
+                            WHERE 
+                                lower(u."$EMAIL_FIELD") = lower(:$EMAIL_OR_LOGIN) 
+                                OR 
+                                lower(u."$LOGIN_FIELD") = lower(:$EMAIL_OR_LOGIN)
                             GROUP BY 
                                 u."$ID_FIELD", u."$EMAIL_FIELD", u."$LOGIN_FIELD";
                         """
