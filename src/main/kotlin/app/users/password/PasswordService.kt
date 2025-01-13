@@ -13,9 +13,9 @@ import arrow.core.getOrElse
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
-import org.springframework.http.ResponseEntity.badRequest
-import org.springframework.http.ResponseEntity.ok
+import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ServerWebExchange
@@ -51,36 +51,43 @@ class PasswordService(val context: ApplicationContext) {
     suspend fun change(
         passwordChange: PasswordChange,
         exchange: ServerWebExchange
-    ) = exchange
+    ): ResponseEntity<ProblemDetail> = exchange
         .validator
         .validateProperty(
             passwordChange,
             NEW_PASSWORD_ATTR
         ).run {
             when {
-                isNotEmpty() -> badRequest().body(
+                isNotEmpty() -> ResponseEntity.of(
+                    forStatusAndDetail(BAD_REQUEST, iterator().next().message)
+                ).build()
+
+                else -> try {
+                    change(passwordChange.currentPassword, passwordChange.newPassword)
+                    ResponseEntity.ok()
+                } catch (t: Throwable) {
+                    ResponseEntity.of(forStatusAndDetail(BAD_REQUEST, t.message))
+                }.build()
+            }
+        }
+    suspend fun reset(mail: String, exchange: ServerWebExchange)
+            : ResponseEntity<ProblemDetail> = try {
+        with(requestPasswordReset(mail)) {
+            when {
+                this == null -> ResponseEntity.of(
                     forStatusAndDetail(
                         BAD_REQUEST,
-                        iterator().next().message
+                        "Password reset requested for non existing mail"
                     )
                 )
 
-                else -> try {
-                    change(
-                        passwordChange.currentPassword,
-                        passwordChange.newPassword
-                    )
-                    ok().build()
-                } catch (t: Throwable) {
-                    badRequest().body(
-                        forStatusAndDetail(
-                            BAD_REQUEST,
-                            t.message
-                        )
-                    )
-                }
+                else -> apply(::sendPasswordResetMail)
+                    .run { ResponseEntity.ok() }
             }
         }
+    } catch (t: Throwable) {
+        ResponseEntity.of(forStatusAndDetail(BAD_REQUEST, t.message))
+    }.build()
 
     suspend fun completePasswordReset(newPassword: String, key: String): User? {
         //        accountRepository.findOneByResetKey(key).run {
@@ -114,6 +121,7 @@ class PasswordService(val context: ApplicationContext) {
 //                } else return null
 //            }
     }
+
 
 
     /*

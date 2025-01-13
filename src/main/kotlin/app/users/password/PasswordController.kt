@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Email
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
-import org.springframework.http.ResponseEntity.*
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -26,23 +26,10 @@ class PasswordController(private val service: PasswordService) {
     ) = service.change(passwordChange, exchange)
 
     @PostMapping(API_RESET_PASSWORD_INIT)
-    suspend fun reset(@RequestBody @Email mail: String) = try {
-        with(service.requestPasswordReset(mail)) {
-            when {
-                this == null -> of(
-                    forStatusAndDetail(
-                        BAD_REQUEST,
-                        "Password reset requested for non existing mail"
-                    )
-                ).build()
-
-                else -> service.sendPasswordResetMail(this).let { ok().build() }
-            }
-        }
-    } catch (t: Throwable) {
-        of(forStatusAndDetail(BAD_REQUEST, t.message)).build<ProblemDetail>()
-    }
-
+    suspend fun reset(
+        @RequestBody @Email mail: String,
+        exchange: ServerWebExchange
+    ) = service.reset(mail, exchange)
 
 //    /**
 //     * {@code POST   /account/reset-password/finish} : Finish to reset the password of the user.
