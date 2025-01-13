@@ -1876,8 +1876,8 @@ class Tests {
     @Test
     @WithMockUser("change-password-too-small")
     fun testChangePasswordTooSmall(): Unit = runBlocking {
-        val testLogin = "change-password"
-        val testPassword = "change-password"
+        val testLogin = "change-password-too-small"
+        val testPassword = "change-password-too-small"
 
         user.id.run(::assertNull)
 
@@ -1981,8 +1981,8 @@ class Tests {
     @Test
     @WithMockUser("change-password-too-long")
     fun testChangePasswordTooLong(): Unit = runBlocking {
-        val testLogin = "change-password"
-        val testPassword = "change-password"
+        val testLogin = "change-password-too-long"
+        val testPassword = "change-password-too-long"
 
         user.id.run(::assertNull)
 
@@ -2087,8 +2087,8 @@ class Tests {
     @Test
     @WithMockUser("change-password-empty")
     fun testChangePasswordEmpty(): Unit = runBlocking {
-        val testLogin = "change-password"
-        val testPassword = "change-password"
+        val testLogin = "change-password-empty"
+        val testPassword = "change-password-empty"
 
         user.id.run(::assertNull)
 
@@ -2190,6 +2190,7 @@ class Tests {
 
 
     @Test
+    @WithMockUser("change-password")
     fun `test Request Password Reset`(): Unit = runBlocking {
         val testLogin = "change-password"
         val testPassword = "change-password"
@@ -2290,6 +2291,7 @@ class Tests {
 
 
     @Test
+    @WithMockUser("change-password")
     fun `test Request Password Reset UpperCaseEmail`(): Unit = runBlocking {
         val testLogin = "change-password"
         val testPassword = "change-password"
@@ -2390,6 +2392,7 @@ class Tests {
     }
 
         @Test
+        @WithMockUser("change-password")
     fun `test Request Password Reset Wrong Email`() :Unit =runBlocking {
             val testLogin = "change-password"
             val testPassword = "change-password"
@@ -2476,6 +2479,7 @@ class Tests {
 
     @Test
 //    @Throws(Exception::class)
+    @WithMockUser("change-password")
     fun `test Finish Password Reset`() :Unit =runBlocking {
         val testLogin = "change-password"
         val testPassword = "change-password"
@@ -2579,6 +2583,7 @@ class Tests {
 
     @Test
 //    @Throws(Exception::class)
+    @WithMockUser("change-password")
     fun `test Finish Password Reset Too Small`(): Unit = runBlocking {
         val testLogin = "change-password"
         val testPassword = "change-password"
@@ -2686,6 +2691,7 @@ class Tests {
 
     @Test
     @Throws(Exception::class)
+    @WithMockUser("change-password")
     fun `test Finish Password Reset Wrong Key`(): Unit = runBlocking {
         val testLogin = "change-password"
         val testPassword = "change-password"
@@ -2912,9 +2918,7 @@ class Tests {
 
     @Test
     fun testSendLocalizedEmailForAllSupportedLanguages() {
-        user.copy(
-            login = "john", email = "john.doe@acme.com"
-        ).run {
+        user.copy(login = "john", email = "john.doe@acme.com").run {
             for (langKey in languages) {
                 mailService.sendEmailFromTemplate(
                     mapOf(User.objectName to copy(langKey = langKey)),
