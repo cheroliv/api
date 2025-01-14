@@ -2,6 +2,7 @@
 
 package app.core.web
 
+import app.core.Constants.PRODUCTION
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import jakarta.validation.MessageInterpolator
@@ -16,6 +17,7 @@ import org.springframework.data.web.ReactiveSortHandlerMethodArgumentResolver
 import org.springframework.stereotype.Component
 import org.springframework.validation.Validator
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
+import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import org.springframework.web.reactive.config.EnableWebFlux
 import org.springframework.web.reactive.config.WebFluxConfigurer
 import org.springframework.web.server.ServerWebExchange
@@ -23,15 +25,13 @@ import org.springframework.web.server.WebFilter
 import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Hooks
 import reactor.core.publisher.Mono
-import app.core.Constants.PRODUCTION
-import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
-import java.util.*
+import java.util.Locale
 import java.util.regex.Pattern
 
 
 @EnableWebFlux
 @Configuration
-class Web (private val context: ApplicationContext) : WebFluxConfigurer {
+class Web(private val context: ApplicationContext) : WebFluxConfigurer {
 
     @Component
     class SpaWebFilter : WebFilter {
@@ -118,11 +118,13 @@ class Web (private val context: ApplicationContext) : WebFluxConfigurer {
 
     // TODO: remove when this is supported in spring-data / spring-boot
     @Bean
-    fun reactivePageableHandlerMethodArgumentResolver() = ReactivePageableHandlerMethodArgumentResolver()
+    fun reactivePageableHandlerMethodArgumentResolver() =
+        ReactivePageableHandlerMethodArgumentResolver()
 
     // TODO: remove when this is supported in spring-boot
     @Bean
     fun reactiveSortHandlerMethodArgumentResolver() = ReactiveSortHandlerMethodArgumentResolver()
+
     /*
     <bean class="org.springframework.validation.beanvalidation.MethodValidationPostProcessor">
         <property name="validatedAnnotationType" value="javax.validation.Valid" />
@@ -150,8 +152,6 @@ class Web (private val context: ApplicationContext) : WebFluxConfigurer {
     companion object {
         @Bean
         @JvmStatic
-        fun validationPostProcessor() = MethodValidationPostProcessor().apply{
-//            setAdaptConstraintViolations(true)
-        }
+        fun validationPostProcessor() = MethodValidationPostProcessor()
     }
 }
