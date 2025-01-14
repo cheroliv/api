@@ -9,10 +9,11 @@ import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ID_ATTR
-import app.users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
-import app.users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
-import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
-import app.users.signup.UserActivation.Fields.ID_FIELD
+import app.users.signup.UserActivation.Relations.Fields.TABLE_NAME
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
+import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ID_FIELD
 import java.security.SecureRandom
 import java.time.Instant
 import java.time.Instant.now
@@ -47,13 +48,6 @@ data class UserActivation(
         }
     }
 
-    object Fields {
-        //SQL
-        const val ID_FIELD = User.Relations.Fields.ID_FIELD
-        const val ACTIVATION_KEY_FIELD = "activation_key"
-        const val ACTIVATION_DATE_FIELD = "activation_date"
-        const val CREATED_DATE_FIELD = "created_date"
-    }
 
     object Attributes {
         //Class
@@ -64,8 +58,15 @@ data class UserActivation(
     }
 
     object Relations {
-        @Suppress("MemberVisibilityCanBePrivate")
-        const val TABLE_NAME = "user_activation"
+        object Fields {
+            //SQL
+            @Suppress("MemberVisibilityCanBePrivate")
+            const val TABLE_NAME = "user_activation"
+            const val ID_FIELD = User.Relations.Fields.ID_FIELD
+            const val ACTIVATION_KEY_FIELD = "activation_key"
+            const val ACTIVATION_DATE_FIELD = "activation_date"
+            const val CREATED_DATE_FIELD = "created_date"
+        }
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" UUID PRIMARY KEY,
@@ -73,7 +74,7 @@ data class UserActivation(
             "$CREATED_DATE_FIELD" TIMESTAMP,
             "$ACTIVATION_DATE_FIELD" TIMESTAMP,
             FOREIGN KEY ("$ID_FIELD") 
-            REFERENCES "${User.Relations.TABLE_NAME}" ("$ID_FIELD")
+            REFERENCES "${User.Relations.Fields.TABLE_NAME}" ("$ID_FIELD")
             ON DELETE CASCADE ON UPDATE CASCADE
         );
 

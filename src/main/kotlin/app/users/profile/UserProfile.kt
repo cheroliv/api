@@ -5,9 +5,10 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import app.users.User
 import app.users.User.Relations.Fields.ID_FIELD
-import app.users.profile.UserProfile.Fields.FIRST_NAME_FIELD
-import app.users.profile.UserProfile.Fields.IMAGE_URL_FIELD
-import app.users.profile.UserProfile.Fields.LAST_NAME_FIELD
+import app.users.profile.UserProfile.Relations.Fields.TABLE_NAME
+import app.users.profile.UserProfile.Relations.Fields.FIRST_NAME_FIELD
+import app.users.profile.UserProfile.Relations.Fields.IMAGE_URL_FIELD
+import app.users.profile.UserProfile.Relations.Fields.LAST_NAME_FIELD
 import java.util.*
 
 @JvmRecord
@@ -21,15 +22,15 @@ data class UserProfile(
     @field:Size(max = 256)
     val imageUrl: String? = null,
 ) {
-    object Fields {
-        const val ID = "id"
-        const val FIRST_NAME_FIELD = "first_name"
-        const val LAST_NAME_FIELD = "last_name"
-        const val IMAGE_URL_FIELD = "image_url"
-    }
 
     object Relations {
-        const val TABLE_NAME = "`user_profile`"
+        object Fields {
+            const val TABLE_NAME = "`user_profile`"
+            const val ID = "id"
+            const val FIRST_NAME_FIELD = "first_name"
+            const val LAST_NAME_FIELD = "last_name"
+            const val IMAGE_URL_FIELD = "image_url"
+        }
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS $TABLE_NAME (
             "$ID_FIELD"                     UUID PRIMARY KEY,
@@ -37,7 +38,7 @@ data class UserProfile(
             "$LAST_NAME_FIELD"              VARCHAR,
             "$IMAGE_URL_FIELD"              VARCHAR,
         FOREIGN KEY ("$ID_FIELD") 
-        REFERENCES "${User.Relations.TABLE_NAME}" ("$ID_FIELD")
+        REFERENCES "${User.Relations.Fields.TABLE_NAME}" ("$ID_FIELD")
         ON DELETE CASCADE ON UPDATE CASCADE);
 """
         const val INSERT = ""

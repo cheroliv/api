@@ -181,9 +181,6 @@ object Constants {
     }
 
 
-    const val PASSWORD_MIN: Int = 4
-    const val PASSWORD_MAX: Int = 24
-    const val IMAGE_URL_DEFAULT = "http://placehold.it/50x50"
 
     @JvmField
     val defaultProblems = ProblemsModel(

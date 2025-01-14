@@ -3,16 +3,14 @@ package app.users.security
 import app.core.database.EntityModel
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
-import app.users.security.Role.Fields.ID_FIELD
+import app.users.security.Role.Relations.Fields.TABLE_NAME
+import app.users.security.Role.Relations.Fields.ID_FIELD
 
 data class Role(
     @field:NotNull
     @field:Size(max = 50)
     override val id: String
 ) : EntityModel<String>() {
-    object Fields {
-        const val ID_FIELD = "role"
-    }
 
     object Attributes {
         const val ID_ATTR = "role"
@@ -21,7 +19,10 @@ data class Role(
     object Constraints
 
     object Relations {
-        const val TABLE_NAME = "authority"
+        object Fields {
+            const val TABLE_NAME = "authority"
+            const val ID_FIELD = "role"
+        }
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" VARCHAR(50) PRIMARY KEY

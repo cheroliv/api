@@ -5,33 +5,35 @@ package app.users
 import app.core.Constants.EMPTY_STRING
 import app.core.Loggers.i
 import app.core.database.EntityModel
-import app.users.User.Attributes.EMAIL_OR_LOGIN
 import app.users.User.Attributes.EMAIL_ATTR
+import app.users.User.Attributes.EMAIL_OR_LOGIN
 import app.users.User.Attributes.ID_ATTR
 import app.users.User.Attributes.LANG_KEY_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
 import app.users.User.Attributes.VERSION_ATTR
+import app.users.User.Constraints.LOGIN_REGEX
+import app.users.User.Members.ROLES_MEMBER
+import app.users.User.Relations.CREATE_TABLES
 import app.users.User.Relations.Fields.EMAIL_FIELD
 import app.users.User.Relations.Fields.ID_FIELD
 import app.users.User.Relations.Fields.LANG_KEY_FIELD
 import app.users.User.Relations.Fields.LOGIN_FIELD
 import app.users.User.Relations.Fields.PASSWORD_FIELD
+import app.users.User.Relations.Fields.TABLE_NAME
 import app.users.User.Relations.Fields.VERSION_FIELD
-import app.users.User.Members.ROLES_MEMBER
-import app.users.User.Relations.CREATE_TABLES
 import app.users.security.Role
 import app.users.security.UserRole
-import app.users.security.UserRole.Fields.ROLE_FIELD
-import app.users.security.UserRole.Fields.USER_ID_FIELD
+import app.users.security.UserRole.Relations.Fields.ROLE_FIELD
+import app.users.security.UserRole.Relations.Fields.USER_ID_FIELD
 import app.users.signup.UserActivation
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
-import java.util.*
 import java.util.Locale.ENGLISH
+import java.util.UUID
 
 data class User(
     override val id: UUID? = null,
@@ -58,8 +60,7 @@ data class User(
         @JvmStatic
         fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(::i)
 
-        const val LOGIN_REGEX =
-            "^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$"
+        const val IMAGE_URL_DEFAULT = "http://placehold.it/50x50"
 
         @JvmStatic
         val objectName: String = User::class
@@ -73,14 +74,15 @@ data class User(
             }
     }
 
+
     object EndPoint {
         const val API_USERS = "/api/users"
         const val API_AUTHORITY_PATH = "/api/authorities"
     }
 
     object Constraints {
-        const val PASSWORD_MIN: Int = 4
-        const val PASSWORD_MAX: Int = 16
+        const val LOGIN_REGEX =
+            "^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$"
         const val IMAGE_URL_DEFAULT = "https://placehold.it/50x50"
         const val PHONE_REGEX = "^(\\+|00)?[1-9]\\d{0,49}\$"
     }
@@ -113,8 +115,9 @@ data class User(
                 transform = String::trimIndent
             ).run(String::trimMargin)
 
-        const val TABLE_NAME = "user"
+
         object Fields {
+            const val TABLE_NAME = "user"
             const val ID_FIELD = "id"
             const val LOGIN_FIELD = "login"
             const val PASSWORD_FIELD = "password"
@@ -122,6 +125,7 @@ data class User(
             const val LANG_KEY_FIELD = "lang_key"
             const val VERSION_FIELD = "version"
         }
+
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
         "$ID_FIELD"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -188,7 +192,7 @@ data class User(
                                 u."$PASSWORD_FIELD",
                                 u.$LANG_KEY_FIELD,
                                 u.$VERSION_FIELD,
-                                STRING_AGG(DISTINCT a."${Role.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
+                                STRING_AGG(DISTINCT a."${Role.Relations.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
                             FROM "$TABLE_NAME" as u
                             LEFT JOIN 
                                 user_authority ua ON u."$ID_FIELD" = ua."$USER_ID_FIELD"

@@ -59,7 +59,6 @@ import app.users.User
 import app.users.User.Attributes.EMAIL_ATTR
 import app.users.User.Attributes.LOGIN_ATTR
 import app.users.User.Attributes.PASSWORD_ATTR
-import app.users.User.EndPoint.API_USERS
 import app.users.User.Relations.FIND_ALL_USERS
 import app.users.User.Relations.Fields.ID_FIELD
 import app.users.User.Relations.Fields.LOGIN_FIELD
@@ -92,9 +91,9 @@ import app.users.signup.SignupService.Companion.SIGNUP_LOGIN_NOT_AVAILABLE
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
-import app.users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
-import app.users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
-import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
+import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivationDao.activate
 import app.users.signup.UserActivationDao.validate
 import app.workspace.Installer
@@ -167,7 +166,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
 import org.springframework.core.env.get
-import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
 import org.springframework.http.MediaType.APPLICATION_JSON
@@ -588,8 +586,8 @@ class Tests {
                 .fetch()
                 .all()
                 .collect { rows ->
-                    assertEquals(rows[Role.Fields.ID_FIELD], ROLE_USER)
-                    resultRoles.add(rows[Role.Fields.ID_FIELD].toString())
+                    assertEquals(rows[Role.Relations.Fields.ID_FIELD], ROLE_USER)
+                    resultRoles.add(rows[Role.Relations.Fields.ID_FIELD].toString())
                 }
             assertEquals(ROLE_USER, resultRoles.first())
             assertEquals(ROLE_USER, resultRoles.first())
@@ -621,8 +619,8 @@ class Tests {
                     .fetch()
                     .all()
                     .collect { rows ->
-                        assertEquals(rows[Role.Fields.ID_FIELD], ROLE_USER)
-                        resultRoles.add(Role(id = rows[Role.Fields.ID_FIELD].toString()))
+                        assertEquals(rows[Role.Relations.Fields.ID_FIELD], ROLE_USER)
+                        resultRoles.add(Role(id = rows[Role.Relations.Fields.ID_FIELD].toString()))
                     }
                 assertEquals(
                     ROLE_USER,
@@ -674,8 +672,8 @@ class Tests {
             .awaitSingleOrNull()
 
         """
-        SELECT ua.${UserRole.Fields.ID_FIELD} 
-        FROM ${UserRole.Relations.TABLE_NAME} AS ua 
+        SELECT ua.${UserRole.Relations.Fields.ID_FIELD} 
+        FROM ${UserRole.Relations.Fields.TABLE_NAME} AS ua 
         where ua.user_id= :userId and ua."role" = :role"""
             .trimIndent()
             .run(context.getBean<DatabaseClient>()::sql)
@@ -683,7 +681,7 @@ class Tests {
             .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
             .fetch()
             .one()
-            .awaitSingle()[UserRole.Fields.ID_FIELD]
+            .awaitSingle()[UserRole.Relations.Fields.ID_FIELD]
             .toString()
             .let { "user_role_id : $it" }
             .run(::i)
@@ -1262,7 +1260,7 @@ class Tests {
                                 .apply { toString().run(::i) }
                                 .let {
                                     UserActivation(
-                                        id = UserActivation.Fields.ID_FIELD
+                                        id = UserActivation.Relations.Fields.ID_FIELD
                                             .run(it::get)
                                             .toString()
                                             .run(UUID::fromString),
@@ -2847,13 +2845,13 @@ class Tests {
         val part = ((message.content as MimeMultipart)
             .getBodyPart(0).content as MimeMultipart)
             .getBodyPart(0) as MimeBodyPart
-        val aos = ByteArrayOutputStream()
-        part.writeTo(aos)
+        val baos = ByteArrayOutputStream()
+        part.writeTo(baos)
         assertThat(message.subject).isEqualTo("testSubject")
         assertThat("${message.allRecipients[0]}").isEqualTo("john.doe@acme.com")
         assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
         assertThat(message.content).isInstanceOf(Multipart::class.java)
-        assertThat("$aos").isEqualTo("\r\ntestContent")
+        assertThat("$baos").isEqualTo("\r\ntestContent")
         assertThat(part.dataHandler.contentType).isEqualTo("text/plain; charset=UTF-8")
     }
 

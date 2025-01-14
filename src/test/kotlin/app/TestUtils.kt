@@ -29,20 +29,20 @@ import app.users.User.Relations.Fields.LANG_KEY_FIELD
 import app.users.User.Relations.Fields.LOGIN_FIELD
 import app.users.User.Relations.Fields.PASSWORD_FIELD
 import app.users.User.Relations.Fields.VERSION_FIELD
-import app.users.User.Relations.TABLE_NAME
+import app.users.User.Relations.Fields.TABLE_NAME
 import app.users.security.Role
 import app.users.security.UserRole
 import app.users.security.UserRole.Attributes.USER_ID_ATTR
-import app.users.security.UserRole.Fields.ROLE_FIELD
-import app.users.security.UserRole.Fields.USER_ID_FIELD
+import app.users.security.UserRole.Relations.Fields.ROLE_FIELD
+import app.users.security.UserRole.Relations.Fields.USER_ID_FIELD
 import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Companion.USERACTIVATIONCLASS
-import app.users.signup.UserActivation.Fields.ACTIVATION_DATE_FIELD
-import app.users.signup.UserActivation.Fields.ACTIVATION_KEY_FIELD
-import app.users.signup.UserActivation.Fields.CREATED_DATE_FIELD
-import app.users.signup.UserActivation.Fields.ID_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
+import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ID_FIELD
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -149,14 +149,14 @@ object TestUtils {
         .toString()
         .toInt()
 
-    const val COUNT_USER_ACTIVATION = """SELECT COUNT(*) FROM "${UserActivation.Relations.TABLE_NAME}";"""
+    const val COUNT_USER_ACTIVATION = """SELECT COUNT(*) FROM "${UserActivation.Relations.Fields.TABLE_NAME}";"""
 
     const val FIND_BY_ACTIVATION_KEY = """
-        SELECT * FROM "${UserActivation.Relations.TABLE_NAME}" as ua
+        SELECT * FROM "${UserActivation.Relations.Fields.TABLE_NAME}" as ua
         WHERE ua."$ACTIVATION_KEY_FIELD" = :$ACTIVATION_KEY_ATTR;
         """
 
-    const val FIND_ALL_USERACTIVATION = """SELECT * FROM "${UserActivation.Relations.TABLE_NAME}";"""
+    const val FIND_ALL_USERACTIVATION = """SELECT * FROM "${UserActivation.Relations.Fields.TABLE_NAME}";"""
 
     suspend fun ApplicationContext.deleteAllUserAuthorities(): Unit = DELETE_USER_AUTHORITIES
         .trimIndent()
@@ -225,10 +225,10 @@ object TestUtils {
                                 u."$PASSWORD_FIELD",
                                 u.$LANG_KEY_FIELD,
                                 u.$VERSION_FIELD,
-                                STRING_AGG(DISTINCT a."${Role.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
-                            FROM "${User.Relations.TABLE_NAME}" as u
+                                STRING_AGG(DISTINCT a."${Role.Relations.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
+                            FROM "${User.Relations.Fields.TABLE_NAME}" as u
                             LEFT JOIN 
-                                user_authority ua ON u."${UserRole.Fields.ID_FIELD}" = ua."$USER_ID_FIELD"
+                                user_authority ua ON u."${UserRole.Relations.Fields.ID_FIELD}" = ua."$USER_ID_FIELD"
                             LEFT JOIN 
                                 authority as a ON UPPER(ua."$ROLE_FIELD") = UPPER(a."${Role.Attributes.ID_ATTR}")
                             WHERE 
@@ -492,7 +492,7 @@ object TestUtils {
                     .bind(EMAIL_ATTR, email)
                     .fetch()
                     .all()
-                    .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
+                    .collect { add(Role(it[Role.Relations.Fields.ID_FIELD].toString())) }
             }.toSet().right()
         } catch (e: Throwable) {
             e.left()
@@ -512,7 +512,7 @@ object TestUtils {
                     .bind(LOGIN_ATTR, login)
                     .fetch()
                     .all()
-                    .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
+                    .collect { add(Role(it[Role.Relations.Fields.ID_FIELD].toString())) }
             }.toSet().right()
         } catch (e: Throwable) {
             e.left()
@@ -545,7 +545,7 @@ object TestUtils {
                 .bind("userId", userId)
                 .fetch()
                 .all()
-                .collect { add(Role(it[Role.Fields.ID_FIELD].toString())) }
+                .collect { add(Role(it[Role.Relations.Fields.ID_FIELD].toString())) }
         }.toSet().right()
     } catch (e: Throwable) {
         e.left()

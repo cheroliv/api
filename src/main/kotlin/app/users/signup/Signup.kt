@@ -1,12 +1,12 @@
 package app.users.signup
 
-import app.core.Constants.PASSWORD_MAX
-import app.core.Constants.PASSWORD_MIN
+import app.users.User.Constraints.LOGIN_REGEX
+import app.users.signup.Signup.Constraints.PASSWORD_MAX
+import app.users.signup.Signup.Constraints.PASSWORD_MIN
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
-import app.users.User.Companion.LOGIN_REGEX
 
 
 @JvmRecord
@@ -41,5 +41,9 @@ data class Signup(
                     first().lowercaseChar()
                 )
             }
+    }
+    object Constraints {
+        const val PASSWORD_MIN: Int = 4
+        const val PASSWORD_MAX: Int = 16
     }
 }

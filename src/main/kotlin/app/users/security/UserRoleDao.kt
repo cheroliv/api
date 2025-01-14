@@ -2,7 +2,7 @@ package app.users.security
 
 import app.users.security.UserRole.Attributes.ROLE_ATTR
 import app.users.security.UserRole.Attributes.USER_ID_ATTR
-import app.users.security.UserRole.Fields.ID_FIELD
+import app.users.security.UserRole.Relations.Fields.ID_FIELD
 import app.users.security.UserRole.Relations.INSERT
 import arrow.core.Either
 import arrow.core.left
