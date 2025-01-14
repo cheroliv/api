@@ -166,6 +166,7 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
@@ -206,7 +207,6 @@ import java.util.*
 import java.util.Locale.*
 import java.util.UUID.fromString
 import java.util.UUID.randomUUID
-import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.*
 
@@ -219,7 +219,7 @@ import kotlin.test.*
 )
 class Tests {
 
-    @Inject
+    @Autowired
     lateinit var context: ApplicationContext
     lateinit var client: WebTestClient
     lateinit var mailService: MailService
@@ -305,17 +305,19 @@ class Tests {
     }
 
     @Test
-    fun `test lsWorkingDir & lsWorkingDirProcess`(): Unit = "build".let {
-        it.run(::File).run {
-            context
-                .lsWorkingDirProcess(this)
-                .run { "lsWorkingDirProcess : $this" }
-                .run(::i)
-            absolutePath.run(::i)
-            // Liste un répertoire spécifié par une chaîne
-            context.lsWorkingDir(it, maxDepth = 2)
-            // Liste un répertoire spécifié par un Path
-            context.lsWorkingDir(Paths.get(it))
+    fun `test lsWorkingDir & lsWorkingDirProcess`(): Unit = assertDoesNotThrow {
+        "build".let {
+            it.run(::File).run {
+                context
+                    .lsWorkingDirProcess(this)
+                    .run { "lsWorkingDirProcess : $this" }
+                    .run(::i)
+                absolutePath.run(::i)
+                // Liste un répertoire spécifié par une chaîne
+                context.lsWorkingDir(it, maxDepth = 2)
+                // Liste un répertoire spécifié par un Path
+                context.lsWorkingDir(Paths.get(it))
+            }
         }
     }
 
@@ -360,11 +362,11 @@ class Tests {
     @Test
     fun `test findOneWithAuths using one query`(): Unit = runBlocking {
         context.tripleCounts().run {
-            assertEquals(Triple(0, 0, 0), this)
+            assertThat(this).isEqualTo(Triple(0, 0, 0))
             (user to context).signup()
-            assertEquals(first + 1, context.countUsers())
-            assertEquals(second + 1, context.countUserAuthority())
-            assertEquals(third + 1, context.countUserActivation())
+            assertThat(context.countUsers()).isEqualTo(first + 1)
+            assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+            assertThat(context.countUserActivation()).isEqualTo(third + 1)
         }
         """
             SELECT 
@@ -391,8 +393,7 @@ class Tests {
             .run(context.getBean<DatabaseClient>()::sql)
             .bind("emailOrLogin", user.email)
             .fetch()
-            .awaitSingleOrNull()
-            ?.run {
+            .awaitSingleOrNull()?.run {
                 toString().run(::i)
                 val expectedUserResult = User(
                     id = fromString(get(ID_FIELD).toString()),
@@ -442,21 +443,17 @@ class Tests {
             .run(::println)
         assertEquals(1, context.countUsers())
         assertEquals(1, context.countUserAuthority())
-        context.findOne<User>(user.email)
-            .getOrNull()
-            ?.apply {
-                run(::assertNotNull)
-                assertEquals(1, roles.size)
-                assertEquals(ROLE_USER, roles.first().id)
-                assertEquals(userId, id)
-            }.run { "context.findOneWithAuths<User>(${user.email}).getOrNull() : $this" }
-            .run(::i)
+        context.findOne<User>(user.email).getOrNull()?.apply {
+            run(::assertNotNull)
+            assertEquals(1, roles.size)
+            assertEquals(ROLE_USER, roles.first().id)
+            assertEquals(userId, id)
+        }.run { i("context.findOneWithAuths<User>(${user.email}).getOrNull() : $this") }
+
         context.findOne<User>(userId).getOrNull()
-            .run { "context.findOneDraft<User>(user.email).getOrNull() : $this" }
-            .run(::i)
+            .run { i("context.findOneDraft<User>(user.email).getOrNull() : $this") }
         context.findAuthsByEmail(user.email).getOrNull()
-            .run { "context.findAuthsByEmail(${user.email}).getOrNull() : $this" }
-            .run(::i)
+            .run { i("context.findAuthsByEmail(${user.email}).getOrNull() : $this") }
     }
 
     @Test
@@ -467,8 +464,9 @@ class Tests {
         val findOneEmailResult: Either<Throwable, User> = context.findOne<User>(user.email)
         findOneEmailResult.map { assertDoesNotThrow { fromString(it.id.toString()) } }
         i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
-        context.findOne<User>(user.login)
-            .map { assertDoesNotThrow { fromString(it.id.toString()) } }
+        context.findOne<User>(user.login).map {
+            assertDoesNotThrow { fromString(it.id.toString()) }
+        }
     }
 
     @Test
@@ -1655,42 +1653,44 @@ class Tests {
 
     @Test
     @WithMockUser("change-password-wrong-existing-password")
-    fun `test change password with wrong existing password, only service layer`(): Unit = runBlocking {
-        user.id.run(::assertNull)
+    fun `test change password with wrong existing password, only service layer`(): Unit =
+        runBlocking {
+            user.id.run(::assertNull)
 
-        context.tripleCounts().run {
-            val uuid: UUID = (user to context).signup()
-                .getOrNull()!!.first
-                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+            context.tripleCounts().run {
+                val uuid: UUID = (user to context).signup()
+                    .getOrNull()!!.first
+                    .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-            assertEquals(first + 1, context.countUsers())
-            assertEquals(second + 1, context.countUserActivation())
-            assertEquals(third + 1, context.countUserAuthority())
+                assertEquals(first + 1, context.countUsers())
+                assertEquals(second + 1, context.countUserActivation())
+                assertEquals(third + 1, context.countUserAuthority())
 
-            FIND_ALL_USERS
-                .trimIndent()
-                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                .fetch().awaitSingle().run {
-                    (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
-                }.run {
-                    "user.id retrieved before update password: $first".apply(::i)
-                    assertEquals(uuid, first, "user.id should be the same")
-                    assertNotEquals(user.password, second, "password should be different")
-                    assertTrue(
-                        context.getBean<PasswordEncoder>().matches(user.password, second),
-                        message = "password should be encoded"
-                    )
+                FIND_ALL_USERS
+                    .trimIndent()
+                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .fetch().awaitSingle().run {
+                        (this[ID_FIELD].toString()
+                            .run(::fromString) to this[PASSWORD_FIELD].toString())
+                    }.run {
+                        "user.id retrieved before update password: $first".apply(::i)
+                        assertEquals(uuid, first, "user.id should be the same")
+                        assertNotEquals(user.password, second, "password should be different")
+                        assertTrue(
+                            context.getBean<PasswordEncoder>().matches(user.password, second),
+                            message = "password should be encoded"
+                        )
 
-                    "*updatedPassword123".run {
-                        assertNotEquals(user.login, getCurrentUserLogin())
-                        assertThrows<InvalidPasswordException> {
-                            context.getBean<PasswordService>()
-                                .change(PasswordChange(user.password, this))
+                        "*updatedPassword123".run {
+                            assertNotEquals(user.login, getCurrentUserLogin())
+                            assertThrows<InvalidPasswordException> {
+                                context.getBean<PasswordService>()
+                                    .change(PasswordChange(user.password, this))
+                            }
                         }
                     }
-                }
+            }
         }
-    }
 
     @Test
     @WithMockUser("change-password-wrong-existing-password")
