@@ -9,6 +9,7 @@ import app.users.UserDao.change
 import app.users.UserDao.findOne
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import arrow.core.getOrElse
+import jakarta.validation.Valid
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus.BAD_REQUEST
@@ -17,12 +18,14 @@ import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.server.ServerWebExchange
 
 @Service
+@Validated
 class PasswordService(val context: ApplicationContext) {
 
-    suspend fun change(currentClearTextPassword: String, newPassword: String): Long {
+    suspend fun change(@Valid changePassword: PasswordChange): Long {
         getCurrentUserLogin().apply {
             d("Current security context user.login : $this")
             when {
@@ -31,9 +34,9 @@ class PasswordService(val context: ApplicationContext) {
                     context.findOne<User>(this).map {
                         when {
                             context.getBean<PasswordEncoder>().matches(
-                                currentClearTextPassword,
+                                changePassword.currentPassword,
                                 it.password
-                            ) -> return (it.copy(password = newPassword) to context).change()
+                            ) -> return (it.copy(password = changePassword.newPassword) to context).change()
                                 //invalid update password persistence
                                 .getOrElse { throw InvalidPasswordException() }
                                 .apply { d("Changed password for User: ${it.login}") }
@@ -59,16 +62,16 @@ class PasswordService(val context: ApplicationContext) {
             when {
                 isNotEmpty() -> ResponseEntity.of(
                     forStatusAndDetail(BAD_REQUEST, iterator().next().message)
-                ).build()
+                )
 
                 else -> try {
-                    change(passwordChange.currentPassword, passwordChange.newPassword)
+                    change(passwordChange)
                     ResponseEntity.ok()
                 } catch (t: Throwable) {
                     ResponseEntity.of(forStatusAndDetail(BAD_REQUEST, t.message))
-                }.build()
+                }
             }
-        }
+        }.build()
 
     suspend fun reset(mail: String, exchange: ServerWebExchange)
             : ResponseEntity<ProblemDetail> = try {

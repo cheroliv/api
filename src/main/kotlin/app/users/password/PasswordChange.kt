@@ -4,8 +4,10 @@ import app.users.signup.Signup.Constraints.PASSWORD_MAX
 import app.users.signup.Signup.Constraints.PASSWORD_MIN
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
+import org.springframework.validation.annotation.Validated
 
-@JvmRecord
+@Validated
+//@JvmRecord
 data class PasswordChange(
     @field:NotNull
     @field:Size(min = PASSWORD_MIN, max = PASSWORD_MAX)

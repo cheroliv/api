@@ -24,6 +24,7 @@ import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Hooks
 import reactor.core.publisher.Mono
 import app.core.Constants.PRODUCTION
+import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import java.util.*
 import java.util.regex.Pattern
 
@@ -146,4 +147,11 @@ class Web (private val context: ApplicationContext) : WebFluxConfigurer {
             )
         }
     */
+    companion object {
+        @Bean
+        @JvmStatic
+        fun validationPostProcessor() = MethodValidationPostProcessor().apply{
+//            setAdaptConstraintViolations(true)
+        }
+    }
 }
