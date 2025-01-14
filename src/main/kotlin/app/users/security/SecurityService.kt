@@ -47,7 +47,8 @@ class SecurityService(
 
     @Transactional(readOnly = true)
     @Throws(UsernameNotFoundException::class)
-    override fun findByUsername(emailOrLogin: String): Mono<UserDetails> = context.userDetails(emailOrLogin)
+    override fun findByUsername(emailOrLogin: String): Mono<UserDetails> =
+        context.userDetails(emailOrLogin)
 
     @Throws(Exception::class)
     override fun afterPropertiesSet() {
@@ -96,8 +97,8 @@ class SecurityService(
 
         else -> tokenValidityInMilliseconds
     }.run {
-        now()
-            .plusSeconds(this / 1000)
+        1000.run(::div)
+            .run(now()::plusSeconds)
             .toInstant()
             .run(Date::from)
     }
@@ -107,8 +108,7 @@ class SecurityService(
         authentication: Authentication,
         rememberMe: Boolean
     ): String = now().run {
-        builder()
-            .setSubject(authentication.name)
+        builder().setSubject(authentication.name)
             .claim(
                 AUTHORITIES_KEY,
                 authentication.authorities
