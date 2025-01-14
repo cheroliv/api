@@ -46,7 +46,8 @@ object Constants {
     const val NORMAL_TERMINATION = 0
     const val DOMAIN_DEV_URL = "acme.com"
     private const val DOMAIN_URL = "https://cccp-education.github.io"
-    const val STARTUP_HOST_WARN_LOG_MSG = "The host name could not be determined, using `localhost` as fallback"
+    const val STARTUP_HOST_WARN_LOG_MSG =
+        "The host name could not be determined, using `localhost` as fallback"
     const val SPRING_APPLICATION_NAME = "spring.application.name"
     const val SERVER_SSL_KEY_STORE = "server.ssl.key-store"
     const val SERVER_PORT = "server.port"
@@ -111,15 +112,18 @@ object Constants {
     const val PROP_MAIL_PORT = "community.accounts.mail.port"
     const val PROP_MAIL_PASSWORD = "community.accounts.mail.password"
     const val PROP_MAIL_PROPERTY_DEBUG = "community.accounts.mail.property.debug"
-    const val PROP_MAIL_PROPERTY_TRANSPORT_PROTOCOL = "community.accounts.mail.property.transport.protocol"
+    const val PROP_MAIL_PROPERTY_TRANSPORT_PROTOCOL =
+        "community.accounts.mail.property.transport.protocol"
     const val PROP_MAIL_PROPERTY_SMTP_AUTH = "community.accounts.mail.property.smtp.auth"
-    const val PROP_MAIL_PROPERTY_SMTP_STARTTLS_ENABLE = "community.accounts.mail.property.smtp.starttls.enable"
+    const val PROP_MAIL_PROPERTY_SMTP_STARTTLS_ENABLE =
+        "community.accounts.mail.property.smtp.starttls.enable"
     const val PROP_DATABASE_POPULATOR_PATH = "community.database.populator-path"
     const val STARTUP_LOG_MSG_KEY = "startup.log.msg"
 
 
     //Email activation
     const val USER = "user"
+    const val PASSWORD = "1$USER&A"
     const val ADMIN = "admin"
     const val BASE_URL = "baseUrl"
 
@@ -179,7 +183,6 @@ object Constants {
             status = SERVICE_UNAVAILABLE.value(),
         )
     }
-
 
 
     @JvmField
