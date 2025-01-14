@@ -28,22 +28,19 @@ data class Signup(
     val password: String,
     val repassword: String,
     @field:Email
-    @field:Size(min = 5, max = 254)
+    @field:Size(min = 7, max = 254)
     val email: String,
 ) {
     companion object {
         @JvmStatic
         val objectName: String = Signup::class
             .java
-            .simpleName.run {
-                replaceFirst(
-                    first(),
-                    first().lowercaseChar()
-                )
-            }
+            .simpleName
+            .run { replaceFirst(first(), first().lowercaseChar()) }
     }
+
     object Constraints {
         const val PASSWORD_MIN: Int = 4
-        const val PASSWORD_MAX: Int = 16
+        const val PASSWORD_MAX: Int = 20
     }
 }

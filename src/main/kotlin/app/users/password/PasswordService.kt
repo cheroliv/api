@@ -5,7 +5,6 @@ import app.core.Loggers.i
 import app.core.security.SecurityUtils.getCurrentUserLogin
 import app.core.web.HttpUtils.validator
 import app.users.User
-import app.users.UserDao
 import app.users.UserDao.change
 import app.users.UserDao.findOne
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
@@ -70,6 +69,7 @@ class PasswordService(val context: ApplicationContext) {
                 }.build()
             }
         }
+
     suspend fun reset(mail: String, exchange: ServerWebExchange)
             : ResponseEntity<ProblemDetail> = try {
         with(requestPasswordReset(mail)) {
@@ -121,7 +121,6 @@ class PasswordService(val context: ApplicationContext) {
 //                } else return null
 //            }
     }
-
 
 
     /*

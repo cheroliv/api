@@ -72,6 +72,7 @@ import app.users.mail.MailService
 import app.users.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
+import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.PasswordService
 import app.users.security.Role
@@ -79,6 +80,8 @@ import app.users.security.RoleDao.countRoles
 import app.users.security.UserRole
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
+import app.users.signup.Signup.Constraints.PASSWORD_MAX
+import app.users.signup.Signup.Constraints.PASSWORD_MIN
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PARAM
 import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
 import app.users.signup.SignupEndPoint.API_SIGNUP_PATH
@@ -603,19 +606,18 @@ class Tests {
             val countUserAuthBefore = context.countUserAuthority()
             assertEquals(0, countUserAuthBefore)
             val resultRoles = mutableSetOf<Role>()
-            val findAuthsAnswer: Any?//= Either<Throwable,Set<String>>()
             lateinit var resultUserId: UUID
             (user to context).signup().apply {
                 assertTrue(isRight())
                 assertFalse(isLeft())
-            }.onRight { signupResult ->
+            }.onRight {
                 """
             SELECT ur."role" 
             FROM user_authority AS ur 
             WHERE ur.user_id = :userId"""
                     .trimIndent()
                     .run(context.getBean<DatabaseClient>()::sql)
-                    .bind(UserRole.Attributes.USER_ID_ATTR, signupResult.first)
+                    .bind(UserRole.Attributes.USER_ID_ATTR, it.first)
                     .fetch()
                     .all()
                     .collect { rows ->
@@ -624,37 +626,32 @@ class Tests {
                     }
                 assertEquals(
                     ROLE_USER,
-                    user.withId(signupResult.first).copy(
+                    user.withId(it.first).copy(
                         roles =
                         resultRoles
                             .map { it.id.run(::Role) }
                             .toMutableSet())
                         .roles.first().id
                 )
-                resultUserId = signupResult.first
+                resultUserId = it.first
             }
-            assertEquals(
-                resultUserId.toString().length,
-                "85b34d71-ef1d-41e0-acc1-00ab4ee1f932".length
-            )//TODO : assertnotthrow with fromStringToUuid
-            assertEquals(ROLE_USER, resultRoles.first().id)
-            assertEquals(1, context.countUsers())
-            assertEquals(1, context.countUserAuthority())
+            assertThat(resultUserId.toString().length).isEqualTo(randomUUID().toString().length)
+            assertDoesNotThrow { fromString(resultUserId.toString()) }
+            assertThat(ROLE_USER).isEqualTo(resultRoles.first().id)
+            assertThat(context.countUsers()).isEqualTo(1)
+            assertThat(context.countUserAuthority()).isEqualTo(1)
         }
 
 
-    @Test
+    @Test//TODO: rewrite test showing the scenario clearly
     fun `test UserRoleDao signup with existing user without user_role`(): Unit = runBlocking {
         val countUserBefore = context.countUsers()
-        assertEquals(0, countUserBefore)
+        assertThat(countUserBefore).isEqualTo(0)
         val countUserAuthBefore = context.countUserAuthority()
-        assertEquals(0, countUserAuthBefore)
-        val userSaveResult = (user to context).save()
-        assertEquals(countUserBefore + 1, context.countUsers())
-        userSaveResult//TODO: Problem with the either result do not return the user id but persist it on database
-            .map { i("on passe ici!") }
-            .mapLeft { i("on passe par la!") }
-
+        assertThat(countUserAuthBefore).isEqualTo(0)
+        lateinit var result: Either<Throwable, UUID>
+        (user to context).save()
+        assertThat(context.countUsers()).isEqualTo(countUserBefore + 1)
         val userId = context.getBean<DatabaseClient>().sql(FIND_USER_BY_LOGIN)
             .bind(LOGIN_ATTR, user.login.lowercase())
             .fetch()
@@ -685,8 +682,7 @@ class Tests {
             .toString()
             .let { "user_role_id : $it" }
             .run(::i)
-
-        assertEquals(countUserAuthBefore + 1, context.countUserAuthority())
+        assertThat(context.countUserAuthority()).isEqualTo(countUserAuthBefore + 1)
     }
 
     @Test
@@ -1198,7 +1194,7 @@ class Tests {
     }
 
     @Test
-    fun `Verifies the internationalization of validations through REST with a non-conforming password in French`(): Unit =
+    fun `Verifies the internationalization of validations through REST with an unconform password in French`(): Unit =
         runBlocking {
             assertEquals(0, context.countUsers())
             client
@@ -1788,11 +1784,22 @@ class Tests {
     @Test
     @WithMockUser("change-password", roles = [ROLE_USER])
     fun `test controller change password`(): Unit = runBlocking {
+        user.id.run(::assertNull)
         val testLogin = "change-password"
         val testPassword = "change-password"
-
-        user.id.run(::assertNull)
-
+        context.getBean<Validator>()
+            .validateProperty(user.copy(login = testLogin), LOGIN_ATTR)
+            .run(::assertThat)
+            .isEmpty()
+        context.getBean<Validator>()
+            .validateProperty(
+                PasswordChange(
+                    currentPassword = testPassword,
+                    newPassword = user.password
+                ), CURRENT_PASSWORD_ATTR
+            )
+            .run(::assertThat)
+            .isEmpty()
         context.tripleCounts().run {
             val uuid: UUID = (user.copy(
                 login = testLogin,
@@ -1875,21 +1882,30 @@ class Tests {
     @WithMockUser("change-password-too-small")
     fun testChangePasswordTooSmall(): Unit = runBlocking {
         val testLogin = "change-password-too-small"
-        val testPassword = "change-password-too-small"
-
+        val testPassword = "password-too-small"
         user.id.run(::assertNull)
+        context.getBean<Validator>()
+            .validateProperty(user.copy(login = testLogin), LOGIN_ATTR)
+            .run(::assertThat)
+            .isEmpty()
+        context.getBean<Validator>().validateProperty(
+            PasswordChange(
+                currentPassword = testPassword,
+                newPassword = user.password
+            ),
+            CURRENT_PASSWORD_ATTR
+        ).run(::assertThat).isEmpty()
 
         context.tripleCounts().run {
             val uuid: UUID = (user.copy(
                 login = testLogin,
                 password = testPassword
-            ) to context).signup()
-                .getOrNull()!!.first
+            ) to context).signup().getOrNull()!!.first
                 .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-            assertEquals(first + 1, context.countUsers())
-            assertEquals(second + 1, context.countUserActivation())
-            assertEquals(third + 1, context.countUserAuthority())
+            assertThat(context.countUsers()).isEqualTo(first + 1)
+            assertThat(context.countUserActivation()).isEqualTo(second + 1)
+            assertThat(context.countUserAuthority()).isEqualTo(third + 1)
 
             FIND_ALL_USERS
                 .trimIndent()
@@ -1897,19 +1913,19 @@ class Tests {
                 .fetch().awaitSingle().run {
                     (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
                 }.run {
-                    "user.id retrieved before update password: $first".apply(::i)
+                    "user.id retrieved before update password attempt: $first".apply(::i)
                     assertEquals(uuid, first, "user.id should be the same")
                     assertNotEquals(
                         testPassword,
                         second,
-                        "password should be encoded and not the same"
+                        message = "password should be encoded and not the same"
                     )
                     assertTrue(
                         context.getBean<PasswordEncoder>().matches(testPassword, second),
-                        message = "password should not be different"
+                        message = "passwords should match"
                     )
 
-                    "*updatedPassword123".run updatedPassword@{
+                    "1*2".run updatedPassword@{
                         assertEquals(testLogin, getCurrentUserLogin())
                         assertTrue(
                             context.getBean<PasswordEncoder>().matches(
@@ -1923,64 +1939,45 @@ class Tests {
                             ).apply { "passwords matches : ${toString()}".run(::i) },
                             message = "password should be updated"
                         )
-
                         client
                             .post()
                             .uri(API_CHANGE_PASSWORD_PATH)
                             .contentType(APPLICATION_PROBLEM_JSON)
+                            .header(ACCEPT_LANGUAGE, ENGLISH.language)
                             .bodyValue(PasswordChange(testPassword, this))
                             .exchange()
                             .expectStatus()
-                            .isOk
+                            .isBadRequest
                             .returnResult<ProblemDetail>()
                             .responseBodyContent!!
-                            .isEmpty()
-                            .run(::assertTrue)
-
+                            .apply { assertThat(isNotEmpty()).isTrue }
+                            .responseToString()
+                            .run(::assertThat)
+                            .contains("size must be between $PASSWORD_MIN and $PASSWORD_MAX")
                         context.findOne<User>(testLogin).getOrNull()!!.run {
                             assertThat(
                                 context.getBean<PasswordEncoder>().matches(
                                     this@updatedPassword,
                                     password
                                 )
-                            ).isTrue
+                            ).isFalse
                             assertThat(
                                 context.getBean<PasswordEncoder>().matches(
                                     testPassword,
                                     password
                                 )
-                            ).isFalse
+                            ).isTrue
                         }
                     }
                 }
         }
-//            val currentPassword = RandomStringUtils.random(60)
-//            val user = User(
-//                password = passwordEncoder.encode(currentPassword),
-//                login = "change-password-too-small",
-//                createdBy = SYSTEM_ACCOUNT,
-//                email = "change-password-too-small@example.com"
-//            )
-//
-//            userRepository.save(user).block()
-//
-//            val newPassword = RandomStringUtils.random(ManagedUserVM.PASSWORD_MIN_LENGTH - 1)
-//
-//            accountWebTestClient.post().uri("/api/account/change-password")
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .bodyValue(convertObjectToJsonBytes(PasswordChangeDTO(currentPassword, newPassword)))
-//                .exchange()
-//                .expectStatus().isBadRequest
-//
-//            val updatedUser = userRepository.findOneByLogin("change-password-too-small").block()
-//            assertThat(updatedUser.password).isEqualTo(user.password)
     }
 
     @Test
     @WithMockUser("change-password-too-long")
     fun testChangePasswordTooLong(): Unit = runBlocking {
         val testLogin = "change-password-too-long"
-        val testPassword = "change-password-too-long"
+        val testPassword = "password-too-long"
 
         user.id.run(::assertNull)
 
@@ -2827,7 +2824,6 @@ class Tests {
             assertThat(content).isInstanceOf(String::class.java)
             assertThat(content.toString()).isEqualTo("testContent")
             assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-
         }
     }
 

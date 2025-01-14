@@ -236,6 +236,14 @@ configurations {
     }
 }
 
+tasks {
+    withType<JavaCompile>().configureEach { options.encoding = "UTF-8" }
+    withType<JavaExec>().configureEach { defaultCharacterEncoding = "UTF-8" }
+    withType<Javadoc>().configureEach { options.encoding = "UTF-8" }
+    withType<Test>().configureEach { defaultCharacterEncoding = "UTF-8" }
+    withType<BootRun>().configureEach { defaultCharacterEncoding = "UTF-8" }
+}
+
 tasks.withType<KotlinCompile> {
     compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
 }
