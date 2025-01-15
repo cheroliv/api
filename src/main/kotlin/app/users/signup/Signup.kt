@@ -8,6 +8,24 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 
+import app.users.core.Constants
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.users.core.web.HttpUtils.badResponse
+import app.users.core.web.HttpUtils.validator
+import app.users.core.web.ProblemsModel
+import app.users.core.models.User
+import app.users.core.models.User.EndPoint.API_USERS
+import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
+import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
+import org.springframework.http.HttpStatus
+import org.springframework.http.ProblemDetail
+import org.springframework.http.ProblemDetail.forStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.status
+import org.springframework.web.server.ServerWebExchange
+import java.net.URI
 
 @JvmRecord
 @FieldMatch(
@@ -37,6 +55,18 @@ data class Signup(
             .java
             .simpleName
             .run { replaceFirst(first(), first().lowercaseChar()) }
+    }
+
+    /** SignupEndPoint REST API URIs */
+    object EndPoint {
+        const val API_SIGNUP = "/signup"
+        const val API_SIGNUP_PATH = "$API_USERS$API_SIGNUP"
+
+        const val API_ACTIVATE = "/activate"
+        const val API_ACTIVATE_KEY = "key"
+        const val API_ACTIVATE_PARAM = "{activationKey}"
+        const val API_ACTIVATE_PATH = "$API_USERS$API_ACTIVATE?$API_ACTIVATE_KEY="
+
     }
 
     object Constraints {

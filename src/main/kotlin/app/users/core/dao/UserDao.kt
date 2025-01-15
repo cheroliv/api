@@ -29,7 +29,7 @@ import app.users.core.models.User.Relations.SELECT_SIGNUP_AVAILABILITY
 import app.users.core.models.User.Relations.UPDATE_PASSWORD
 import app.users.signup.Signup
 import app.users.signup.UserActivation
-import app.users.signup.UserActivationDao.save
+import app.users.signup.SignupDao.save
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -50,6 +50,7 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
 import reactor.core.publisher.Mono
+import java.lang.Boolean.parseBoolean
 import java.util.UUID
 
 object UserDao {
@@ -183,9 +184,9 @@ object UserDao {
             .awaitSingle()
             .run {
                 Triple(
-                    java.lang.Boolean.parseBoolean(this[LOGIN_AND_EMAIL_AVAILABLE_COLUMN].toString()),
-                    java.lang.Boolean.parseBoolean(this[EMAIL_AVAILABLE_COLUMN].toString()),
-                    java.lang.Boolean.parseBoolean(this[LOGIN_AVAILABLE_COLUMN].toString())
+                    parseBoolean(this[LOGIN_AND_EMAIL_AVAILABLE_COLUMN].toString()),
+                    parseBoolean(this[EMAIL_AVAILABLE_COLUMN].toString()),
+                    parseBoolean(this[LOGIN_AVAILABLE_COLUMN].toString())
                 ).right()
             }
     } catch (e: Throwable) {
@@ -215,10 +216,10 @@ object UserDao {
         when {
             validateProperty(
                 User(email = emailOrLogin),
-                User.Relations.Fields.EMAIL_FIELD
+                EMAIL_FIELD
             ).isNotEmpty() && validateProperty(
                 User(login = emailOrLogin),
-                User.Relations.Fields.LOGIN_FIELD
+                LOGIN_FIELD
             ).isNotEmpty() -> throw UsernameNotFoundException("User $emailOrLogin was not found")
 
             else -> mono {

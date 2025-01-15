@@ -86,9 +86,9 @@ import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.Signup.Constraints.PASSWORD_MAX
 import app.users.signup.Signup.Constraints.PASSWORD_MIN
-import app.users.signup.SignupEndPoint.API_ACTIVATE_PARAM
-import app.users.signup.SignupEndPoint.API_ACTIVATE_PATH
-import app.users.signup.SignupEndPoint.API_SIGNUP_PATH
+import app.users.signup.Signup.EndPoint.API_ACTIVATE_PARAM
+import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
+import app.users.signup.Signup.EndPoint.API_SIGNUP_PATH
 import app.users.signup.SignupService
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
 import app.users.signup.SignupService.Companion.SIGNUP_AVAILABLE
@@ -101,8 +101,8 @@ import app.users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
-import app.users.signup.UserActivationDao.activate
-import app.users.signup.UserActivationDao.validate
+import app.users.signup.SignupDao.activate
+import app.users.signup.SignupDao.validate
 import app.workspace.Installer
 import app.workspace.Workspace
 import app.workspace.Workspace.Companion.install

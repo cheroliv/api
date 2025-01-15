@@ -3,7 +3,10 @@
 package app.users.signup
 
 import app.users.core.Loggers.i
-import app.users.core.models.EntityModel
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.users.core.models.User
 import app.users.core.web.HttpUtils.validator
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
@@ -22,7 +25,25 @@ import org.springframework.r2dbc.core.*
 import org.springframework.web.server.ServerWebExchange
 import java.util.*
 
-object UserActivationDao {
+object SignupDao {
+    fun Signup.validate(
+        exchange: ServerWebExchange
+    ): Set<Map<String, String?>> = exchange.validator.run {
+        setOf(
+            User.Attributes.PASSWORD_ATTR,
+            User.Attributes.EMAIL_ATTR,
+            User.Attributes.LOGIN_ATTR,
+        ).map { it to validateProperty(this@validate, it) }
+            .flatMap { (first, second) ->
+                second.map {
+                    mapOf<String, String?>(
+                        MODEL_FIELD_OBJECTNAME to Signup.objectName,
+                        MODEL_FIELD_FIELD to first,
+                        MODEL_FIELD_MESSAGE to it.message
+                    )
+                }
+            }.toSet()
+    }
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<UserActivation, ApplicationContext>.save()
@@ -67,9 +88,9 @@ object UserActivationDao {
             .flatMap { (first, second) ->
                 second.map {
                     mapOf<String, String?>(
-                        EntityModel.MODEL_FIELD_OBJECTNAME to UserActivation.objectName,
-                        EntityModel.MODEL_FIELD_FIELD to first,
-                        EntityModel.MODEL_FIELD_MESSAGE to it.message
+                        MODEL_FIELD_OBJECTNAME to UserActivation.objectName,
+                        MODEL_FIELD_FIELD to first,
+                        MODEL_FIELD_MESSAGE to it.message
                     )
                 }
             }.toSet()

@@ -4,31 +4,22 @@ import app.users.core.Constants
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.users.core.web.HttpUtils.badResponse
-import app.users.core.web.HttpUtils.validator
-import app.users.core.web.ProblemsModel
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USERS
 import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
 import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
+import app.users.core.web.HttpUtils.badResponse
+import app.users.core.web.ProblemsModel
+import app.users.signup.Signup.EndPoint.API_ACTIVATE
+import app.users.signup.Signup.EndPoint.API_SIGNUP
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.ResponseEntity.status
-import org.springframework.web.server.ServerWebExchange
 import java.net.URI
 
-/** SignupEndPoint REST API URIs */
-object SignupEndPoint {
-    const val API_SIGNUP = "/signup"
-    const val API_SIGNUP_PATH = "$API_USERS$API_SIGNUP"
-
-    const val API_ACTIVATE = "/activate"
-    const val API_ACTIVATE_KEY = "key"
-    const val API_ACTIVATE_PARAM = "{activationKey}"
-    const val API_ACTIVATE_PATH = "$API_USERS$API_ACTIVATE?$API_ACTIVATE_KEY="
-
+object SignupErrors {
     @JvmStatic
     val signupProblems: ProblemsModel =
         Constants.defaultProblems.copy(path = "$API_USERS$API_SIGNUP")
@@ -100,22 +91,5 @@ object SignupEndPoint {
             )
         )
 
-    fun Signup.validate(
-        exchange: ServerWebExchange
-    ): Set<Map<String, String?>> = exchange.validator.run {
-        setOf(
-            User.Attributes.PASSWORD_ATTR,
-            User.Attributes.EMAIL_ATTR,
-            User.Attributes.LOGIN_ATTR,
-        ).map { it to validateProperty(this@validate, it) }
-            .flatMap { (first, second) ->
-                second.map {
-                    mapOf<String, String?>(
-                        MODEL_FIELD_OBJECTNAME to Signup.objectName,
-                        MODEL_FIELD_FIELD to first,
-                        MODEL_FIELD_MESSAGE to it.message
-                    )
-                }
-            }.toSet()
-    }
+
 }

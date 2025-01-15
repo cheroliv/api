@@ -1,6 +1,6 @@
 package app.users.core.models
 
-import app.users.core.Constants
+import app.users.core.Constants.EMPTY_STRING
 import app.users.core.Loggers
 import app.users.core.models.User.Attributes.EMAIL_ATTR
 import app.users.core.models.User.Attributes.EMAIL_OR_LOGIN
@@ -25,7 +25,7 @@ import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
-import java.util.Locale
+import java.util.Locale.ENGLISH
 import java.util.UUID
 
 data class User(
@@ -33,18 +33,18 @@ data class User(
     @field:NotNull
     @field:Pattern(regexp = LOGIN_REGEX)
     @field:Size(min = 1, max = 50)
-    val login: String = Constants.EMPTY_STRING,
+    val login: String = EMPTY_STRING,
     @field:JsonIgnore
     @field:NotNull
     @field:Size(min = 60, max = 60)
-    val password: String = Constants.EMPTY_STRING,
+    val password: String = EMPTY_STRING,
     @field:Email
     @field:Size(min = 5, max = 254)
-    val email: String = Constants.EMPTY_STRING,
+    val email: String = EMPTY_STRING,
     @field:JsonIgnore
     val roles: Set<Role> = emptySet(),
     @field:Size(min = 2, max = 10)
-    val langKey: String = Locale.ENGLISH.language,
+    val langKey: String = ENGLISH.language,
     @field:JsonIgnore
     val version: Long = 0,
 ) : EntityModel<UUID>() {
@@ -97,10 +97,11 @@ data class User(
     }
 
     object Relations {
+        @Suppress("RemoveRedundantQualifierName")
         @JvmStatic
         val CREATE_TABLES: String
             get() = listOf(
-                SQL_SCRIPT,
+                User.Relations.SQL_SCRIPT,
                 Role.Relations.SQL_SCRIPT,
                 UserRole.Relations.SQL_SCRIPT,
                 UserActivation.Relations.SQL_SCRIPT,
@@ -133,6 +134,9 @@ data class User(
         CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_email" ON "$TABLE_NAME" ("$EMAIL_FIELD");
         """
         const val FIND_ALL_USERS = """SELECT * FROM "$TABLE_NAME";"""
+        const val LOGIN_AND_EMAIL_AVAILABLE_COLUMN = "login_and_email_available"
+        const val EMAIL_AVAILABLE_COLUMN = "email_available"
+        const val LOGIN_AVAILABLE_COLUMN = "login_available"
 
         const val INSERT = """
                 insert into "$TABLE_NAME" (
@@ -152,9 +156,6 @@ data class User(
                     "$VERSION_FIELD" = :$VERSION_ATTR
                 WHERE "$ID_FIELD" = :$ID_ATTR;"""
 
-        const val LOGIN_AND_EMAIL_AVAILABLE_COLUMN = "login_and_email_available"
-        const val EMAIL_AVAILABLE_COLUMN = "email_available"
-        const val LOGIN_AVAILABLE_COLUMN = "login_available"
         const val SELECT_SIGNUP_AVAILABILITY = """
                 SELECT
                     CASE
