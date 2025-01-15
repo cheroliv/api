@@ -2,9 +2,9 @@
 
 package app.users.signup
 
-import app.core.Loggers.i
-import app.core.database.EntityModel
-import app.core.web.HttpUtils.validator
+import app.users.core.Loggers.i
+import app.users.core.models.EntityModel
+import app.users.core.web.HttpUtils.validator
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR

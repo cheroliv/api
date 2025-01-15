@@ -1,10 +1,10 @@
 package app.users.profile
 
-import app.core.Constants
+import app.users.core.Constants
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
-import app.users.User
-import app.users.User.Relations.Fields.ID_FIELD
+import app.users.core.models.User
+import app.users.core.models.User.Relations.Fields.ID_FIELD
 import app.users.profile.UserProfile.Relations.Fields.TABLE_NAME
 import app.users.profile.UserProfile.Relations.Fields.FIRST_NAME_FIELD
 import app.users.profile.UserProfile.Relations.Fields.IMAGE_URL_FIELD

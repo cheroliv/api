@@ -1,6 +1,6 @@
 package app.users.password
 
-import app.users.User.EndPoint.API_USERS
+import app.users.core.models.User.EndPoint.API_USER
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD
 import app.users.password.PasswordEndPoint.API_RESET_PASSWORD_FINISH
 import app.users.password.PasswordEndPoint.API_RESET_PASSWORD_INIT
@@ -15,7 +15,7 @@ import org.springframework.web.server.ServerWebExchange
 
 
 @RestController
-@RequestMapping(API_USERS)
+@RequestMapping(API_USER)
 class PasswordController(private val service: PasswordService) {
 
     @PostMapping(API_CHANGE_PASSWORD)

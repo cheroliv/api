@@ -1,16 +1,16 @@
 package app.users.signup
 
-import app.core.Constants
-import app.core.database.EntityModel.Companion.MODEL_FIELD_FIELD
-import app.core.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
-import app.core.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.core.web.HttpUtils.badResponse
-import app.core.web.HttpUtils.validator
-import app.core.web.ProblemsModel
-import app.users.User
-import app.users.User.EndPoint.API_USERS
-import app.users.User.Relations.Fields.EMAIL_FIELD
-import app.users.User.Relations.Fields.LOGIN_FIELD
+import app.users.core.Constants
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.users.core.web.HttpUtils.badResponse
+import app.users.core.web.HttpUtils.validator
+import app.users.core.web.ProblemsModel
+import app.users.core.models.User
+import app.users.core.models.User.EndPoint.API_USERS
+import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
+import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatus

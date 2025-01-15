@@ -8,7 +8,7 @@ import org.springframework.web.server.ServerWebExchange
 import app.users.signup.SignupEndPoint.API_ACTIVATE
 import app.users.signup.SignupEndPoint.API_ACTIVATE_KEY
 import app.users.signup.SignupEndPoint.API_SIGNUP
-import app.users.User.EndPoint.API_USERS
+import app.users.core.models.User.EndPoint.API_USERS
 
 @RestController
 @RequestMapping(API_USERS)

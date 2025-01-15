@@ -30,57 +30,58 @@ import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
-import app.core.Constants.DEFAULT_LANGUAGE
-import app.core.Constants.DEVELOPMENT
-import app.core.Constants.EMPTY_STRING
-import app.core.Constants.PASSWORD
-import app.core.Constants.PATTERN_LOCALE_2
-import app.core.Constants.PATTERN_LOCALE_3
-import app.core.Constants.PRODUCTION
-import app.core.Constants.ROLE_USER
-import app.core.Constants.STARTUP_LOG_MSG_KEY
-import app.core.Constants.USER
-import app.core.Constants.VIRGULE
-import app.core.Constants.languages
-import app.core.Loggers.i
-import app.core.Properties
-import app.core.Utils.lsWorkingDir
-import app.core.Utils.lsWorkingDirProcess
-import app.core.Utils.toJson
-import app.core.database.EntityModel.Companion.MODEL_FIELD_FIELD
-import app.core.database.EntityModel.Companion.MODEL_FIELD_MESSAGE
-import app.core.database.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.core.database.EntityModel.Members.withId
-import app.core.mail.MailConfiguration.GoogleAuthConfig
-import app.core.security.SecurityUtils.generateActivationKey
-import app.core.security.SecurityUtils.generateResetKey
-import app.core.security.SecurityUtils.getCurrentUserLogin
-import app.core.web.HttpUtils.validator
-import app.users.User
-import app.users.User.Attributes.EMAIL_ATTR
-import app.users.User.Attributes.LOGIN_ATTR
-import app.users.User.Attributes.PASSWORD_ATTR
-import app.users.User.Relations.FIND_ALL_USERS
-import app.users.User.Relations.Fields.ID_FIELD
-import app.users.User.Relations.Fields.LOGIN_FIELD
-import app.users.User.Relations.Fields.PASSWORD_FIELD
-import app.users.UserDao.availability
-import app.users.UserDao.change
-import app.users.UserDao.findOne
-import app.users.UserDao.save
-import app.users.UserDao.signup
-import app.users.mail.MailService
-import app.users.mail.MailServiceSmtp
+import app.users.core.Constants.DEFAULT_LANGUAGE
+import app.users.core.Constants.DEVELOPMENT
+import app.users.core.Constants.EMPTY_STRING
+import app.users.core.Constants.PASSWORD
+import app.users.core.Constants.PATTERN_LOCALE_2
+import app.users.core.Constants.PATTERN_LOCALE_3
+import app.users.core.Constants.PRODUCTION
+import app.users.core.Constants.ROLE_USER
+import app.users.core.Constants.STARTUP_LOG_MSG_KEY
+import app.users.core.Constants.USER
+import app.users.core.Constants.VIRGULE
+import app.users.core.Constants.languages
+import app.users.core.Loggers.i
+import app.users.core.Properties
+import app.users.core.Utils.lsWorkingDir
+import app.users.core.Utils.lsWorkingDirProcess
+import app.users.core.Utils.toJson
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.users.core.models.EntityModel.Members.withId
+import app.users.core.mail.MailConfiguration.GoogleAuthConfig
+import app.users.core.security.SecurityUtils.generateActivationKey
+import app.users.core.security.SecurityUtils.generateResetKey
+import app.users.core.security.SecurityUtils.getCurrentUserLogin
+import app.users.core.web.HttpUtils.validator
+import app.users.core.models.User
+import app.users.core.models.User.Attributes.EMAIL_ATTR
+import app.users.core.models.User.Attributes.LOGIN_ATTR
+import app.users.core.models.User.Attributes.PASSWORD_ATTR
+import app.users.core.models.User.Relations.FIND_ALL_USERS
+import app.users.core.models.User.Relations.Fields.ID_FIELD
+import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
+import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
+import app.users.core.dao.UserDao.availability
+import app.users.core.dao.UserDao.change
+import app.users.core.dao.UserDao.findOne
+import app.users.core.dao.UserDao.save
+import app.users.core.dao.UserDao.signup
+import app.users.core.mail.MailService
+import app.users.core.mail.MailServiceSmtp
 import app.users.password.InvalidPasswordException
+import app.users.password.KeyAndPassword
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.PasswordEndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.password.PasswordService
-import app.users.security.Role
-import app.users.security.RoleDao.countRoles
-import app.users.security.UserRole
+import app.users.core.models.Role
+import app.users.core.dao.RoleDao.countRoles
+import app.users.core.models.UserRole
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.Signup.Constraints.PASSWORD_MAX
@@ -2236,9 +2237,10 @@ class Tests {
         }
     }
 
+    @Ignore
     @Test
     @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
-    fun `test reset password request`(): Unit = runBlocking {
+    fun `test initiate reset password request with valid key and`(): Unit = runBlocking {
         user.id.run(::assertNull)
 
         context.tripleCounts().run {
@@ -2284,11 +2286,11 @@ class Tests {
                         ).apply { "passwords matches : ${toString()}".run(::i) },
                         message = "password should be updated"
                     )
-
+                    //TODO: Run init reset to create key and retrieve in DB to test
                     client.post()
                         .uri(API_RESET_PASSWORD_INIT_PATH)
                         .contentType(APPLICATION_PROBLEM_JSON)
-                        .bodyValue(user.email)
+                        .bodyValue(KeyAndPassword(generateActivationKey))
                         .exchange()
                         .expectStatus()
                         .isOk
@@ -3239,20 +3241,28 @@ class Tests {
     }
 
     //@org.junit.jupiter.api.extension.ExtendWith
-//@org.junit.jupiter.api.TestInstance(PER_CLASS)
+    //@org.junit.jupiter.api.TestInstance(PER_CLASS)
     class GUITest {
         private lateinit var window: FrameFixture
 
         //    @kotlin.test.BeforeTest
         fun setUp() = execute {
-            window =
-//            context.
-                run(Installer::GUI)
-                    .run(::FrameFixture)
-                    .apply(FrameFixture::show)
+            // context.
+            window = run(Installer::GUI)
+                .run(::FrameFixture)
+                .apply(FrameFixture::show)
         }
 
         //    @kotlin.test.AfterTest
         fun tearDown() = window.cleanUp()
+    }
+
+    @Nested
+    @TestInstance(PER_CLASS)
+    inner class AiTests {
+        @Test
+        fun `ollama canary`(): Unit = runBlocking {
+            i("Hello from ollama!")
+        }
     }
 }

@@ -4,7 +4,7 @@ package app.users.signup
 
 import jakarta.validation.constraints.Size
 import org.apache.commons.lang3.RandomStringUtils.random
-import app.users.User
+import app.users.core.models.User
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR

@@ -1,7 +1,7 @@
 package app
 
-import app.core.Loggers.startupLog
-import app.core.Properties
+import app.users.core.Loggers.startupLog
+import app.users.core.Properties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.runApplication

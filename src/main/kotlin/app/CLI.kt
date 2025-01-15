@@ -1,9 +1,9 @@
 package app
 
-import app.core.Constants.CLI
-import app.core.Constants.CLI_PROPS
-import app.core.Constants.NORMAL_TERMINATION
-import app.core.Loggers.i
+import app.users.core.Constants.CLI
+import app.users.core.Constants.CLI_PROPS
+import app.users.core.Constants.NORMAL_TERMINATION
+import app.users.core.Loggers.i
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.runApplication

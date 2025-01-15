@@ -7,34 +7,34 @@ package app
 
 import app.TestUtils.Data.displayInsertUserScript
 import app.TestUtils.WithUnauthenticatedMockUser.Factory
-import app.core.Constants
-import app.core.Constants.ADMIN
-import app.core.Constants.DOMAIN_DEV_URL
-import app.core.Constants.EMPTY_STRING
-import app.core.Constants.ROLE_ADMIN
-import app.core.Constants.ROLE_ANONYMOUS
-import app.core.Constants.ROLE_USER
-import app.core.Constants.USER
-import app.core.Constants.VIRGULE
-import app.core.Loggers.i
-import app.core.database.EntityModel
-import app.core.database.EntityModel.Members.withId
-import app.users.User
-import app.users.User.Attributes.EMAIL_ATTR
-import app.users.User.Attributes.ID_ATTR
-import app.users.User.Attributes.LOGIN_ATTR
-import app.users.User.Members.ROLES_MEMBER
-import app.users.User.Relations.Fields.EMAIL_FIELD
-import app.users.User.Relations.Fields.LANG_KEY_FIELD
-import app.users.User.Relations.Fields.LOGIN_FIELD
-import app.users.User.Relations.Fields.PASSWORD_FIELD
-import app.users.User.Relations.Fields.VERSION_FIELD
-import app.users.User.Relations.Fields.TABLE_NAME
-import app.users.security.Role
-import app.users.security.UserRole
-import app.users.security.UserRole.Attributes.USER_ID_ATTR
-import app.users.security.UserRole.Relations.Fields.ROLE_FIELD
-import app.users.security.UserRole.Relations.Fields.USER_ID_FIELD
+import app.users.core.Constants
+import app.users.core.Constants.ADMIN
+import app.users.core.Constants.DOMAIN_DEV_URL
+import app.users.core.Constants.EMPTY_STRING
+import app.users.core.Constants.ROLE_ADMIN
+import app.users.core.Constants.ROLE_ANONYMOUS
+import app.users.core.Constants.ROLE_USER
+import app.users.core.Constants.USER
+import app.users.core.Constants.VIRGULE
+import app.users.core.Loggers.i
+import app.users.core.models.EntityModel
+import app.users.core.models.EntityModel.Members.withId
+import app.users.core.models.User
+import app.users.core.models.User.Attributes.EMAIL_ATTR
+import app.users.core.models.User.Attributes.ID_ATTR
+import app.users.core.models.User.Attributes.LOGIN_ATTR
+import app.users.core.models.User.Members.ROLES_MEMBER
+import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
+import app.users.core.models.User.Relations.Fields.LANG_KEY_FIELD
+import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
+import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
+import app.users.core.models.User.Relations.Fields.VERSION_FIELD
+import app.users.core.models.User.Relations.Fields.TABLE_NAME
+import app.users.core.models.Role
+import app.users.core.models.UserRole
+import app.users.core.models.UserRole.Attributes.USER_ID_ATTR
+import app.users.core.models.UserRole.Relations.Fields.ROLE_FIELD
+import app.users.core.models.UserRole.Relations.Fields.USER_ID_FIELD
 import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
@@ -591,13 +591,13 @@ object TestUtils {
             environment.defaultProfiles.isNotEmpty() -> environment.defaultProfiles.reduce { acc, s -> "$acc, $s" }
 
             else -> ""
-        }).let { "defaultProfiles : $it" }.let(_root_ide_package_.app.core.Loggers::i)
+        }).let { "defaultProfiles : $it" }.let(app.users.core.Loggers::i)
 
         (when {
             environment.activeProfiles.isNotEmpty() -> environment.activeProfiles.reduce { acc, s -> "$acc, $s" }
 
             else -> ""
-        }).let { "activeProfiles : $it" }.let(_root_ide_package_.app.core.Loggers::i)
+        }).let { "activeProfiles : $it" }.let(app.users.core.Loggers::i)
 
         //TODO: ajouter des app.users avec leurs roles
     }
