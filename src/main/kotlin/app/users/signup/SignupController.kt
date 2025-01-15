@@ -1,17 +1,22 @@
 package app.users.signup
 
+import app.users.core.models.User.EndPoint.API_USER
+import app.users.signup.Signup.EndPoint.API_ACTIVATE
+import app.users.signup.Signup.EndPoint.API_ACTIVATE_KEY
+import app.users.signup.Signup.EndPoint.API_SIGNUP
 import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
-import app.users.signup.SignupEndPoint.API_ACTIVATE
-import app.users.signup.SignupEndPoint.API_ACTIVATE_KEY
-import app.users.signup.SignupEndPoint.API_SIGNUP
-import app.users.core.models.User.EndPoint.API_USERS
 
 @RestController
-@RequestMapping(API_USERS)
+@RequestMapping(API_USER)
 class SignupController(private val service: SignupService) {
 
     /**

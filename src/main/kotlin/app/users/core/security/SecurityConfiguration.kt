@@ -38,11 +38,11 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         val permitAll = arrayOf(
             "/",
             "/*.*",
-            "/api/users/signup",
-            "/api/users/activate",
-            "/api/users/authenticate",
-            "/api/users/reset-password/init",
-            "/api/users/reset-password/finish",
+            "/api/user/signup",
+            "/api/user/activate",
+            "/api/user/authenticate",
+            "/api/user/reset-password/init",
+            "/api/user/reset-password/finish",
             "/api/ai/simple",
         )
         val authenticated = arrayOf(

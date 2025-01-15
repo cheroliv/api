@@ -14,8 +14,8 @@ import app.users.signup.SignupDao.activate
 import app.users.signup.SignupDao.validate
 import app.users.signup.SignupErrors.activateProblems
 import app.users.signup.SignupErrors.badResponseEmailIsNotAvailable
-import app.users.signup.SignupErrors.badResponseLoginIsNotAvailable
 import app.users.signup.SignupErrors.badResponseLoginAndEmailIsNotAvailable
+import app.users.signup.SignupErrors.badResponseLoginIsNotAvailable
 import app.users.signup.SignupErrors.exceptionProblem
 import app.users.signup.SignupErrors.signupProblems
 import arrow.core.Either
@@ -39,21 +39,6 @@ import java.util.UUID.randomUUID
 
 @Service
 class SignupService(private val context: ApplicationContext) {
-    companion object {
-        const val ONE_ROW_UPDATED = 1L
-
-        @JvmStatic
-        val SIGNUP_AVAILABLE = Triple(true, true, true)
-
-        @JvmStatic
-        val SIGNUP_LOGIN_NOT_AVAILABLE = Triple(false, true, false)
-
-        @JvmStatic
-        val SIGNUP_EMAIL_NOT_AVAILABLE = Triple(false, false, true)
-
-        @JvmStatic
-        val SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE = Triple(false, false, false)
-    }
 
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
         context.user(signup).run {
@@ -145,5 +130,21 @@ class SignupService(private val context: ApplicationContext) {
                     UserActivation::class.java
                 )
         }
+    }
+
+    companion object {
+        const val ONE_ROW_UPDATED = 1L
+
+        @JvmStatic
+        val SIGNUP_AVAILABLE = Triple(true, true, true)
+
+        @JvmStatic
+        val SIGNUP_LOGIN_NOT_AVAILABLE = Triple(false, true, false)
+
+        @JvmStatic
+        val SIGNUP_EMAIL_NOT_AVAILABLE = Triple(false, false, true)
+
+        @JvmStatic
+        val SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE = Triple(false, false, false)
     }
 }

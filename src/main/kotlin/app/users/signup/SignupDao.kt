@@ -26,6 +26,7 @@ import org.springframework.web.server.ServerWebExchange
 import java.util.*
 
 object SignupDao {
+
     fun Signup.validate(
         exchange: ServerWebExchange
     ): Set<Map<String, String?>> = exchange.validator.run {
@@ -38,6 +39,23 @@ object SignupDao {
                 second.map {
                     mapOf<String, String?>(
                         MODEL_FIELD_OBJECTNAME to Signup.objectName,
+                        MODEL_FIELD_FIELD to first,
+                        MODEL_FIELD_MESSAGE to it.message
+                    )
+                }
+            }.toSet()
+    }
+
+    fun UserActivation.validate(
+        exchange: ServerWebExchange
+    ): Set<Map<String, String?>> = exchange.validator.run {
+        i("Validate UserActivation : ${this@validate}")
+        setOf(ACTIVATION_KEY_ATTR)
+            .map { it to validateProperty(this@validate, it) }
+            .flatMap { (first, second) ->
+                second.map {
+                    mapOf<String, String?>(
+                        MODEL_FIELD_OBJECTNAME to UserActivation.objectName,
                         MODEL_FIELD_FIELD to first,
                         MODEL_FIELD_MESSAGE to it.message
                     )
@@ -77,22 +95,5 @@ object SignupDao {
             .right()
     } catch (e: Throwable) {
         e.left()
-    }
-
-    fun UserActivation.validate(
-        exchange: ServerWebExchange
-    ): Set<Map<String, String?>> = exchange.validator.run {
-        i("Validate UserActivation : ${this@validate}")
-        setOf(ACTIVATION_KEY_ATTR)
-            .map { it to validateProperty(this@validate, it) }
-            .flatMap { (first, second) ->
-                second.map {
-                    mapOf<String, String?>(
-                        MODEL_FIELD_OBJECTNAME to UserActivation.objectName,
-                        MODEL_FIELD_FIELD to first,
-                        MODEL_FIELD_MESSAGE to it.message
-                    )
-                }
-            }.toSet()
     }
 }

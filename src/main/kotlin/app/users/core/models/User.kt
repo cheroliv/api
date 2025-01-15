@@ -49,31 +49,6 @@ data class User(
     val version: Long = 0,
 ) : EntityModel<UUID>() {
 
-    companion object {
-        @JvmStatic
-        fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(Loggers::i)
-
-        const val IMAGE_URL_DEFAULT = "http://placehold.it/50x50"
-
-        @JvmStatic
-        val objectName: String = User::class
-            .java
-            .simpleName
-            .run {
-                replaceFirst(
-                    first(),
-                    first().lowercaseChar()
-                )
-            }
-    }
-
-
-    object EndPoint {
-        const val API_USER = "/api/user"
-        const val API_USERS = "/api/users"
-        const val API_AUTHORITY_PATH = "/api/authorities"
-    }
-
     object Constraints {
         const val LOGIN_REGEX =
             "^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$"
@@ -139,16 +114,12 @@ data class User(
         const val LOGIN_AVAILABLE_COLUMN = "login_available"
 
         const val INSERT = """
-                insert into "$TABLE_NAME" (
-                    "$LOGIN_FIELD", "$EMAIL_FIELD",
-                    "$PASSWORD_FIELD", "$LANG_KEY_FIELD",
-                    "$VERSION_FIELD"
-                ) values (
-                :$LOGIN_ATTR,
-                :$EMAIL_ATTR,
-                :$PASSWORD_ATTR,
-                :$LANG_KEY_ATTR,
-                :$VERSION_ATTR);"""
+                INSERT INTO "$TABLE_NAME" (
+                    "$LOGIN_FIELD", "$EMAIL_FIELD", "$PASSWORD_FIELD",
+                    "$LANG_KEY_FIELD", "$VERSION_FIELD"
+                ) VALUES (
+                :$LOGIN_ATTR, :$EMAIL_ATTR, :$PASSWORD_ATTR,
+                :$LANG_KEY_ATTR, :$VERSION_ATTR);"""
 
         const val UPDATE_PASSWORD = """
                 UPDATE "$TABLE_NAME"
@@ -169,15 +140,15 @@ data class User(
                              )
                             THEN FALSE
                         ELSE TRUE
-                    END AS login_and_email_available,
+                    END AS $LOGIN_AND_EMAIL_AVAILABLE_COLUMN,
                     NOT EXISTS(
                             SELECT 1 FROM "$TABLE_NAME" 
                             WHERE LOWER("$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)
-                        ) AS email_available,
+                        ) AS $EMAIL_AVAILABLE_COLUMN,
                     NOT EXISTS(
                             SELECT 1 FROM "$TABLE_NAME" 
                             WHERE LOWER("$LOGIN_FIELD") = LOWER(:$LOGIN_ATTR)
-                        ) AS login_available;
+                        ) AS $LOGIN_AVAILABLE_COLUMN;
         """
         const val FIND_USER_WITH_AUTHS_BY_EMAILOGIN = """
                             SELECT 
@@ -200,5 +171,29 @@ data class User(
                             GROUP BY 
                                 u."$ID_FIELD", u."$LOGIN_FIELD",u."$EMAIL_FIELD";
                         """
+    }
+
+    object EndPoint {
+        const val API_USER = "/api/user"
+        const val API_USERS = "/api/users"
+        const val API_AUTHORITY_PATH = "/api/authorities"
+    }
+
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(Loggers::i)
+
+        const val IMAGE_URL_DEFAULT = "http://placehold.it/50x50"
+
+        @JvmStatic
+        val objectName: String = User::class
+            .java
+            .simpleName
+            .run {
+                replaceFirst(
+                    first(),
+                    first().lowercaseChar()
+                )
+            }
     }
 }

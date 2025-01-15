@@ -9,7 +9,7 @@ import java.util.regex.Pattern
 import java.util.regex.Pattern.compile
 
 object Constants {
-
+    const val ROOT_PACKAGE = "app"
     const val BLANK = ""
     val languages = arrayOf("en", "fr", "de", "it", "es")
     val PATTERN_LOCALE_3: Pattern = compile("([a-z]{2})-([a-zA-Z]{4})-([a-z]{2})")
