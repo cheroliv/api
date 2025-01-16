@@ -16,6 +16,7 @@ import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USERACTIVATION
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
 import app.TestUtils.FIND_USER_BY_LOGIN
+import app.TestUtils.checkProperty
 import app.TestUtils.countUserActivation
 import app.TestUtils.countUserAuthority
 import app.TestUtils.countUsers
@@ -30,6 +31,8 @@ import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
+import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_FR
+import app.ai.SimpleAiController.PromptManager.USER_MSG_FR
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
@@ -134,6 +137,9 @@ import arrow.core.Either.Left
 import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
+import dev.langchain4j.model.chat.ChatLanguageModel
+import dev.langchain4j.service.SystemMessage
+import dev.langchain4j.service.spring.AiService
 import jakarta.mail.Multipart
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
@@ -3257,12 +3263,30 @@ class Tests {
         fun tearDown() = window.cleanUp()
     }
 
+    @AiService
+    interface Assistant {
+        @SystemMessage(SYSTEM_MSG_FR)
+        fun chat(userMessage: String?): String?
+    }
+
     @Nested
     @TestInstance(PER_CLASS)
     inner class AiTests {
+
         @Test
         fun `ollama canary`(): Unit = runBlocking {
-            i("Hello from ollama!")
+            i("Hello from ollama!\n\tusing model: ${context.environment["langchain4j.ollama.chat-model.model-name"]}")
+        }
+
+        @Test
+        fun `test ollama configuration`(): Unit = runBlocking {
+            assertThat("http://localhost:11434").isEqualTo(context.environment["langchain4j.ollama.chat-model.base-url"])
+//            assertThat("smollm2:360m-instruct-fp16").isEqualTo(context.environment["langchain4j.ollama.chat-model.model-name"])
+            assertDoesNotThrow {
+                context.getBean<Assistant>().run {
+                    chat(USER_MSG_FR)?.run(::i)
+                }
+            }
         }
     }
 }
