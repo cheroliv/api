@@ -248,47 +248,6 @@ class Tests {
         )
     }
 
-    @Nested
-    @TestInstance(PER_CLASS)
-    inner class AiTests {
-
-        @Test
-        fun `test ollama configuration`(): Unit = runBlocking {
-
-            assertThat(
-                context.environment["langchain4j.ollama.chat-model.base-url"]
-            ).isEqualTo("http://localhost:11434")
-
-            assertThat(
-                context.environment["langchain4j.ollama.chat-model.model-name"]
-            ).isEqualTo("smollm:135m")
-        }
-
-        @Test
-        fun `test simple ai api`(): Unit  {
-            client.mutate()
-                .responseTimeout(ofSeconds(60))
-                .build()
-                .get().uri("/api/ai/simple")
-                .exchange().expectStatus().isOk
-                .returnResult<ProblemDetail>()
-                .responseBodyContent!!
-                .responseToString()
-                .run { context.getBean<ObjectMapper>().readValue<ProblemDetail>(this) }
-                .detail!!.apply(::i)
-                .run(::assertThat)
-                .isNotEmpty
-                .asString()
-                .containsAnyOf(
-                    "code", "program", "function",
-                    "python", "html", "div", "json", "yaml", "xml",
-                    "javascript", "css", "kotlin", "if", "else",
-                    "for", "while", "return", "print", "true", "false"
-                )
-        }
-    }
-
-
     @BeforeTest
     fun setUp(context: ApplicationContext) {
         client = context.run(WebTestClient::bindToApplicationContext).build()
@@ -3300,4 +3259,43 @@ class Tests {
         fun tearDown() = window.cleanUp()
     }
 
+    @Nested
+    @TestInstance(PER_CLASS)
+    inner class AiTests {
+
+        @Test
+        fun `test ollama configuration`(): Unit = runBlocking {
+
+            assertThat(
+                context.environment["langchain4j.ollama.chat-model.base-url"]
+            ).isEqualTo("http://localhost:11434")
+
+            assertThat(
+                context.environment["langchain4j.ollama.chat-model.model-name"]
+            ).isEqualTo("smollm:135m")
+        }
+
+        @Test
+        fun `test simple ai api`(): Unit {
+            client.mutate()
+                .responseTimeout(ofSeconds(60))
+                .build()
+                .get().uri("/api/ai/simple")
+                .exchange().expectStatus().isOk
+                .returnResult<ProblemDetail>()
+                .responseBodyContent!!
+                .responseToString()
+                .run { context.getBean<ObjectMapper>().readValue<ProblemDetail>(this) }
+                .detail!!.apply(::i)
+                .run(::assertThat)
+                .isNotEmpty
+                .asString()
+                .containsAnyOf(
+                    "code", "program", "function",
+                    "python", "html", "div", "json", "yaml", "xml",
+                    "javascript", "css", "kotlin", "if", "else",
+                    "for", "while", "return", "print", "true", "false"
+                )
+        }
+    }
 }
