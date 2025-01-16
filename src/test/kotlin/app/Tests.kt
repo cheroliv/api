@@ -3296,6 +3296,7 @@ class Tests {
                     "for", "while", "return", "print", "true", "false"
                 )
         }
+
         @Test
         fun `test simple ai api, json format response`(): Unit = runBlocking {
             client.mutate()
