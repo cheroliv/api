@@ -3265,7 +3265,6 @@ class Tests {
 
         @Test
         fun `test ollama configuration`(): Unit = runBlocking {
-
             assertThat(
                 context.environment["langchain4j.ollama.chat-model.base-url"]
             ).isEqualTo("http://localhost:11434")
