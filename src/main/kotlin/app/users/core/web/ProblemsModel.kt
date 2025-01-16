@@ -96,7 +96,6 @@ public class BookmarkNotFoundException extends ErrorResponseException {
 }*/
 
 
-
 /*
 {
   "type": "https://cheroliv.github.io/problem/constraint-violation",

@@ -30,8 +30,6 @@ import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
-import app.ai.SimpleAiController.Assistant
-import app.ai.SimpleAiController.PromptManager.USER_MSG_FR
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
@@ -136,6 +134,7 @@ import arrow.core.Either.Left
 import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import jakarta.mail.Multipart
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
@@ -263,14 +262,10 @@ class Tests {
             assertThat(
                 context.environment["langchain4j.ollama.chat-model.model-name"]
             ).isEqualTo("smollm:135m")
-
-            assertDoesNotThrow {
-                context.getBean<Assistant>().run { chat(USER_MSG_FR)?.run(::i) }
-            }
         }
 
         @Test
-        fun `test simple ai api`(): Unit = runBlocking {
+        fun `test simple ai api`(): Unit  {
             client.mutate()
                 .responseTimeout(ofSeconds(60))
                 .build()
@@ -278,7 +273,9 @@ class Tests {
                 .exchange().expectStatus().isOk
                 .returnResult<ProblemDetail>()
                 .responseBodyContent!!
-                .responseToString().apply(::i)
+                .responseToString()
+                .run { context.getBean<ObjectMapper>().readValue<ProblemDetail>(this) }
+                .detail!!.apply(::i)
                 .run(::assertThat)
                 .isNotEmpty
                 .asString()

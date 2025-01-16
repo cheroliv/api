@@ -2,10 +2,8 @@
 
 package app.ai
 
-import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_FR
+import app.ai.AiConfiguration.Assistant
 import app.ai.SimpleAiController.PromptManager.USER_MSG_FR
-import dev.langchain4j.service.SystemMessage
-import dev.langchain4j.service.spring.AiService
 import org.springframework.http.HttpStatus.OK
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
@@ -18,12 +16,6 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class SimpleAiController(private val chat: Assistant) {
-
-    @AiService
-    interface Assistant {
-        @SystemMessage(SYSTEM_MSG_FR)
-        fun chat(userMessage: String?): String?
-    }
 
     @GetMapping("/api/ai/simple")
     suspend fun completion(
