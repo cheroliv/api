@@ -1,7 +1,6 @@
 package app.users.core.models
 
 import app.users.core.Constants.EMPTY_STRING
-import app.users.core.Loggers
 import app.users.core.models.User.Attributes.EMAIL_ATTR
 import app.users.core.models.User.Attributes.EMAIL_OR_LOGIN
 import app.users.core.models.User.Attributes.ID_ATTR
@@ -11,7 +10,6 @@ import app.users.core.models.User.Attributes.PASSWORD_ATTR
 import app.users.core.models.User.Attributes.VERSION_ATTR
 import app.users.core.models.User.Constraints.LOGIN_REGEX
 import app.users.core.models.User.Members.ROLES_MEMBER
-import app.users.core.models.User.Relations.CREATE_TABLES
 import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
 import app.users.core.models.User.Relations.Fields.ID_FIELD
 import app.users.core.models.User.Relations.Fields.LANG_KEY_FIELD
@@ -49,11 +47,27 @@ data class User(
     val version: Long = 0,
 ) : EntityModel<UUID>() {
 
+    companion object {
+        @JvmStatic
+        val objectName: String = User::class
+            .java
+            .simpleName
+            .run {
+                replaceFirst(
+                    first(),
+                    first().lowercaseChar()
+                )
+            }
+
+    }
+
     object Constraints {
         const val LOGIN_REGEX =
             "^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$"
-        const val IMAGE_URL_DEFAULT = "https://placehold.it/50x50"
         const val PHONE_REGEX = "^(\\+|00)?[1-9]\\d{0,49}\$"
+
+
+        const val IMAGE_URL_DEFAULT = "https://placehold.it/50x50"
     }
 
     object Members {
@@ -112,7 +126,6 @@ data class User(
         const val LOGIN_AND_EMAIL_AVAILABLE_COLUMN = "login_and_email_available"
         const val EMAIL_AVAILABLE_COLUMN = "email_available"
         const val LOGIN_AVAILABLE_COLUMN = "login_available"
-
         const val INSERT = """
                 INSERT INTO "$TABLE_NAME" (
                     "$LOGIN_FIELD", "$EMAIL_FIELD", "$PASSWORD_FIELD",
@@ -120,13 +133,11 @@ data class User(
                 ) VALUES (
                 :$LOGIN_ATTR, :$EMAIL_ATTR, :$PASSWORD_ATTR,
                 :$LANG_KEY_ATTR, :$VERSION_ATTR);"""
-
         const val UPDATE_PASSWORD = """
                 UPDATE "$TABLE_NAME"
                 SET "$PASSWORD_FIELD" = :$PASSWORD_ATTR,
                     "$VERSION_FIELD" = :$VERSION_ATTR
                 WHERE "$ID_FIELD" = :$ID_ATTR;"""
-
         const val SELECT_SIGNUP_AVAILABILITY = """
                 SELECT
                     CASE
@@ -177,23 +188,5 @@ data class User(
         const val API_USER = "/api/user"
         const val API_USERS = "/api/users"
         const val API_AUTHORITY_PATH = "/api/authorities"
-    }
-
-    companion object {
-        @JvmStatic
-        fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(Loggers::i)
-
-        const val IMAGE_URL_DEFAULT = "http://placehold.it/50x50"
-
-        @JvmStatic
-        val objectName: String = User::class
-            .java
-            .simpleName
-            .run {
-                replaceFirst(
-                    first(),
-                    first().lowercaseChar()
-                )
-            }
     }
 }

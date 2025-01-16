@@ -6,6 +6,11 @@ import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_FR
 import app.ai.SimpleAiController.PromptManager.USER_MSG_FR
 import dev.langchain4j.service.SystemMessage
 import dev.langchain4j.service.spring.AiService
+import org.springframework.http.HttpStatus.OK
+import org.springframework.http.ProblemDetail
+import org.springframework.http.ProblemDetail.forStatusAndDetail
+import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.ok
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -24,7 +29,8 @@ class SimpleAiController(private val chat: Assistant) {
     suspend fun completion(
         @RequestParam(value = "message", defaultValue = USER_MSG_FR)
         message: String?
-    ) = chat.chat(message)
+    ): ResponseEntity<ProblemDetail> = ok()
+        .body(forStatusAndDetail(OK, chat.chat(message)))
 
     object PromptManager {
         const val ASSISTANT_NAME = "E-3PO"

@@ -327,3 +327,12 @@ tasks.register<Exec>("apiCheckFirefox") {
             .toAbsolutePath()
     )
 }
+
+tasks.register<JavaExec>("displayCreateTestDbSchema") {
+    group = "application"
+    description = "Display SQL script who creates database tables into test schema."
+    "app.users.core.dao.DatabaseConfiguration".run(mainClass::set)
+    "main".run(sourceSets::get)
+        .runtimeClasspath
+        .run(::setClasspath)
+}

@@ -1,6 +1,7 @@
 package app.users.core.dao
 
 import app.users.core.Constants.ROOT_PACKAGE
+import app.users.core.Loggers
 import app.users.core.Loggers.i
 import app.users.core.models.User.Relations.CREATE_TABLES
 import io.r2dbc.spi.ConnectionFactory
@@ -35,6 +36,10 @@ import java.time.ZoneOffset.UTC
 @EnableTransactionManagement
 @EnableR2dbcRepositories(ROOT_PACKAGE)
 class DatabaseConfiguration(private val context: ApplicationContext) {
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(Loggers::i)
+    }
 
     //TODO: https://reflectoring.io/spring-bean-lifecycle/
     fun createSystemUser(): Unit = i("Creating system user")

@@ -30,7 +30,7 @@ import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
-import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_FR
+import app.ai.SimpleAiController.Assistant
 import app.ai.SimpleAiController.PromptManager.USER_MSG_FR
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
@@ -136,8 +136,6 @@ import arrow.core.Either.Left
 import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
-import dev.langchain4j.service.SystemMessage
-import dev.langchain4j.service.spring.AiService
 import jakarta.mail.Multipart
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
@@ -208,6 +206,7 @@ import java.nio.charset.Charset
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.SecureRandom
+import java.time.Duration.ofSeconds
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
 import java.util.*
@@ -250,35 +249,48 @@ class Tests {
         )
     }
 
-    @AiService
-    interface Assistant {
-        @SystemMessage(SYSTEM_MSG_FR)
-        fun chat(userMessage: String?): String?
-    }
-
-
     @Nested
     @TestInstance(PER_CLASS)
     inner class AiTests {
 
         @Test
-        fun `ollama canary`(): Unit = runBlocking {
-            i("Hello from ollama!\n\tusing model: ${context.environment["langchain4j.ollama.chat-model.model-name"]}")
+        fun `test ollama configuration`(): Unit = runBlocking {
+
+            assertThat(
+                context.environment["langchain4j.ollama.chat-model.base-url"]
+            ).isEqualTo("http://localhost:11434")
+
+            assertThat(
+                context.environment["langchain4j.ollama.chat-model.model-name"]
+            ).isEqualTo("smollm:135m")
+
+            assertDoesNotThrow {
+                context.getBean<Assistant>().run { chat(USER_MSG_FR)?.run(::i) }
+            }
         }
 
         @Test
-        fun `test ollama configuration`(): Unit = runBlocking {
-            assertThat("http://localhost:11434")
-                .isEqualTo(context.environment["langchain4j.ollama.chat-model.base-url"])
-            assertThat("smollm:135m")
-                .isEqualTo(context.environment["langchain4j.ollama.chat-model.model-name"])
-            assertDoesNotThrow {
-                context.getBean<Assistant>().run {
-                    chat(USER_MSG_FR)?.run(::i)
-                }
-            }
+        fun `test simple ai api`(): Unit = runBlocking {
+            client.mutate()
+                .responseTimeout(ofSeconds(60))
+                .build()
+                .get().uri("/api/ai/simple")
+                .exchange().expectStatus().isOk
+                .returnResult<ProblemDetail>()
+                .responseBodyContent!!
+                .responseToString().apply(::i)
+                .run(::assertThat)
+                .isNotEmpty
+                .asString()
+                .containsAnyOf(
+                    "code", "program", "function",
+                    "python", "html", "div", "json", "yaml", "xml",
+                    "javascript", "css", "kotlin", "if", "else",
+                    "for", "while", "return", "print", "true", "false"
+                )
         }
     }
+
 
     @BeforeTest
     fun setUp(context: ApplicationContext) {
@@ -3275,7 +3287,7 @@ class Tests {
     }
 
     //@org.junit.jupiter.api.extension.ExtendWith
-    //@org.junit.jupiter.api.TestInstance(PER_CLASS)
+//@org.junit.jupiter.api.TestInstance(PER_CLASS)
     class GUITest {
         private lateinit var window: FrameFixture
 
