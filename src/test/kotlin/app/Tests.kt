@@ -252,6 +252,34 @@ class Tests {
         )
     }
 
+    @AiService
+    interface Assistant {
+        @SystemMessage(SYSTEM_MSG_FR)
+        fun chat(userMessage: String?): String?
+    }
+
+
+    @Nested
+    @TestInstance(PER_CLASS)
+    inner class AiTests {
+
+        @Test
+        fun `ollama canary`(): Unit = runBlocking {
+            i("Hello from ollama!\n\tusing model: ${context.environment["langchain4j.ollama.chat-model.model-name"]}")
+        }
+
+        @Test
+        fun `test ollama configuration`(): Unit = runBlocking {
+            assertThat("http://localhost:11434").isEqualTo(context.environment["langchain4j.ollama.chat-model.base-url"])
+//            assertThat("smollm2:360m-instruct-fp16").isEqualTo(context.environment["langchain4j.ollama.chat-model.model-name"])
+            assertDoesNotThrow {
+                context.getBean<Assistant>().run {
+                    chat(USER_MSG_FR)?.run(::i)
+                }
+            }
+        }
+    }
+
     @BeforeTest
     fun setUp(context: ApplicationContext) {
         client = context.run(WebTestClient::bindToApplicationContext).build()
@@ -3263,30 +3291,4 @@ class Tests {
         fun tearDown() = window.cleanUp()
     }
 
-    @AiService
-    interface Assistant {
-        @SystemMessage(SYSTEM_MSG_FR)
-        fun chat(userMessage: String?): String?
-    }
-
-    @Nested
-    @TestInstance(PER_CLASS)
-    inner class AiTests {
-
-        @Test
-        fun `ollama canary`(): Unit = runBlocking {
-            i("Hello from ollama!\n\tusing model: ${context.environment["langchain4j.ollama.chat-model.model-name"]}")
-        }
-
-        @Test
-        fun `test ollama configuration`(): Unit = runBlocking {
-            assertThat("http://localhost:11434").isEqualTo(context.environment["langchain4j.ollama.chat-model.base-url"])
-//            assertThat("smollm2:360m-instruct-fp16").isEqualTo(context.environment["langchain4j.ollama.chat-model.model-name"])
-            assertDoesNotThrow {
-                context.getBean<Assistant>().run {
-                    chat(USER_MSG_FR)?.run(::i)
-                }
-            }
-        }
-    }
 }
