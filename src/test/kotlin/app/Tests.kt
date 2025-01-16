@@ -3264,7 +3264,7 @@ class Tests {
     inner class AiTests {
 
         @Test
-        fun `test ollama configuration`(): Unit = runBlocking {
+        fun `test ollama configuration`(): Unit {
             assertThat(
                 context.environment["langchain4j.ollama.chat-model.base-url"]
             ).isEqualTo("http://localhost:11434")
@@ -3275,7 +3275,29 @@ class Tests {
         }
 
         @Test
-        fun `test simple ai api`(): Unit {
+        fun `test simple ai api`(): Unit = runBlocking {
+            client.mutate()
+                .responseTimeout(ofSeconds(60))
+                .build()
+                .get().uri("/api/ai/trivial")
+                .exchange().expectStatus().isOk
+                .returnResult<ProblemDetail>()
+                .responseBodyContent!!
+                .responseToString()
+                .run { context.getBean<ObjectMapper>().readValue<ProblemDetail>(this) }
+                .detail!!.apply(::i)
+                .run(::assertThat)
+                .isNotEmpty
+                .asString()
+                .containsAnyOf(
+                    "code", "program", "function",
+                    "python", "html", "div", "json", "yaml", "xml",
+                    "javascript", "css", "kotlin", "if", "else",
+                    "for", "while", "return", "print", "true", "false"
+                )
+        }
+        @Test
+        fun `test simple ai api, json format response`(): Unit = runBlocking {
             client.mutate()
                 .responseTimeout(ofSeconds(60))
                 .build()

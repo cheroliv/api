@@ -16,9 +16,15 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class SimpleAiController(private val chat: Assistant) {
-
     @GetMapping("/api/ai/simple")
-    suspend fun completion(
+    suspend fun simple(
+        @RequestParam(value = "message", defaultValue = USER_MSG_FR)
+        message: String?
+    ): ResponseEntity<ProblemDetail> = ok()
+        .body(forStatusAndDetail(OK, chat.chat(message)))
+
+    @GetMapping("/api/ai/trivial")
+    suspend fun trivial(
         @RequestParam(value = "message", defaultValue = USER_MSG_FR)
         message: String?
     ): ResponseEntity<ProblemDetail> = ok()

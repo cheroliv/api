@@ -43,6 +43,7 @@ class SecurityConfiguration(private val context: ApplicationContext) {
             "/api/user/authenticate",
             "/api/user/reset-password/init",
             "/api/user/reset-password/finish",
+            "/api/ai/trivial",
             "/api/ai/simple",
         )
         val authenticated = arrayOf(
