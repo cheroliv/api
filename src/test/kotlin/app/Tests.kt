@@ -16,7 +16,6 @@ import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USERACTIVATION
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
 import app.TestUtils.FIND_USER_BY_LOGIN
-import app.TestUtils.checkProperty
 import app.TestUtils.countUserActivation
 import app.TestUtils.countUserAuthority
 import app.TestUtils.countUsers
@@ -50,15 +49,20 @@ import app.users.core.Properties
 import app.users.core.Utils.lsWorkingDir
 import app.users.core.Utils.lsWorkingDirProcess
 import app.users.core.Utils.toJson
+import app.users.core.dao.RoleDao.countRoles
+import app.users.core.dao.UserDao.availability
+import app.users.core.dao.UserDao.change
+import app.users.core.dao.UserDao.findOne
+import app.users.core.dao.UserDao.save
+import app.users.core.dao.UserDao.signup
+import app.users.core.mail.MailConfiguration.GoogleAuthConfig
+import app.users.core.mail.MailService
+import app.users.core.mail.MailServiceSmtp
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
 import app.users.core.models.EntityModel.Members.withId
-import app.users.core.mail.MailConfiguration.GoogleAuthConfig
-import app.users.core.security.SecurityUtils.generateActivationKey
-import app.users.core.security.SecurityUtils.generateResetKey
-import app.users.core.security.SecurityUtils.getCurrentUserLogin
-import app.users.core.web.HttpUtils.validator
+import app.users.core.models.Role
 import app.users.core.models.User
 import app.users.core.models.User.Attributes.EMAIL_ATTR
 import app.users.core.models.User.Attributes.LOGIN_ATTR
@@ -67,13 +71,11 @@ import app.users.core.models.User.Relations.FIND_ALL_USERS
 import app.users.core.models.User.Relations.Fields.ID_FIELD
 import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
 import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
-import app.users.core.dao.UserDao.availability
-import app.users.core.dao.UserDao.change
-import app.users.core.dao.UserDao.findOne
-import app.users.core.dao.UserDao.save
-import app.users.core.dao.UserDao.signup
-import app.users.core.mail.MailService
-import app.users.core.mail.MailServiceSmtp
+import app.users.core.models.UserRole
+import app.users.core.security.SecurityUtils.generateActivationKey
+import app.users.core.security.SecurityUtils.generateResetKey
+import app.users.core.security.SecurityUtils.getCurrentUserLogin
+import app.users.core.web.HttpUtils.validator
 import app.users.password.InvalidPasswordException
 import app.users.password.KeyAndPassword
 import app.users.password.PasswordChange
@@ -82,9 +84,6 @@ import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.PasswordEndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.password.PasswordService
-import app.users.core.models.Role
-import app.users.core.dao.RoleDao.countRoles
-import app.users.core.models.UserRole
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.Signup.Constraints.PASSWORD_MAX
@@ -92,6 +91,8 @@ import app.users.signup.Signup.Constraints.PASSWORD_MIN
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_PARAM
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
 import app.users.signup.Signup.EndPoint.API_SIGNUP_PATH
+import app.users.signup.SignupDao.activate
+import app.users.signup.SignupDao.validate
 import app.users.signup.SignupService
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
 import app.users.signup.SignupService.Companion.SIGNUP_AVAILABLE
@@ -104,8 +105,6 @@ import app.users.signup.UserActivation.Companion.ACTIVATION_KEY_SIZE
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
-import app.users.signup.SignupDao.activate
-import app.users.signup.SignupDao.validate
 import app.workspace.Installer
 import app.workspace.Workspace
 import app.workspace.Workspace.Companion.install
@@ -137,7 +136,6 @@ import arrow.core.Either.Left
 import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
-import dev.langchain4j.model.chat.ChatLanguageModel
 import dev.langchain4j.service.SystemMessage
 import dev.langchain4j.service.spring.AiService
 import jakarta.mail.Multipart
@@ -270,8 +268,10 @@ class Tests {
 
         @Test
         fun `test ollama configuration`(): Unit = runBlocking {
-            assertThat("http://localhost:11434").isEqualTo(context.environment["langchain4j.ollama.chat-model.base-url"])
-//            assertThat("smollm2:360m-instruct-fp16").isEqualTo(context.environment["langchain4j.ollama.chat-model.model-name"])
+            assertThat("http://localhost:11434")
+                .isEqualTo(context.environment["langchain4j.ollama.chat-model.base-url"])
+            assertThat("smollm:135m")
+                .isEqualTo(context.environment["langchain4j.ollama.chat-model.model-name"])
             assertDoesNotThrow {
                 context.getBean<Assistant>().run {
                     chat(USER_MSG_FR)?.run(::i)

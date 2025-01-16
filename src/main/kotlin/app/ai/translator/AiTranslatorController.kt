@@ -69,7 +69,9 @@ class AiTranslatorController(service: ChatModelService) {
 
         fun ApplicationContext.createOllamaChatModel(model: String = "smollm:135m"): OllamaChatModel =
             OllamaChatModel.builder().apply {
-                baseUrl(environment.getProperty("ollama.baseUrl") as? String ?: "http://localhost:11434")
+                baseUrl(
+                    environment.getProperty("ollama.baseUrl") as? String ?: "http://localhost:11434"
+                )
 //                modelName(findProperty("ollama.modelName") as? String ?: model)
 //                temperature(findProperty("ollama.temperature") as? Double ?: 0.8)
 //                timeout(ofSeconds(findProperty("ollama.timeout") as? Long ?: 6_000))
