@@ -41,11 +41,12 @@ class Web(private val context: ApplicationContext) : WebFluxConfigurer {
         fun validationPostProcessor() = MethodValidationPostProcessor()
 
         @JvmStatic
-        fun ApplicationContext.configuration(): Properties = Properties().apply {
-            getBean<ClassPathResource>("classpath:private.properties")
-                .inputStream
-                .use(::load)
-        }
+        val ApplicationContext.configuration: Properties
+            get() = Properties().apply {
+                getBean<ClassPathResource>("classpath:private.properties")
+                    .inputStream
+                    .use(::load)
+            }
     }
 
     @Component
