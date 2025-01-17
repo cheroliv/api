@@ -3,17 +3,16 @@
 package app.users.core.web
 
 import app.users.core.Constants.PRODUCTION
+import app.users.core.Loggers.i
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import jakarta.validation.MessageInterpolator
 import jakarta.validation.Validation
 import jakarta.validation.ValidatorFactory
-import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import org.springframework.core.io.ClassPathResource
 import org.springframework.data.web.ReactivePageableHandlerMethodArgumentResolver
 import org.springframework.data.web.ReactiveSortHandlerMethodArgumentResolver
 import org.springframework.stereotype.Component
@@ -43,10 +42,10 @@ class Web(private val context: ApplicationContext) : WebFluxConfigurer {
         @JvmStatic
         val ApplicationContext.configuration: Properties
             get() = Properties().apply {
-                getBean<ClassPathResource>("classpath:private.properties")
-                    .inputStream
+                "classpath*:private.properties"
+                    .run(classLoader!!::getResourceAsStream)
                     .use(::load)
-            }
+            }.apply { i("configuration: $this") }
     }
 
     @Component

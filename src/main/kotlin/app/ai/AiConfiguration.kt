@@ -1,21 +1,67 @@
 package app.ai
 
 import app.ai.AiConfiguration.PromptManager.FRENCH
+import app.users.core.web.Web.Companion.configuration
+import dev.langchain4j.data.message.UserMessage
+import dev.langchain4j.model.chat.ChatLanguageModel
+import dev.langchain4j.model.huggingface.HuggingFaceChatModel
+import dev.langchain4j.model.huggingface.HuggingFaceModelName.TII_UAE_FALCON_7B_INSTRUCT
+import dev.langchain4j.model.output.Response
 import dev.langchain4j.service.SystemMessage
 import dev.langchain4j.service.spring.AiService
-import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationContext
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.io.ClassPathResource
-import java.util.Properties
+import reactor.core.publisher.Mono
+import reactor.core.publisher.Mono.just
+import java.time.Duration.ofSeconds
+import java.util.function.Function
+
 
 @Configuration
 class AiConfiguration(private val context: ApplicationContext) {
+
     @AiService
     interface Assistant {
         @SystemMessage(FRENCH.SYSTEM_MSG)
         fun chat(userMessage: String?): String?
     }
+
+//    data class MessageDto(val message: String)
+
+
+//    interface ChatAdapter {
+//        fun chatPrompt(message: MessageDto): Mono<Any>
+//    }
+
+//    class ChatLangChainAdapter(
+//        private val chatLanguageModel: ChatLanguageModel
+//    ) : ChatAdapter {
+//
+//        override fun chatPrompt(message: MessageDto): Mono<Any> = just<MessageDto>(message)
+//            .map(MessageDto::message)
+//            .map(UserMessage::from)
+//            .map(chatLanguageModel::generate)
+//            .map { it.content().text() }
+//    }
+
+//    @Bean
+//    fun chatLangChainAdapter(@Autowired chatLanguageModel: ChatLanguageModel): ChatAdapter {
+//        return ChatLangChainAdapter(chatLanguageModel)
+//    }
+
+    @Bean
+    fun chatLanguageModel(): ChatLanguageModel = "huggingface.1.api-key.1.key"
+        .run(context.configuration::getProperty)
+        .run(HuggingFaceChatModel.builder()::accessToken)
+        .modelId(TII_UAE_FALCON_7B_INSTRUCT)
+        .timeout(ofSeconds(15))
+        .temperature(0.7)
+        .maxNewTokens(20)
+        .waitForModel(true)
+        .build()
+
 
     object PromptManager {
         const val ASSISTANT_NAME = "E-3PO"
@@ -55,3 +101,4 @@ class AiConfiguration(private val context: ApplicationContext) {
         }
     }
 }
+
