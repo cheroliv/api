@@ -62,7 +62,7 @@ object SignupErrors {
                     MODEL_FIELD_OBJECTNAME to User.objectName,
                     MODEL_FIELD_FIELD to LOGIN_FIELD,
                     MODEL_FIELD_FIELD to EMAIL_FIELD,
-                    MODEL_FIELD_MESSAGE to "Login name already used and email is already in use!!"
+                    MODEL_FIELD_MESSAGE to "Login name already used and email is already in use!"
                 )
             )
         )

@@ -11,7 +11,7 @@ import app.users.profile.UserProfile.Relations.Fields.IMAGE_URL_FIELD
 import app.users.profile.UserProfile.Relations.Fields.LAST_NAME_FIELD
 import java.util.*
 
-@JvmRecord
+
 data class UserProfile(
     @field:NotNull
     val id: UUID,

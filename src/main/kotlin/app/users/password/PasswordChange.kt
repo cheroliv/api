@@ -5,7 +5,7 @@ import app.users.signup.Signup.Constraints.PASSWORD_MIN
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
-@JvmRecord
+
 data class PasswordChange(
     @field:NotNull
     @field:Size(min = PASSWORD_MIN, max = PASSWORD_MAX)

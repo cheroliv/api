@@ -19,7 +19,7 @@ import java.time.Instant
 import java.time.Instant.now
 import java.util.*
 
-@JvmRecord
+
 data class UserActivation(
     val id: UUID,
     @field:Size(max = ACTIVATION_KEY_SIZE)

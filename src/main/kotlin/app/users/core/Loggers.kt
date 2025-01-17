@@ -68,7 +68,7 @@ object Loggers {
             .run(Loggers::i)
     }
 
-    @JvmRecord
+
     private data class StartupLogMsg(
         val appName: String?,
         val goVisitMessage: String,

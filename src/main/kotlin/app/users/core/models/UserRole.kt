@@ -8,7 +8,7 @@ import app.users.core.models.UserRole.Relations.Fields.USER_ID_FIELD
 import jakarta.validation.constraints.NotNull
 import java.util.*
 
-@JvmRecord
+
 data class UserRole(
     val id: Long = -1,
     @field:NotNull

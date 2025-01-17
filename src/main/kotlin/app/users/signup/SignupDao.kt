@@ -73,7 +73,8 @@ object SignupDao {
             .bind(CREATED_DATE_ATTR, first.createdDate)
             .bind(
                 ACTIVATION_DATE_ATTR,
-                first.activationDate!!
+                @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
+                first.activationDate
             ).fetch()
             .awaitRowsUpdated()
             .right()

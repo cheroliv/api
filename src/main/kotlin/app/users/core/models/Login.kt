@@ -3,7 +3,7 @@ package app.users.core.models
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 
-@JvmRecord
+
 data class Login(
     @field:NotNull
     val username:
