@@ -48,7 +48,7 @@ data class User(
 ) : EntityModel<UUID>() {
 
     companion object {
-        @JvmStatic
+        
         val objectName: String = User::class
             .java
             .simpleName
@@ -87,7 +87,7 @@ data class User(
 
     object Relations {
         @Suppress("RemoveRedundantQualifierName")
-        @JvmStatic
+        
         val CREATE_TABLES: String
             get() = listOf(
                 User.Relations.SQL_SCRIPT,

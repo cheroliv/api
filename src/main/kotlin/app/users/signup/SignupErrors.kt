@@ -20,15 +20,15 @@ import org.springframework.http.ResponseEntity.status
 import java.net.URI
 
 object SignupErrors {
-    @JvmStatic
+    
     val signupProblems: ProblemsModel =
         Constants.defaultProblems.copy(path = "$API_USERS$API_SIGNUP")
 
-    @JvmStatic
+    
     val activateProblems: ProblemsModel =
         Constants.defaultProblems.copy(path = "$API_USERS$API_ACTIVATE")
 
-    @JvmStatic
+    
     fun ProblemsModel.exceptionProblem(
         ex: Throwable,
         status: HttpStatus,
@@ -54,7 +54,7 @@ object SignupErrors {
         }.run { status(status).body(this) }
 
 
-    @JvmStatic
+    
     val ProblemsModel.badResponseLoginAndEmailIsNotAvailable: ResponseEntity<ProblemDetail>
         get() = badResponse(
             setOf(
@@ -67,7 +67,7 @@ object SignupErrors {
             )
         )
 
-    @JvmStatic
+    
     val ProblemsModel.badResponseLoginIsNotAvailable: ResponseEntity<ProblemDetail>
         get() = badResponse(
             setOf(
@@ -79,7 +79,7 @@ object SignupErrors {
             )
         )
 
-    @JvmStatic
+    
     val ProblemsModel.badResponseEmailIsNotAvailable: ResponseEntity<ProblemDetail>
         get() = badResponse(
             setOf(

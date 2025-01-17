@@ -33,7 +33,7 @@ object Utils {
 //        .deleteCharAt(length - 2)
 //        .toString()
 
-    @JvmStatic
+    
     val String.upperFirstLetter
         get() = run {
             replaceFirst(
@@ -42,7 +42,7 @@ object Utils {
             )
         }
 
-    @JvmStatic
+    
     val String.lowerFirstLetter
         get() = run {
             replaceFirst(

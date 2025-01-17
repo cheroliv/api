@@ -15,7 +15,7 @@ import kotlin.system.exitProcess
 @Profile(CLI)
 class CLI : CommandLineRunner {
     companion object {
-        @JvmStatic
+        
         fun main(args: Array<String>) {
             runApplication<API>(*args) {
                 setAdditionalProfiles(CLI)

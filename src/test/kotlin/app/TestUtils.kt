@@ -114,7 +114,7 @@ import kotlin.toString
 
 
 object TestUtils {
-    @JvmStatic
+    
     fun main(args: Array<String>): Unit = displayInsertUserScript()
 
 

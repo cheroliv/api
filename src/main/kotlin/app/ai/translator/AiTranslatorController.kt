@@ -44,14 +44,14 @@ class AiTranslatorController(service: ChatModelService) {
     }
 
     object AssistantManager {
-        @JvmStatic
+        
         fun main(args: Array<String>) {
             FRENCH.SYSTEM_MSG.run { "userMessageFr : $this" }.run(::println)
             println()
             ENGLISH.SYSTEM_MSG.run { "userMessageEn : $this" }.run(::println)
         }
 
-        @JvmStatic
+        
         val localModels
             get() = setOf(
                 "llama3.2:3b" to "LlamaTiny",
@@ -61,7 +61,7 @@ class AiTranslatorController(service: ChatModelService) {
             )
 
         // Creating tasks for each model
-        @JvmStatic
+        
         fun ApplicationContext.createChatTasks() = localModels.forEach {
             createChatTask(it.first, "helloOllama${it.second}")
             createStreamingChatTask(it.first, "helloOllamaStream${it.second}")
@@ -143,7 +143,7 @@ class AiTranslatorController(service: ChatModelService) {
 //            }
         }
 
-//        @JvmStatic
+//        
 //        val ApplicationContext.openAIapiKey: String
 //            get() = privateProps["OPENAI_API_KEY"] as String
 

@@ -37,7 +37,7 @@ object Loggers {
     fun e(message: String, e: Exception?): Unit = log.error(message, e)
     fun w(message: String, e: Exception?): Unit = log.warn(message, e)
 
-    @JvmStatic
+    
     fun ApplicationContext.startupLog() = logProfiles.run {
         StartupLogMsg(
             appName = SPRING_APPLICATION_NAME.run(environment::getProperty),

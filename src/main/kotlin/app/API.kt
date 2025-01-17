@@ -10,7 +10,7 @@ import org.springframework.boot.runApplication
 @EnableConfigurationProperties(Properties::class)
 class API {
     companion object {
-        @JvmStatic
+        
         fun main(args: Array<String>): Unit = runApplication<API>(*args).startupLog()
     }
 }

@@ -50,7 +50,7 @@ data class Signup(
     }
 
     companion object {
-        @JvmStatic
+        
         val objectName: String = Signup::class
             .java
             .simpleName

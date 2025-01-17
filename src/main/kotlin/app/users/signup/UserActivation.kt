@@ -39,7 +39,7 @@ data class UserActivation(
         const val ACTIVATION_KEY_SIZE = 20
         @Suppress("SpellCheckingInspection")
         val USERACTIVATIONCLASS = UserActivation::class.java
-        @JvmStatic
+        
         val objectName: String = USERACTIVATIONCLASS.simpleName.run {
             replaceFirst(
                 first(),
