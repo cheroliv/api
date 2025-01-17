@@ -8,10 +8,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import jakarta.validation.MessageInterpolator
 import jakarta.validation.Validation
 import jakarta.validation.ValidatorFactory
+import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import org.springframework.core.io.ClassPathResource
 import org.springframework.data.web.ReactivePageableHandlerMethodArgumentResolver
 import org.springframework.data.web.ReactiveSortHandlerMethodArgumentResolver
 import org.springframework.stereotype.Component
@@ -26,12 +28,25 @@ import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Hooks
 import reactor.core.publisher.Mono
 import java.util.Locale
+import java.util.Properties
 import java.util.regex.Pattern
 
 
 @EnableWebFlux
 @Configuration
 class Web(private val context: ApplicationContext) : WebFluxConfigurer {
+    companion object {
+        @Bean
+        @JvmStatic
+        fun validationPostProcessor() = MethodValidationPostProcessor()
+
+        @JvmStatic
+        fun ApplicationContext.configuration(): Properties = Properties().apply {
+            getBean<ClassPathResource>("classpath:private.properties")
+                .inputStream
+                .use(::load)
+        }
+    }
 
     @Component
     class SpaWebFilter : WebFilter {
@@ -149,9 +164,4 @@ class Web(private val context: ApplicationContext) : WebFluxConfigurer {
             )
         }
     */
-    companion object {
-        @Bean
-        @JvmStatic
-        fun validationPostProcessor() = MethodValidationPostProcessor()
-    }
 }

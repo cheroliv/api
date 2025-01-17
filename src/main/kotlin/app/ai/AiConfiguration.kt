@@ -3,8 +3,11 @@ package app.ai
 import app.ai.AiConfiguration.PromptManager.FRENCH
 import dev.langchain4j.service.SystemMessage
 import dev.langchain4j.service.spring.AiService
+import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.io.ClassPathResource
+import java.util.Properties
 
 @Configuration
 class AiConfiguration(private val context: ApplicationContext) {
