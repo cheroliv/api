@@ -138,6 +138,7 @@ import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.mockk.InternalPlatformDsl.toArray
 import jakarta.mail.Multipart
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
