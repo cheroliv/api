@@ -29,8 +29,10 @@ class SimpleAiController(private val chat: Assistant) {
             }
         }
 
-        data class Error(val exception: Exception, val status: HttpStatus = INTERNAL_SERVER_ERROR) :
-            AssistantResponse() {
+        data class Error(
+            val exception: Exception,
+            val status: HttpStatus = INTERNAL_SERVER_ERROR
+        ) : AssistantResponse() {
             val problemDetail: ProblemDetail
                 get() = forStatusAndDetail(status, exception.message)
         }
@@ -39,7 +41,7 @@ class SimpleAiController(private val chat: Assistant) {
     val AssistantResponse.toResponse: ResponseEntity<AssistantResponse>
         get() = when (this) {
             is Success -> ResponseEntity(this, OK)
-            is Error -> ResponseEntity(this, status)
+            is Error -> ResponseEntity.status(this.status).body(this)
         }
 
     @GetMapping("/api/ai/simple")
@@ -49,9 +51,7 @@ class SimpleAiController(private val chat: Assistant) {
             defaultValue = FRENCH.USER_MSG
         ) message: String?
     ): ResponseEntity<AssistantResponse> = try {
-        message.run(chat::chat)
-            .run(AssistantResponse::Success)
-            .toResponse
+        message.run(chat::chat).run(::Success).toResponse
     } catch (e: Exception) {
         Error(e).toResponse
     }
