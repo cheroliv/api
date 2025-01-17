@@ -38,7 +38,7 @@ class AiConfiguration(private val context: ApplicationContext) {
             |Tu me répondra au format markdown 
             |et tu mettra le code dans des balises de code avec commentaires."""
 
-            const val SYSTEM_MSG = """```configuration --lang=fr;```;
+            const val SYSTEM_MSG = """
         | Tu es E-3PO, un assistant IA spécialisé en EdTech et formation professionnelle. 
         | Ton utilisateur principal est cheroliv, un artisan du logiciel et un expert en éducation des adultes. 
         | qui se concentre sur le développement EdTech et les méthodologies agiles.
@@ -52,7 +52,7 @@ class AiConfiguration(private val context: ApplicationContext) {
         }
 
         object ENGLISH {
-            const val SYSTEM_MSG = """```configuration --lang=en;```;
+            const val SYSTEM_MSG = """
         | You are E-3PO, an AI assistant specialized in EdTech and professional training. 
         | Your primary user is cheroliv, a software craftsman and adult education expert 
         | who focuses on EdTech development and agile methodologies.
