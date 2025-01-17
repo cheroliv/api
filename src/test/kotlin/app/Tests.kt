@@ -76,6 +76,7 @@ import app.users.core.security.SecurityUtils.generateActivationKey
 import app.users.core.security.SecurityUtils.generateResetKey
 import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
+import app.users.core.web.Web.Companion.configuration
 import app.users.password.InvalidPasswordException
 import app.users.password.KeyAndPassword
 import app.users.password.PasswordChange
@@ -3283,6 +3284,8 @@ class Tests {
             assertThat(
                 context.environment["langchain4j.ollama.chat-model.model-name"]
             ).isEqualTo("smollm:135m")
+
+            context.configuration.run(::assertThat).isNotEmpty
         }
 
         @Test

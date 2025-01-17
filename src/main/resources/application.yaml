@@ -73,3 +73,12 @@ logging:
 
 server:
   port: 8880
+
+langchain4j:
+  ollama:
+    chat-model:
+      base-url: http://localhost:11434
+      model-name: smollm:135m
+    streaming-chat-model:
+      base-url: http://localhost:11434
+      model-name: smollm:135m

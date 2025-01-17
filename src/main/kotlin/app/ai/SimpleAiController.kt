@@ -41,7 +41,7 @@ class SimpleAiController(private val chat: Assistant) {
     val AssistantResponse.toResponse: ResponseEntity<AssistantResponse>
         get() = when (this) {
             is Success -> ResponseEntity(this, OK)
-            is Error -> ResponseEntity.status(this.status).body(this)
+            is Error -> ResponseEntity.status(status).body(this)
         }
 
     @GetMapping("/api/ai/simple")

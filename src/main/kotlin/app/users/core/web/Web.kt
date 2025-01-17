@@ -42,7 +42,7 @@ class Web(private val context: ApplicationContext) : WebFluxConfigurer {
         @JvmStatic
         val ApplicationContext.configuration: Properties
             get() = Properties().apply {
-                "classpath*:private.properties"
+                "private.properties"
                     .run(classLoader!!::getResourceAsStream)
                     .use(::load)
             }.apply { i("configuration: $this") }
