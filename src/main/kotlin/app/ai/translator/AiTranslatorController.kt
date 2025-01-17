@@ -1,7 +1,7 @@
 package app.ai.translator
 
-import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_EN
-import app.ai.SimpleAiController.PromptManager.SYSTEM_MSG_FR
+import app.ai.AiConfiguration.PromptManager.ENGLISH
+import app.ai.AiConfiguration.PromptManager.FRENCH
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
@@ -46,9 +46,9 @@ class AiTranslatorController(service: ChatModelService) {
     object AssistantManager {
         @JvmStatic
         fun main(args: Array<String>) {
-            SYSTEM_MSG_FR.run { "userMessageFr : $this" }.run(::println)
+            FRENCH.SYSTEM_MSG.run { "userMessageFr : $this" }.run(::println)
             println()
-            SYSTEM_MSG_EN.run { "userMessageEn : $this" }.run(::println)
+            ENGLISH.SYSTEM_MSG.run { "userMessageEn : $this" }.run(::println)
         }
 
         @JvmStatic
@@ -108,13 +108,13 @@ class AiTranslatorController(service: ChatModelService) {
 
         fun ApplicationContext.runChat(model: String) {
             createOllamaChatModel(model = model)
-                .run { SYSTEM_MSG_FR.run(::generate).let(::println) }
+                .run { FRENCH.SYSTEM_MSG.run(::generate).let(::println) }
         }
 
         fun ApplicationContext.runStreamChat(model: String) {
             runBlocking {
                 createOllamaStreamingChatModel(model).run {
-                    when (val answer = generateStreamingResponse(this, SYSTEM_MSG_FR)) {
+                    when (val answer = generateStreamingResponse(this, FRENCH.SYSTEM_MSG)) {
                         is Right -> "Complete response received:\n${
                             answer.value.content().text()
                         }".run(::println)

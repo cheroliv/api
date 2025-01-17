@@ -4,6 +4,7 @@ app:
   go-visit-message: https://cccp-education.github.io/
   clientApp:
     name: 'server'
+
   mail:
     base-url: http://127.0.0.1:8080
     from: webapp-r2dbc-jwt@localhost
@@ -20,7 +21,6 @@ app:
         starttls:
           enable: true
     token: 2e2a7d47-0476-4046-9c66-9f990f8d6d35-f840450f-e853-43a5-b3f4-bbc
-
   security:
     authentication:
       jwt:
@@ -28,6 +28,7 @@ app:
         base64-secret: MjNlZmQzMzgwM2MzN2FmMGNhZTY3NDllMDJiODg2YWRlMmY0ZDUzMzg2ODI4MTgxNmIxNzQ1OGEzMmNmNjY2OTA3Nzk4MzRkNDUzZWFlMTljZjJmNDU5NDNjOWI3NjRhNDg3MGYzODhiYjVjZWU5MmNhMDA2MDU3ZjA2NjJhODE=
         token-validity-in-seconds: 86400
         token-validity-in-seconds-for-remember-me: 2592000
+
   cors:
     allowed-origins: '*'
     allowed-methods: '*'
@@ -39,20 +40,23 @@ app:
 langchain4j:
   ollama:
     chat-model:
-      model-name: llama3.2:3b-instruct-q8_0
+      model-name: smollm:135m
+#      model-name: smollm2:135m
+#      model-name: llama3.2:3b
       base-url: http://localhost:11434
       temperature: 0.7
       timeout: PT60S
       log-requests: true
       log-responses: true
     streaming-chat-model:
-      model-name: llama3.2:3b-instruct-q8_0
+      model-name: smollm:135m
+#      model-name: smollm2:135m
+#      model-name: llama3.2:3b
       base-url: http://localhost:11434
       temperature: 0.7
       timeout: PT60S
       log-requests: true
       log-responses: true
-
 spring:
   profiles:
     default: dev

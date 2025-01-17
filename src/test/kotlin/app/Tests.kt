@@ -30,6 +30,8 @@ import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
+import app.ai.SimpleAiController.AssistantResponse
+import app.ai.SimpleAiController.AssistantResponse.Success
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
@@ -3262,6 +3264,15 @@ class Tests {
     @Nested
     @TestInstance(PER_CLASS)
     inner class AiTests {
+        @Suppress("MemberVisibilityCanBePrivate", "PropertyName")
+        val EXPECTED_KEYWORDS = setOf(
+            "```", "code", "function",
+            "python", "html", "div", "json",
+            "yaml", "xml", "javascript",
+            "css", "kotlin", "if", "else",
+            "for", "while", "return", "print",
+            "true", "false", "program",
+        )
 
         @Test
         fun `test ollama configuration`(): Unit {
@@ -3275,7 +3286,7 @@ class Tests {
         }
 
         @Test
-        fun `test simple ai api`(): Unit = runBlocking {
+        fun `test trivial ai api`(): Unit = runBlocking {
             client.mutate()
                 .responseTimeout(ofSeconds(60))
                 .build()
@@ -3283,18 +3294,13 @@ class Tests {
                 .exchange().expectStatus().isOk
                 .returnResult<ProblemDetail>()
                 .responseBodyContent!!
-                .responseToString()
-                .run { context.getBean<ObjectMapper>().readValue<ProblemDetail>(this) }
-                .detail!!.apply(::i)
+                .responseToString().run {
+                    context.getBean<ObjectMapper>().readValue<ProblemDetail>(this)
+                }.detail!!.apply(::i)
                 .run(::assertThat)
                 .isNotEmpty
                 .asString()
-                .containsAnyOf(
-                    "code", "program", "function",
-                    "python", "html", "div", "json", "yaml", "xml",
-                    "javascript", "css", "kotlin", "if", "else",
-                    "for", "while", "return", "print", "true", "false"
-                )
+                .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
         }
 
         @Test
@@ -3304,20 +3310,16 @@ class Tests {
                 .build()
                 .get().uri("/api/ai/simple")
                 .exchange().expectStatus().isOk
-                .returnResult<ProblemDetail>()
-                .responseBodyContent!!
-                .responseToString()
-                .run { context.getBean<ObjectMapper>().readValue<ProblemDetail>(this) }
-                .detail!!.apply(::i)
-                .run(::assertThat)
-                .isNotEmpty
+                .returnResult<ResponseEntity<AssistantResponse>>()
+                .responseBodyContent!!.responseToString().run {
+                    context.getBean<ObjectMapper>()
+                        .readValue<Success>(this)
+                        .answer!!
+                        .apply(::i)
+                }.run(::assertThat)
+                .isNotBlank()
                 .asString()
-                .containsAnyOf(
-                    "code", "program", "function",
-                    "python", "html", "div", "json", "yaml", "xml",
-                    "javascript", "css", "kotlin", "if", "else",
-                    "for", "while", "return", "print", "true", "false"
-                )
+                .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
         }
     }
 }
