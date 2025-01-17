@@ -2242,7 +2242,7 @@ class Tests {
         }
     }
 
-//    @Ignore
+    // Man at work!
     @Test
     @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
     fun `test initiate reset password request with valid key and`(): Unit = runBlocking {
@@ -2258,39 +2258,41 @@ class Tests {
 
             assertEquals(first + 1, context.countUsers())
             assertEquals(third + 1, context.countUserAuthority())
-//            assertEquals(second + 1, context.countUserActivation())
-//
-//            FIND_ALL_USERS
-//                .trimIndent()
-//                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-//                .fetch().awaitSingle().run {
-//                    (this[ID_FIELD].toString().run(::fromString) to this[PASSWORD_FIELD].toString())
-//                }.run {
-//                    "user.id retrieved before update password: $first".apply(::i)
-//                    assertEquals(uuid, first, "user.id should be the same")
-//                    assertNotEquals(
-//                        PASSWORD,
-//                        second,
-//                        "password should be encoded and not the same"
-//                    )
-//                    assertTrue(
-//                        context.getBean<PasswordEncoder>().matches(PASSWORD, second),
-//                        message = "password should not be different"
-//                    )
-//
-//                    assertThat(USER).isEqualTo(getCurrentUserLogin())
-//                    assertTrue(
-//                        context.getBean<PasswordEncoder>().matches(
-//                            PASSWORD, FIND_ALL_USERS
-//                                .trimIndent()
-//                                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-//                                .fetch()
-//                                .awaitSingle()[PASSWORD_FIELD]
-//                                .toString()
-//                                .also { i("password retrieved after user update: $it") }
-//                        ).apply { "passwords matches : ${toString()}".run(::i) },
-//                        message = "password should be updated"
-//                    )
+            assertEquals(second + 1, context.countUserActivation())
+
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                .fetch().awaitSingle().run {
+                    @Suppress("RemoveRedundantQualifierName")
+                    (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                            to this[PASSWORD_FIELD].toString())
+                }.run {
+                    "user.id retrieved before update password: $first".apply(::i)
+                    assertEquals(uuid, first, "user.id should be the same")
+                    assertNotEquals(
+                        PASSWORD,
+                        second,
+                        "password should be encoded and not the same"
+                    )
+                    assertTrue(
+                        context.getBean<PasswordEncoder>().matches(PASSWORD, second),
+                        message = "password should not be different"
+                    )
+
+                    assertThat(USER).isEqualTo(getCurrentUserLogin())
+                    assertTrue(
+                        context.getBean<PasswordEncoder>().matches(
+                            PASSWORD, FIND_ALL_USERS
+                                .trimIndent()
+                                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                .fetch()
+                                .awaitSingle()[PASSWORD_FIELD]
+                                .toString()
+                                .also { i("password retrieved after user update: $it") }
+                        ).apply { "passwords matches : ${toString()}".run(::i) },
+                        message = "password should be updated"
+                    )
 //                    //TODO: Run init reset to create key and retrieve in DB to test
 //                    client.post()
 //                        .uri(API_RESET_PASSWORD_INIT_PATH)
@@ -2303,7 +2305,7 @@ class Tests {
 //                        .responseBodyContent!!
 //                        .isEmpty()
 //                        .run(::assertTrue)
-//                }
+                }
         }
     }
 

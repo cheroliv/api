@@ -2,22 +2,22 @@
 
 package app.users.signup
 
-import jakarta.validation.constraints.Size
-import org.apache.commons.lang3.RandomStringUtils.random
 import app.users.core.models.User
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ID_ATTR
-import app.users.signup.UserActivation.Relations.Fields.TABLE_NAME
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ID_FIELD
+import app.users.signup.UserActivation.Relations.Fields.TABLE_NAME
+import jakarta.validation.constraints.Size
+import org.apache.commons.lang3.RandomStringUtils.random
 import java.security.SecureRandom
 import java.time.Instant
 import java.time.Instant.now
-import java.util.*
+import java.util.UUID
 
 
 data class UserActivation(
@@ -36,15 +36,13 @@ data class UserActivation(
     val activationDate: Instant? = null,
 ) {
     companion object {
-        const val ACTIVATION_KEY_SIZE = 20
+        const val ACTIVATION_KEY_SIZE: Int = 20
+
         @Suppress("SpellCheckingInspection")
         val USERACTIVATIONCLASS = UserActivation::class.java
-        
+
         val objectName: String = USERACTIVATIONCLASS.simpleName.run {
-            replaceFirst(
-                first(),
-                first().lowercaseChar()
-            )
+            replaceFirst(first(), first().lowercaseChar())
         }
     }
 
@@ -67,6 +65,7 @@ data class UserActivation(
             const val ACTIVATION_DATE_FIELD = "activation_date"
             const val CREATED_DATE_FIELD = "created_date"
         }
+
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" UUID PRIMARY KEY,
