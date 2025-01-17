@@ -1,11 +1,10 @@
 package app.users.core.dao
 
 import app.users.core.Constants
-import app.users.core.models.EntityModel
-import app.users.core.models.User
-import app.users.core.models.Role
-import app.users.core.models.UserRole
 import app.users.core.dao.UserRoleDao.signup
+import app.users.core.models.EntityModel
+import app.users.core.models.Role
+import app.users.core.models.User
 import app.users.core.models.User.Attributes.EMAIL_ATTR
 import app.users.core.models.User.Attributes.EMAIL_OR_LOGIN
 import app.users.core.models.User.Attributes.ID_ATTR
@@ -27,9 +26,10 @@ import app.users.core.models.User.Relations.LOGIN_AND_EMAIL_AVAILABLE_COLUMN
 import app.users.core.models.User.Relations.LOGIN_AVAILABLE_COLUMN
 import app.users.core.models.User.Relations.SELECT_SIGNUP_AVAILABILITY
 import app.users.core.models.User.Relations.UPDATE_PASSWORD
+import app.users.core.models.UserRole
 import app.users.signup.Signup
-import app.users.signup.UserActivation
 import app.users.signup.SignupDao.save
+import app.users.signup.UserActivation
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
@@ -44,7 +44,6 @@ import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitOne
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
-import org.springframework.r2dbc.core.bind
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -199,7 +198,7 @@ object UserDao {
         UPDATE_PASSWORD
             .trimIndent()
             .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-            .bind(ID_ATTR, first.id)
+            .bind(ID_ATTR, first.id!!)
             .bind(PASSWORD_ATTR, first.password.run(second.getBean<PasswordEncoder>()::encode))
             .bind(VERSION_ATTR, first.version)
             .fetch()

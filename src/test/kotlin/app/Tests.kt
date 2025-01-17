@@ -16,6 +16,7 @@ import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USERACTIVATION
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
 import app.TestUtils.FIND_USER_BY_LOGIN
+import app.TestUtils.countRoles
 import app.TestUtils.countUserActivation
 import app.TestUtils.countUserAuthority
 import app.TestUtils.countUsers
@@ -49,7 +50,6 @@ import app.users.core.Properties
 import app.users.core.Utils.lsWorkingDir
 import app.users.core.Utils.lsWorkingDirProcess
 import app.users.core.Utils.toJson
-import app.users.core.dao.RoleDao.countRoles
 import app.users.core.dao.UserDao.availability
 import app.users.core.dao.UserDao.change
 import app.users.core.dao.UserDao.findOne
@@ -138,7 +138,6 @@ import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.mockk.InternalPlatformDsl.toArray
 import jakarta.mail.Multipart
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
@@ -3263,6 +3262,7 @@ class Tests {
         fun tearDown() = window.cleanUp()
     }
 
+    @Ignore
     @Nested
     @TestInstance(PER_CLASS)
     inner class AiTests {

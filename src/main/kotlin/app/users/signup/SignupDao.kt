@@ -73,7 +73,7 @@ object SignupDao {
             .bind(CREATED_DATE_ATTR, first.createdDate)
             .bind(
                 ACTIVATION_DATE_ATTR,
-                first.activationDate
+                first.activationDate!!
             ).fetch()
             .awaitRowsUpdated()
             .right()

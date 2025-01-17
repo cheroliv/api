@@ -31,6 +31,8 @@ import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
 import app.users.core.models.User.Relations.Fields.VERSION_FIELD
 import app.users.core.models.User.Relations.Fields.TABLE_NAME
 import app.users.core.models.Role
+import app.users.core.models.Role.Relations
+import app.users.core.models.Role.Relations.DELETE_AUTHORITY_BY_ROLE
 import app.users.core.models.UserRole
 import app.users.core.models.UserRole.Attributes.USER_ID_ATTR
 import app.users.core.models.UserRole.Relations.Fields.ROLE_FIELD
@@ -125,6 +127,20 @@ object TestUtils {
                     : SecurityContext = SecurityContextHolder.createEmptyContext()
         }
     }
+    suspend fun ApplicationContext.countRoles(): Int = Relations.COUNT
+        .let(getBean<DatabaseClient>()::sql)
+        .fetch()
+        .awaitSingle()
+        .values
+        .first()
+        .toString()
+        .toInt()
+
+    suspend fun ApplicationContext.deleteAuthorityByRole(role: String): Unit =
+        DELETE_AUTHORITY_BY_ROLE
+            .let(getBean<DatabaseClient>()::sql)
+            .bind(Role.Attributes.ID_ATTR, role)
+            .await()
 
     //TODO: test if the activation key size is valid
     fun Pair<String, ApplicationContext>.isActivationKeySizeValid()

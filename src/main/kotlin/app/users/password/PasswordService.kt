@@ -2,11 +2,11 @@ package app.users.password
 
 import app.users.core.Loggers.d
 import app.users.core.Loggers.i
-import app.users.core.security.SecurityUtils.getCurrentUserLogin
-import app.users.core.web.HttpUtils.validator
-import app.users.core.models.User
 import app.users.core.dao.UserDao.change
 import app.users.core.dao.UserDao.findOne
+import app.users.core.models.User
+import app.users.core.security.SecurityUtils.getCurrentUserLogin
+import app.users.core.web.HttpUtils.validator
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import arrow.core.Either
 import arrow.core.getOrElse
@@ -15,8 +15,8 @@ import arrow.core.right
 import jakarta.validation.Valid
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
-import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
@@ -88,19 +88,19 @@ class PasswordService(val context: ApplicationContext) {
         }.mapLeft {
             return of(
                 forStatusAndDetail(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    INTERNAL_SERVER_ERROR,
                     it.message
                 )
             ).build()
         }
-         of(
+        of(
             forStatusAndDetail(
                 BAD_REQUEST,
                 "Password reset requested for non existing mail"
             )
         ).build()
     } catch (t: Throwable) {
-         of(forStatusAndDetail(BAD_REQUEST, t.message)).build()
+        of(forStatusAndDetail(BAD_REQUEST, t.message)).build()
     }
 
     fun reset(userKeyPair: Pair<User, String>): Either<Throwable, String> = try {
@@ -108,6 +108,7 @@ class PasswordService(val context: ApplicationContext) {
     } catch (t: Throwable) {
         t.left()
     }
+
     //TODO: Create resetKey
 // findOne
 // save user_reset
