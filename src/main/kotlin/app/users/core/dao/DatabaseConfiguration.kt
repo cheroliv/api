@@ -36,8 +36,9 @@ import java.time.ZoneOffset.UTC
 @EnableTransactionManagement
 @EnableR2dbcRepositories(ROOT_PACKAGE)
 class DatabaseConfiguration(private val context: ApplicationContext) {
-    companion object {
 
+    companion object {
+        @JvmStatic
         fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(Loggers::i)
     }
 
