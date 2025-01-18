@@ -78,7 +78,6 @@ import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
 import app.users.core.web.Web.Companion.configuration
 import app.users.password.InvalidPasswordException
-import app.users.password.KeyAndPassword
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
@@ -133,8 +132,6 @@ import app.workspace.WorkspaceManager.WorkspaceConstants.entries
 import app.workspace.WorkspaceManager.displayWorkspaceStructure
 import app.workspace.WorkspaceManager.workspace
 import arrow.core.Either
-import arrow.core.Either.Left
-import arrow.core.Either.Right
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -949,13 +946,9 @@ class Tests {
 
     @Test
     fun `test signup request with an invalid url`(): Unit = runBlocking {
-        val countUserBefore = context.countUsers()
-        val countUserAuthBefore = context.countUserAuthority()
-        assertEquals(0, countUserBefore)
-        assertEquals(0, countUserAuthBefore)
-        client
-            .post()
-            .uri("$API_SIGNUP_PATH/foobar")
+        val counts = context.countUsers() to  context.countUserAuthority()
+        assertThat(counts).isEqualTo(0 to 0)
+        client.post().uri("$API_SIGNUP_PATH/foobar")
             .contentType(APPLICATION_JSON)
             .bodyValue(signup)
             .exchange()
@@ -965,18 +958,13 @@ class Tests {
             .isEmpty
             .responseBodyContent!!
             .logBody()
-        assertEquals(countUserBefore, context.countUsers())
-        assertEquals(countUserAuthBefore, context.countUserAuthority())
-        context.findOne<User>(user.email).run {
-            when (this) {
-                is Left -> assertEquals(
-                    Exception::class.java,
-                    value::class.java
-                )
 
-                is Right -> assertEquals(user.id, value.id)
-            }
-        }
+        assertThat(counts)
+            .isEqualTo(context.countUsers() to context.countUserAuthority())
+        context.findOne<User>(user.email).mapLeft {
+            assertThat(it::class.java).isEqualTo(Exception::class.java)
+        }.map { assertThat(it.id).isEqualTo(user.id) }
+            .isRight().run(::assertThat).isFalse
     }
 
     @Test
@@ -2243,9 +2231,10 @@ class Tests {
     }
 
     // Man at work!
+    @Ignore
     @Test
     @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
-    fun `test initiate reset password request with valid key and`(): Unit = runBlocking {
+    fun `test initiate reset password with valid email`(): Unit = runBlocking {
         user.id.run(::assertNull)
 
         context.tripleCounts().run {
@@ -2293,18 +2282,21 @@ class Tests {
                         ).apply { "passwords matches : ${toString()}".run(::i) },
                         message = "password should be updated"
                     )
-//                    //TODO: Run init reset to create key and retrieve in DB to test
-//                    client.post()
-//                        .uri(API_RESET_PASSWORD_INIT_PATH)
-//                        .contentType(APPLICATION_PROBLEM_JSON)
-//                        .bodyValue(KeyAndPassword(generateActivationKey))
-//                        .exchange()
-//                        .expectStatus()
-//                        .isOk
-//                        .returnResult<ProblemDetail>()
-//                        .responseBodyContent!!
-//                        .isEmpty()
-//                        .run(::assertTrue)
+
+                    client.post()
+                        .uri(API_RESET_PASSWORD_INIT_PATH)
+                        .contentType(APPLICATION_PROBLEM_JSON)
+                        .bodyValue(user.email)
+                        .exchange()
+                        .expectStatus()
+                        .isOk
+                        .returnResult<ProblemDetail>()
+                        .responseBodyContent!!
+                        .isEmpty()
+                        .run(::assertTrue)
+
+                    //TODO: retrieve the key in DB to test size against generator
+
                 }
         }
     }

@@ -11,7 +11,6 @@ import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.left
-import arrow.core.right
 import jakarta.validation.Valid
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
@@ -30,6 +29,103 @@ import org.springframework.web.server.ServerWebExchange
 @Service
 @Validated
 class PasswordService(val context: ApplicationContext) {
+
+    suspend fun reset(mail: String, exchange: ServerWebExchange)
+            : ResponseEntity<ProblemDetail> = try {
+        requestPasswordReset(mail).map {
+            mail(it.first to it.second)
+            return ok().build()
+        }.mapLeft {
+            return of(
+                forStatusAndDetail(
+                    INTERNAL_SERVER_ERROR,
+                    it.message
+                )
+            ).build()
+        }
+        of(
+            forStatusAndDetail(
+                BAD_REQUEST,
+                "Password reset requested for non existing mail"
+            )
+        ).build()
+    } catch (t: Throwable) {
+        of(forStatusAndDetail(BAD_REQUEST, t.message)).build()
+    }
+
+//    fun reset(userKeyPair: Pair<User, String>): Either<Throwable, String> = try {
+//        userKeyPair.second.right()
+//    } catch (t: Throwable) {
+//        t.left()
+//    }
+
+    //TODO: Create resetKey
+// findOne
+// save user_reset
+// return a pair user to key
+    suspend fun requestPasswordReset(mail: String): Either<Throwable, Pair<User, String>> =
+        UnknownEmailException().left()
+
+    suspend fun mail(userKeyPair: Pair<User, String>) {
+        i("Not yet implemented")
+//        return userRepository
+//            .findOneByEmail(mail)
+//            .apply {
+//                if (this != null && this.activated) {
+//                    resetKey = generateResetKey
+//                    resetDate = now()
+//                    saveUser(this)
+//                } else return null
+//            }
+    }
+
+    suspend fun completePasswordReset(newPassword: String, key: String): User? {
+        //        accountRepository.findOneByResetKey(key).run {
+//            if (this != null && resetDate?.isAfter(Instant.now().minusSeconds(86400)) == true) {
+//                d("Reset account password for reset key $key")
+//                return@completePasswordReset toCredentialsModel
+//                //                return saveUser(
+//                //                apply {
+//                ////                    password = passwordEncoder.encode(newPassword)
+//                //                    resetKey = null
+//                //                    resetDate = null
+//                //                })
+//            } else {
+//                d("$key is not a valid reset account password key")
+//                return@completePasswordReset null
+//            }
+        return null
+    }
+
+
+    /**
+     * {@code POST   /user/reset-password/finish} : Finish to reset the password of the user.
+     *
+     * @param keyAndPassword the generated key and the new password.
+     * @throws InvalidPasswordProblem {@code 400 (Bad Request)} if the password is incorrect.
+     * @throws RuntimeException         {@code 500 (Internal Application Error)} if the password could not be reset.
+     */
+    suspend fun finish(
+        keyAndPassword: KeyAndPassword,
+        exchange: ServerWebExchange
+    ): ResponseEntity<ProblemDetail> {
+        InvalidPasswordException().run {
+//        when {
+//            validator
+//                .validateProperty(
+//                    AccountCredentials(password = keyAndPassword.newPassword),
+//                    PASSWORD_FIELD
+//                ).isNotEmpty() -> throw this
+//
+//            keyAndPassword.newPassword != null
+//                    && keyAndPassword.key != null
+//                    && passwordService.completePasswordReset(
+//                keyAndPassword.newPassword,
+//                keyAndPassword.key
+//            ) == null -> throw PasswordException("No user was found for this reset key")
+        }
+        return ok().build()
+    }
 
     suspend fun change(@Valid changePassword: PasswordChange): Long {
         getCurrentUserLogin().apply {
@@ -78,104 +174,6 @@ class PasswordService(val context: ApplicationContext) {
                 }
             }
         }.build()
-
-    suspend fun reset(mail: String, exchange: ServerWebExchange)
-            : ResponseEntity<ProblemDetail> = try {
-        requestPasswordReset(mail).map {
-            reset(it)
-            mail(it.first to it.second)
-            return ok().build()
-        }.mapLeft {
-            return of(
-                forStatusAndDetail(
-                    INTERNAL_SERVER_ERROR,
-                    it.message
-                )
-            ).build()
-        }
-        of(
-            forStatusAndDetail(
-                BAD_REQUEST,
-                "Password reset requested for non existing mail"
-            )
-        ).build()
-    } catch (t: Throwable) {
-        of(forStatusAndDetail(BAD_REQUEST, t.message)).build()
-    }
-
-    fun reset(userKeyPair: Pair<User, String>): Either<Throwable, String> = try {
-        userKeyPair.second.right()
-    } catch (t: Throwable) {
-        t.left()
-    }
-
-    //TODO: Create resetKey
-// findOne
-// save user_reset
-// return a pair user to key
-    suspend fun requestPasswordReset(mail: String): Either<Throwable, Pair<User, String>> =
-        UnknownEmailException().left()
-
-    suspend fun mail(userKeyPair: Pair<User, String>) {
-        i("Not yet implemented")
-//        return userRepository
-//            .findOneByEmail(mail)
-//            .apply {
-//                if (this != null && this.activated) {
-//                    resetKey = generateResetKey
-//                    resetDate = now()
-//                    saveUser(this)
-//                } else return null
-//            }
-    }
-
-    suspend fun completePasswordReset(newPassword: String, key: String): User? {
-        //        accountRepository.findOneByResetKey(key).run {
-//            if (this != null && resetDate?.isAfter(Instant.now().minusSeconds(86400)) == true) {
-//                d("Reset account password for reset key $key")
-//                return@completePasswordReset toCredentialsModel
-//                //                return saveUser(
-//                //                apply {
-//                ////                    password = passwordEncoder.encode(newPassword)
-//                //                    resetKey = null
-//                //                    resetDate = null
-//                //                })
-//            } else {
-//                d("$key is not a valid reset account password key")
-//                return@completePasswordReset null
-//            }
-        return null
-    }
-
-
-    /**
-     * {@code POST   /users/reset-password/finish} : Finish to reset the password of the user.
-     *
-     * @param keyAndPassword the generated key and the new password.
-     * @throws InvalidPasswordProblem {@code 400 (Bad Request)} if the password is incorrect.
-     * @throws RuntimeException         {@code 500 (Internal Application Error)} if the password could not be reset.
-     */
-    suspend fun finish(
-        keyAndPassword: KeyAndPassword,
-        exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> {
-        InvalidPasswordException().run {
-//        when {
-//            validator
-//                .validateProperty(
-//                    AccountCredentials(password = keyAndPassword.newPassword),
-//                    PASSWORD_FIELD
-//                ).isNotEmpty() -> throw this
-//
-//            keyAndPassword.newPassword != null
-//                    && keyAndPassword.key != null
-//                    && passwordService.completePasswordReset(
-//                keyAndPassword.newPassword,
-//                keyAndPassword.key
-//            ) == null -> throw PasswordException("No user was found for this reset key")
-        }
-        return ok().build()
-    }
 }
 
 
