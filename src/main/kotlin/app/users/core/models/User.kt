@@ -17,6 +17,7 @@ import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
 import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
 import app.users.core.models.User.Relations.Fields.TABLE_NAME
 import app.users.core.models.User.Relations.Fields.VERSION_FIELD
+import app.users.password.UserReset
 import app.users.signup.UserActivation
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Email
@@ -25,6 +26,7 @@ import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.util.Locale.ENGLISH
 import java.util.UUID
+
 
 data class User(
     override val id: UUID? = null,
@@ -48,17 +50,9 @@ data class User(
 ) : EntityModel<UUID>() {
 
     companion object {
-        
-        val objectName: String = User::class
-            .java
-            .simpleName
-            .run {
-                replaceFirst(
-                    first(),
-                    first().lowercaseChar()
-                )
-            }
-
+        val objectName: String = User::class.java.simpleName.run {
+            replaceFirst(first(), first().lowercaseChar())
+        }
     }
 
     object Constraints {
@@ -86,14 +80,14 @@ data class User(
     }
 
     object Relations {
-        @Suppress("RemoveRedundantQualifierName")
-        
         val CREATE_TABLES: String
             get() = listOf(
+                @Suppress("RemoveRedundantQualifierName")
                 User.Relations.SQL_SCRIPT,
                 Role.Relations.SQL_SCRIPT,
                 UserRole.Relations.SQL_SCRIPT,
                 UserActivation.Relations.SQL_SCRIPT,
+                UserReset.Relations.SQL_SCRIPT,
             ).joinToString(
                 "",
                 transform = String::trimIndent
@@ -113,11 +107,11 @@ data class User(
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
         "$ID_FIELD"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "$LOGIN_FIELD"    TEXT,
-        "$PASSWORD_FIELD" TEXT,
-        "$EMAIL_FIELD"    TEXT,
-        "$LANG_KEY_FIELD" VARCHAR,
-        "$VERSION_FIELD"  BIGINT);
+        "$LOGIN_FIELD"    TEXT NOT NULL,
+        "$PASSWORD_FIELD" TEXT NOT NULL,
+        "$EMAIL_FIELD"    TEXT NOT NULL,
+        "$LANG_KEY_FIELD" VARCHAR DEFAULT 'fr',
+        "$VERSION_FIELD"  BIGINT DEFAULT 0);
 
         CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_login" ON "$TABLE_NAME" ("$LOGIN_FIELD");
         CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_email" ON "$TABLE_NAME" ("$EMAIL_FIELD");

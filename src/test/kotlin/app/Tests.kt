@@ -81,9 +81,9 @@ import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
-import app.users.password.PasswordEndPoint.API_CHANGE_PASSWORD_PATH
-import app.users.password.PasswordEndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.password.PasswordService
+import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
+import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.Signup.Constraints.PASSWORD_MAX
@@ -946,7 +946,7 @@ class Tests {
 
     @Test
     fun `test signup request with an invalid url`(): Unit = runBlocking {
-        val counts = context.countUsers() to  context.countUserAuthority()
+        val counts = context.countUsers() to context.countUserAuthority()
         assertThat(counts).isEqualTo(0 to 0)
         client.post().uri("$API_SIGNUP_PATH/foobar")
             .contentType(APPLICATION_JSON)

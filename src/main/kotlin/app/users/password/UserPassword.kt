@@ -9,5 +9,5 @@ data class UserPassword(
     val userId: UUID,
     val modifiedBy: UUID,
     val date: Instant,
-    val current: String,
+    val encoded: String,
 )

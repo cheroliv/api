@@ -37,12 +37,29 @@ import java.time.ZoneOffset.UTC
 @EnableR2dbcRepositories(ROOT_PACKAGE)
 class DatabaseConfiguration(private val context: ApplicationContext) {
     companion object {
-        
+
         fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(Loggers::i)
     }
 
     //TODO: https://reflectoring.io/spring-bean-lifecycle/
     fun createSystemUser(): Unit = i("Creating system user")
+
+    @Bean
+    @Profile("test")
+    fun localTestConnectionFactoryInitializer(
+        @Qualifier("connectionFactory")
+        connectionFactory: ConnectionFactory
+    ): ConnectionFactoryInitializer =
+        ConnectionFactoryInitializer().apply {
+            setConnectionFactory(connectionFactory)
+            setDatabasePopulator(
+                ResourceDatabasePopulator(
+                    createTempFile("prefix", "suffix")
+                        .apply { CREATE_TABLES.run(::writeText) }
+                        .let(::FileSystemResource)
+                )
+            )
+        }
 
     @Bean
     @Profile("dev")

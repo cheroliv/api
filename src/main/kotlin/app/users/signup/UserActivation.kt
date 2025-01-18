@@ -19,7 +19,11 @@ import java.time.Instant
 import java.time.Instant.now
 import java.util.UUID
 
-
+// TODO: Reprendre le scenario et la table user_activation,
+// ajouter un colonne user_id FK, et id est generé par la db,
+// uniq(user_id,date)
+// uniq(key)
+// ajouter la version
 data class UserActivation(
     val id: UUID,
     @field:Size(max = ACTIVATION_KEY_SIZE)
@@ -46,7 +50,6 @@ data class UserActivation(
         }
     }
 
-
     object Attributes {
         //Class
         const val ID_ATTR = ID_FIELD
@@ -69,9 +72,9 @@ data class UserActivation(
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" UUID PRIMARY KEY,
-            "$ACTIVATION_KEY_FIELD" VARCHAR,
-            "$CREATED_DATE_FIELD" TIMESTAMP,
-            "$ACTIVATION_DATE_FIELD" TIMESTAMP,
+            "$ACTIVATION_KEY_FIELD" VARCHAR NOT NULL,
+            "$CREATED_DATE_FIELD" TIMESTAMP NOT NULL,
+            "$ACTIVATION_DATE_FIELD" TIMESTAMP DEFAULT NULL,
             FOREIGN KEY ("$ID_FIELD") 
             REFERENCES "${User.Relations.Fields.TABLE_NAME}" ("$ID_FIELD")
             ON DELETE CASCADE ON UPDATE CASCADE
