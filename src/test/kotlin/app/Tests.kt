@@ -31,8 +31,8 @@ import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
-import app.ai.SimpleAiController.AssistantResponse
-import app.ai.SimpleAiController.AssistantResponse.Success
+import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse
+import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
@@ -3294,7 +3294,7 @@ class Tests {
         }
     }
 
-    @Ignore
+//    @Ignore
     @Nested
     @TestInstance(PER_CLASS)
     inner class AiTests {

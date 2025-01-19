@@ -23,7 +23,7 @@ import javax.swing.UIManager.getInstalledLookAndFeels
 import kotlin.Short.Companion.MAX_VALUE
 
 object Installer {
-    
+    @JvmStatic
     fun main(args: Array<String>) = try {
         getInstalledLookAndFeels()
             .find { it.name == "Nimbus" }

@@ -1,7 +1,7 @@
 package app.ai.translator
 
-import app.ai.AiConfiguration.PromptManager.ENGLISH
-import app.ai.AiConfiguration.PromptManager.FRENCH
+import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.ENGLISH
+import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.FRENCH
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
@@ -44,7 +44,7 @@ class AiTranslatorController(service: ChatModelService) {
     }
 
     object AssistantManager {
-        
+        @JvmStatic
         fun main(args: Array<String>) {
             FRENCH.SYSTEM_MSG.run { "userMessageFr : $this" }.run(::println)
             println()
