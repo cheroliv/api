@@ -2,12 +2,18 @@ package app.users.password
 
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USER
+import app.users.password.UserReset.Relations.Fields.ACTIVE_IDX_FIELD
 import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
+import app.users.password.UserReset.Relations.Fields.DATE_IDX_FIELD
+import app.users.password.UserReset.Relations.Fields.ID_DATE_IDX_FIELD
 import app.users.password.UserReset.Relations.Fields.ID_FIELD
+import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_DATE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.password.UserReset.Relations.Fields.TABLE_NAME
 import app.users.password.UserReset.Relations.Fields.USER_ID_FIELD
+import app.users.password.UserReset.Relations.Fields.USER_ID_IDX_FIELD
+import app.users.password.UserReset.Relations.Fields.USER_RESET_SEQ_FIELD
 import app.users.password.UserReset.Relations.Fields.VERSION_FIELD
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.NotNull
@@ -26,7 +32,7 @@ data class UserReset(
     val resetDate: Instant,
     val changeDate: Instant? = null,
     @field:NotNull
-    val isActive: Boolean,
+    val isActive: Boolean = true,
     @field:JsonIgnore
     val version: Long = 0,
 ) {
@@ -65,23 +71,35 @@ data class UserReset(
             const val CHANGE_DATE_FIELD = "change_date"
             const val IS_ACTIVE_FIELD = "is_active"
             const val VERSION_FIELD = "version"
+            const val USER_RESET_SEQ_FIELD = "user_reset_seq"
+            const val USER_ID_IDX_FIELD = "idx_user_reset_id"
+            const val ACTIVE_IDX_FIELD = "idx_user_reset_active"
+            const val DATE_IDX_FIELD = "idx_user_reset_date"
+            const val ID_DATE_IDX_FIELD = "idx_user_reset_userid_resetdate"
         }
 
-        const val foo = """"""
         const val SQL_SCRIPT = """
+        CREATE SEQUENCE IF NOT EXISTS "$USER_RESET_SEQ_FIELD" START WITH 1 INCREMENT BY 1;
+        
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
-            "$ID_FIELD"             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "$ID_FIELD"             BIGINT DEFAULT nextval('$USER_RESET_SEQ_FIELD') PRIMARY KEY,
             "$USER_ID_FIELD"        UUID NOT NULL,
             "$RESET_KEY_FIELD"      VARCHAR NOT NULL,
             "$RESET_DATE_FIELD"     TIMESTAMP NOT NULL,
             "$CHANGE_DATE_FIELD"    TIMESTAMP NULL,
+            "$IS_ACTIVE_FIELD"      BOOLEAN NOT NULL,            
             "$VERSION_FIELD"        BIGINT DEFAULT 0,
+            UNIQUE ("$USER_ID_FIELD"),
+            UNIQUE ("$RESET_KEY_FIELD"),        
             FOREIGN KEY ("$USER_ID_FIELD")
                 REFERENCES "${User.Relations.Fields.TABLE_NAME}"("${User.Relations.Fields.ID_FIELD}")
                 ON DELETE CASCADE ON UPDATE CASCADE
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_reset_user_id" ON "$TABLE_NAME" ("$USER_ID_FIELD");
-        CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_reset_key" ON "$TABLE_NAME" ("$RESET_KEY_FIELD");
+        );        
+        CREATE INDEX IF NOT EXISTS "$USER_ID_IDX_FIELD" ON "$TABLE_NAME" ("$USER_ID_FIELD");
+        CREATE INDEX IF NOT EXISTS "$ACTIVE_IDX_FIELD" ON "$TABLE_NAME" ("$IS_ACTIVE_FIELD");
+        CREATE INDEX IF NOT EXISTS "$DATE_IDX_FIELD" ON "$TABLE_NAME" ("$RESET_DATE_FIELD");
+        CREATE INDEX IF NOT EXISTS "$ID_DATE_IDX_FIELD"
+            ON "$TABLE_NAME" ("$USER_ID_FIELD", "$RESET_DATE_FIELD" DESC);        
         """
     }
 }

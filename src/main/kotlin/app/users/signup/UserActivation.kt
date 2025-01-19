@@ -10,6 +10,8 @@ import app.users.signup.UserActivation.Attributes.ID_ATTR
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_IDX_FIELD
+import app.users.signup.UserActivation.Relations.Fields.DATE_IDX_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ID_FIELD
 import app.users.signup.UserActivation.Relations.Fields.TABLE_NAME
 import jakarta.validation.constraints.Size
@@ -67,41 +69,29 @@ data class UserActivation(
             const val ACTIVATION_KEY_FIELD = "activation_key"
             const val ACTIVATION_DATE_FIELD = "activation_date"
             const val CREATED_DATE_FIELD = "created_date"
+            const val DATE_IDX_FIELD = "idx_user_activation_date"
+            const val CREATED_DATE_IDX_FIELD = "idx_user_activation_creation_date"
         }
 
-        val foo = """CREATE TABLE IF NOT EXISTS "user_activation" (
-    "id" UUID PRIMARY KEY,
-    "activation_key" VARCHAR NOT NULL,
-    "created_date" TIMESTAMP NOT NULL,
-    "activation_date" TIMESTAMP DEFAULT NULL,
-    FOREIGN KEY ("id")
-    REFERENCES "user" ("id")
-    ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_user_activation_key
-ON "user_activation" ("activation_key");
-"""
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" UUID PRIMARY KEY,
             "$ACTIVATION_KEY_FIELD" VARCHAR NOT NULL,
             "$CREATED_DATE_FIELD" TIMESTAMP NOT NULL,
             "$ACTIVATION_DATE_FIELD" TIMESTAMP DEFAULT NULL,
+            UNIQUE ("$ACTIVATION_KEY_FIELD"),
             FOREIGN KEY ("$ID_FIELD") 
             REFERENCES "${User.Relations.Fields.TABLE_NAME}" ("$ID_FIELD")
             ON DELETE CASCADE ON UPDATE CASCADE
         );
-
-        CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_user_activation_key
-        ON "$TABLE_NAME" ("$ACTIVATION_KEY_FIELD");
-
-        CREATE INDEX IF NOT EXISTS idx_user_activation_date
+      
+        CREATE INDEX IF NOT EXISTS "$DATE_IDX_FIELD"
         ON "$TABLE_NAME" ("$ACTIVATION_DATE_FIELD");
 
-        CREATE INDEX IF NOT EXISTS idx_user_activation_creation_date
+        CREATE INDEX IF NOT EXISTS "$CREATED_DATE_IDX_FIELD"
         ON "$TABLE_NAME" ("$CREATED_DATE_FIELD");
         """
+
         const val INSERT = """
         INSERT INTO "$TABLE_NAME" (
             "$ID_FIELD", "$ACTIVATION_KEY_FIELD", 

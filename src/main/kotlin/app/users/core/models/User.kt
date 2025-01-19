@@ -17,6 +17,7 @@ import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
 import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
 import app.users.core.models.User.Relations.Fields.TABLE_NAME
 import app.users.core.models.User.Relations.Fields.VERSION_FIELD
+import app.users.core.models.UserRole.Relations.Fields.USER_ROLE_ID_SEQ_FIELD
 import app.users.password.UserReset
 import app.users.signup.UserActivation
 import com.fasterxml.jackson.annotation.JsonIgnore
@@ -89,10 +90,9 @@ data class User(
                 UserActivation.Relations.SQL_SCRIPT,
                 UserReset.Relations.SQL_SCRIPT,
             ).joinToString(
-                "",
+                separator = "",
                 transform = String::trimIndent
             ).run(String::trimMargin)
-
 
         object Fields {
             const val TABLE_NAME = "user"
@@ -100,72 +100,94 @@ data class User(
             const val LOGIN_FIELD = "login"
             const val PASSWORD_FIELD = "password"
             const val EMAIL_FIELD = "email"
-            const val LANG_KEY_FIELD = "lang_key"            
+            const val LANG_KEY_FIELD = "lang_key"
             const val VERSION_FIELD = "version"
         }
 
-        val foo = """CREATE TABLE IF NOT EXISTS "user"(
-"id"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-"login"    TEXT NOT NULL,
-"password" TEXT NOT NULL,
-"email"    TEXT NOT NULL,
-"lang_key" VARCHAR DEFAULT 'fr',
-"version"  BIGINT DEFAULT 0);
+        val testCreateTables = """
+            SET search_path = test;
+            
+            DROP TABLE IF EXISTS user_authority;
+            DROP TABLE IF EXISTS user_activation;
+            DROP TABLE IF EXISTS user_reset;
+            DROP TABLE IF EXISTS authority;
+            DROP TABLE IF EXISTS "user";
+            
+            DROP SEQUENCE IF EXISTS "$USER_ROLE_ID_SEQ_FIELD";
+            DROP SEQUENCE IF EXISTS "user_reset_seq";
+            
+            DROP INDEX IF EXISTS "uniq_idx_user_login";
+            DROP INDEX IF EXISTS "uniq_idx_user_email";
+            DROP INDEX IF EXISTS "uniq_idx_user_authority";
+            DROP INDEX IF EXISTS "uniq_idx_user_activation_key";
+            DROP INDEX IF EXISTS idx_user_reset_id;
+            DROP INDEX IF EXISTS idx_user_reset_date;
+            DROP INDEX IF EXISTS idx_user_reset_userid_resetdate;
+            DROP INDEX IF EXISTS "idx_user_reset_active";            
+            DROP INDEX IF EXISTS "idx_${TABLE_NAME}_$LOGIN_FIELD";
+            DROP INDEX IF EXISTS "idx_${TABLE_NAME}_$EMAIL_FIELD";
+            DROP INDEX IF EXISTS "idx_${TABLE_NAME}_$PASSWORD_FIELD";
+        """.trimIndent()
 
-CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_login" ON "user" ("login");
-CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_email" ON "user" ("email");
-"""
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
-        "$ID_FIELD"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        "$LOGIN_FIELD"    TEXT NOT NULL,
-        "$PASSWORD_FIELD" TEXT NOT NULL,
-        "$EMAIL_FIELD"    TEXT NOT NULL,
-        "$LANG_KEY_FIELD" VARCHAR DEFAULT 'fr',
-        "$VERSION_FIELD"  BIGINT DEFAULT 0);
-
-        CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_login" ON "$TABLE_NAME" ("$LOGIN_FIELD");
-        CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_email" ON "$TABLE_NAME" ("$EMAIL_FIELD");
+            "$ID_FIELD"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "$LOGIN_FIELD"    TEXT NOT NULL,
+            "$PASSWORD_FIELD" TEXT NOT NULL,
+            "$EMAIL_FIELD"    TEXT NOT NULL,
+            "$LANG_KEY_FIELD" VARCHAR DEFAULT 'fr',
+            UNIQUE ("$LOGIN_FIELD"),
+            UNIQUE ("$EMAIL_FIELD"),
+            "$VERSION_FIELD"  BIGINT DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS "idx_${TABLE_NAME}_$LOGIN_FIELD" ON "$TABLE_NAME" ("$LOGIN_FIELD");
+        CREATE INDEX IF NOT EXISTS "idx_${TABLE_NAME}_$EMAIL_FIELD" ON "$TABLE_NAME" ("$EMAIL_FIELD");
+        CREATE INDEX IF NOT EXISTS "idx_${TABLE_NAME}_$PASSWORD_FIELD" ON "$TABLE_NAME" ("$PASSWORD_FIELD");
         """
+
         const val FIND_ALL_USERS = """SELECT * FROM "$TABLE_NAME";"""
         const val LOGIN_AND_EMAIL_AVAILABLE_COLUMN = "login_and_email_available"
         const val EMAIL_AVAILABLE_COLUMN = "email_available"
         const val LOGIN_AVAILABLE_COLUMN = "login_available"
+
         const val INSERT = """
-                INSERT INTO "$TABLE_NAME" (
-                    "$LOGIN_FIELD", "$EMAIL_FIELD", "$PASSWORD_FIELD",
-                    "$LANG_KEY_FIELD", "$VERSION_FIELD"
-                ) VALUES (
-                :$LOGIN_ATTR, :$EMAIL_ATTR, :$PASSWORD_ATTR,
-                :$LANG_KEY_ATTR, :$VERSION_ATTR);"""
-        const val UPDATE_PASSWORD = """
-                UPDATE "$TABLE_NAME"
-                SET "$PASSWORD_FIELD" = :$PASSWORD_ATTR,
-                    "$VERSION_FIELD" = :$VERSION_ATTR
-                WHERE "$ID_FIELD" = :$ID_ATTR;"""
-        const val SELECT_SIGNUP_AVAILABILITY = """
-                SELECT
-                    CASE
-                        WHEN EXISTS(
-                                SELECT 1 FROM "$TABLE_NAME" 
-                                WHERE LOWER("$LOGIN_FIELD") = LOWER(:$LOGIN_ATTR)
-                             ) OR 
-                             EXISTS(
-                                SELECT 1 FROM "$TABLE_NAME" 
-                                WHERE LOWER("$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)
-                             )
-                            THEN FALSE
-                        ELSE TRUE
-                    END AS $LOGIN_AND_EMAIL_AVAILABLE_COLUMN,
-                    NOT EXISTS(
-                            SELECT 1 FROM "$TABLE_NAME" 
-                            WHERE LOWER("$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)
-                        ) AS $EMAIL_AVAILABLE_COLUMN,
-                    NOT EXISTS(
-                            SELECT 1 FROM "$TABLE_NAME" 
-                            WHERE LOWER("$LOGIN_FIELD") = LOWER(:$LOGIN_ATTR)
-                        ) AS $LOGIN_AVAILABLE_COLUMN;
+        INSERT INTO "$TABLE_NAME"(
+            "$LOGIN_FIELD", "$EMAIL_FIELD", "$PASSWORD_FIELD",
+            "$LANG_KEY_FIELD", "$VERSION_FIELD") VALUES (
+            :$LOGIN_ATTR, :$EMAIL_ATTR, :$PASSWORD_ATTR,
+            :$LANG_KEY_ATTR, :$VERSION_ATTR );
         """
+
+        const val UPDATE_PASSWORD = """
+            UPDATE "$TABLE_NAME"
+            SET "$PASSWORD_FIELD" = :$PASSWORD_ATTR,
+                    "$VERSION_FIELD" = :$VERSION_ATTR
+            WHERE "$ID_FIELD" = :$ID_ATTR;"""
+
+        const val SELECT_SIGNUP_AVAILABILITY = """
+        SELECT
+            CASE
+            WHEN EXISTS(
+                SELECT 1 FROM "$TABLE_NAME"
+                WHERE LOWER("$LOGIN_FIELD") = LOWER(:$LOGIN_ATTR)
+            ) OR
+            EXISTS(
+                SELECT 1 FROM "$TABLE_NAME"
+                WHERE LOWER("$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)
+            )
+            THEN FALSE
+            ELSE TRUE
+            END AS $LOGIN_AND_EMAIL_AVAILABLE_COLUMN,
+            NOT EXISTS(
+                SELECT 1 FROM "$TABLE_NAME"
+                WHERE LOWER("$EMAIL_FIELD") = LOWER(:$EMAIL_ATTR)
+            ) AS $EMAIL_AVAILABLE_COLUMN,
+            NOT EXISTS(
+                SELECT 1 FROM "$TABLE_NAME"
+                WHERE LOWER("$LOGIN_FIELD") = LOWER(:$LOGIN_ATTR)
+            ) AS $LOGIN_AVAILABLE_COLUMN;
+        """
+
         const val FIND_USER_WITH_AUTHS_BY_EMAILOGIN = """
                             SELECT 
                                 u."$ID_FIELD",

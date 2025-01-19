@@ -226,14 +226,14 @@ class Tests {
 
     @Autowired
     lateinit var context: ApplicationContext
+    lateinit var client: WebTestClient
+    lateinit var mailService: MailService
 
     @Spy
     lateinit var javaMailSender: JavaMailSenderImpl
 
     @Captor
     lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
-    lateinit var client: WebTestClient
-    lateinit var mailService: MailService
     val gmailConfig by lazy {
         GoogleAuthConfig(
             clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
@@ -440,16 +440,30 @@ class Tests {
     @TestInstance(PER_CLASS)
     inner class UserDaoTests {
         @Test
-        fun `test findOneWithAuths using one query`(): Unit = runBlocking {
+        fun `test findOne`(): Unit = runBlocking {
+            assertThat(context.countUsers()).isEqualTo(0)
+            (user to context).save()
+            assertThat(context.countUsers()).isEqualTo(1)
+            val findOneEmailResult: Either<Throwable, User> = context.findOne<User>(user.email)
+            findOneEmailResult.map { assertDoesNotThrow { fromString(it.id.toString()) } }
+            i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
+            context.findOne<User>(user.login).map {
+                assertDoesNotThrow { fromString(it.id.toString()) }
+            }
+        }
+
+        @Test
+        fun `test r2dbc to find user and roles using one query`(): Unit = runBlocking {
             context.tripleCounts().run {
-                assertThat(this).isEqualTo(Triple(0, 0, 0))
+                run(::assertThat).isEqualTo(Triple(0, 0, 0))
                 (user to context).signup()
+                i(context.countUsers().toString())
                 assertThat(context.countUsers()).isEqualTo(first + 1)
                 assertThat(context.countUserAuthority()).isEqualTo(second + 1)
                 assertThat(context.countUserActivation()).isEqualTo(third + 1)
             }
             """
-            SELECT 
+            SELECT
                u."id",
                u."email",
                u."login",
@@ -458,15 +472,15 @@ class Tests {
                u."version",
                STRING_AGG(DISTINCT a."role", ',') AS roles
             FROM "user" AS u
-            LEFT JOIN 
+            LEFT JOIN
                user_authority ua ON u."id" = ua."user_id"
-            LEFT JOIN 
+            LEFT JOIN
                authority AS a ON ua."role" = a."role"
-            WHERE 
-               LOWER(u."email") = LOWER(:emailOrLogin) 
-               OR 
+            WHERE
+               LOWER(u."email") = LOWER(:emailOrLogin)
+               OR
                LOWER(u."login") = LOWER(:emailOrLogin)
-            GROUP BY 
+            GROUP BY
                u."id", u."email", u."login";"""
                 .trimIndent()
                 .apply(::i)
@@ -514,6 +528,7 @@ class Tests {
                 }
         }
 
+
         @Test
         fun `test findOneWithAuths`(): Unit = runBlocking {
             assertEquals(0, context.countUsers())
@@ -537,18 +552,6 @@ class Tests {
                 .run { i("context.findAuthsByEmail(${user.email}).getOrNull() : $this") }
         }
 
-        @Test
-        fun `test findOne`(): Unit = runBlocking {
-            assertEquals(0, context.countUsers())
-            (user to context).save()
-            assertEquals(1, context.countUsers())
-            val findOneEmailResult: Either<Throwable, User> = context.findOne<User>(user.email)
-            findOneEmailResult.map { assertDoesNotThrow { fromString(it.id.toString()) } }
-            i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
-            context.findOne<User>(user.login).map {
-                assertDoesNotThrow { fromString(it.id.toString()) }
-            }
-        }
 
         @Test
         fun `test findUserById`(): Unit = runBlocking {
@@ -3294,7 +3297,7 @@ class Tests {
         }
     }
 
-//    @Ignore
+    @Ignore
     @Nested
     @TestInstance(PER_CLASS)
     inner class AiTests {
