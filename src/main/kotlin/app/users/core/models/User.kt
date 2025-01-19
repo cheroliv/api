@@ -11,14 +11,22 @@ import app.users.core.models.User.Attributes.VERSION_ATTR
 import app.users.core.models.User.Constraints.LOGIN_REGEX
 import app.users.core.models.User.Members.ROLES_MEMBER
 import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
+import app.users.core.models.User.Relations.Fields.EMAIL_IDX_FIELD
 import app.users.core.models.User.Relations.Fields.ID_FIELD
 import app.users.core.models.User.Relations.Fields.LANG_KEY_FIELD
 import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
+import app.users.core.models.User.Relations.Fields.LOGIN_IDX_FIELD
 import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
+import app.users.core.models.User.Relations.Fields.PASSWORD_IDX_FIELD
 import app.users.core.models.User.Relations.Fields.TABLE_NAME
 import app.users.core.models.User.Relations.Fields.VERSION_FIELD
 import app.users.core.models.UserRole.Relations.Fields.USER_ROLE_ID_SEQ_FIELD
 import app.users.password.UserReset
+import app.users.password.UserReset.Relations.Fields.ACTIVE_IDX_FIELD
+import app.users.password.UserReset.Relations.Fields.DATE_IDX_FIELD
+import app.users.password.UserReset.Relations.Fields.ID_DATE_IDX_FIELD
+import app.users.password.UserReset.Relations.Fields.USER_ID_IDX_FIELD
+import app.users.password.UserReset.Relations.Fields.USER_RESET_SEQ_FIELD
 import app.users.signup.UserActivation
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Email
@@ -94,39 +102,32 @@ data class User(
                 transform = String::trimIndent
             ).run(String::trimMargin)
 
-        object Fields {
-            const val TABLE_NAME = "user"
-            const val ID_FIELD = "id"
-            const val LOGIN_FIELD = "login"
-            const val PASSWORD_FIELD = "password"
-            const val EMAIL_FIELD = "email"
-            const val LANG_KEY_FIELD = "lang_key"
-            const val VERSION_FIELD = "version"
-        }
 
+        @Suppress("RemoveRedundantQualifierName")
         val testCreateTables = """
             SET search_path = test;
             
-            DROP TABLE IF EXISTS user_authority;
-            DROP TABLE IF EXISTS user_activation;
-            DROP TABLE IF EXISTS user_reset;
-            DROP TABLE IF EXISTS authority;
-            DROP TABLE IF EXISTS "user";
+            DROP TABLE IF EXISTS "${UserRole.Relations.Fields.TABLE_NAME}";
+            DROP TABLE IF EXISTS "${UserActivation.Relations.Fields.TABLE_NAME}";
+            DROP TABLE IF EXISTS "${UserReset.Relations.Fields.TABLE_NAME}";
+            DROP TABLE IF EXISTS "${Role.Relations.Fields.TABLE_NAME}";
+            DROP TABLE IF EXISTS "${User.Relations.Fields.TABLE_NAME}";
             
             DROP SEQUENCE IF EXISTS "$USER_ROLE_ID_SEQ_FIELD";
-            DROP SEQUENCE IF EXISTS "user_reset_seq";
+            DROP SEQUENCE IF EXISTS "$USER_RESET_SEQ_FIELD";
             
+            DROP INDEX IF EXISTS "$USER_ID_IDX_FIELD";
+            DROP INDEX IF EXISTS "$DATE_IDX_FIELD";
+            DROP INDEX IF EXISTS "$ID_DATE_IDX_FIELD";
+            DROP INDEX IF EXISTS "$ACTIVE_IDX_FIELD";            
+            DROP INDEX IF EXISTS "$LOGIN_IDX_FIELD";
+            DROP INDEX IF EXISTS "$EMAIL_IDX_FIELD";
+            DROP INDEX IF EXISTS "$PASSWORD_IDX_FIELD";
+
             DROP INDEX IF EXISTS "uniq_idx_user_login";
             DROP INDEX IF EXISTS "uniq_idx_user_email";
             DROP INDEX IF EXISTS "uniq_idx_user_authority";
             DROP INDEX IF EXISTS "uniq_idx_user_activation_key";
-            DROP INDEX IF EXISTS idx_user_reset_id;
-            DROP INDEX IF EXISTS idx_user_reset_date;
-            DROP INDEX IF EXISTS idx_user_reset_userid_resetdate;
-            DROP INDEX IF EXISTS "idx_user_reset_active";            
-            DROP INDEX IF EXISTS "idx_${TABLE_NAME}_$LOGIN_FIELD";
-            DROP INDEX IF EXISTS "idx_${TABLE_NAME}_$EMAIL_FIELD";
-            DROP INDEX IF EXISTS "idx_${TABLE_NAME}_$PASSWORD_FIELD";
         """.trimIndent()
 
         const val SQL_SCRIPT = """
@@ -135,15 +136,29 @@ data class User(
             "$LOGIN_FIELD"    TEXT NOT NULL,
             "$PASSWORD_FIELD" TEXT NOT NULL,
             "$EMAIL_FIELD"    TEXT NOT NULL,
-            "$LANG_KEY_FIELD" VARCHAR DEFAULT 'fr',
+            "$LANG_KEY_FIELD" VARCHAR DEFAULT 'en',
             UNIQUE ("$LOGIN_FIELD"),
             UNIQUE ("$EMAIL_FIELD"),
             "$VERSION_FIELD"  BIGINT DEFAULT 0
         );
-        CREATE INDEX IF NOT EXISTS "idx_${TABLE_NAME}_$LOGIN_FIELD" ON "$TABLE_NAME" ("$LOGIN_FIELD");
-        CREATE INDEX IF NOT EXISTS "idx_${TABLE_NAME}_$EMAIL_FIELD" ON "$TABLE_NAME" ("$EMAIL_FIELD");
-        CREATE INDEX IF NOT EXISTS "idx_${TABLE_NAME}_$PASSWORD_FIELD" ON "$TABLE_NAME" ("$PASSWORD_FIELD");
+        CREATE INDEX IF NOT EXISTS "$LOGIN_IDX_FIELD" ON "$TABLE_NAME"("$LOGIN_FIELD");
+        CREATE INDEX IF NOT EXISTS "$EMAIL_IDX_FIELD" ON "$TABLE_NAME"("$EMAIL_FIELD");
+        CREATE INDEX IF NOT EXISTS "$PASSWORD_IDX_FIELD" ON "$TABLE_NAME"("$PASSWORD_FIELD");
         """
+
+        object Fields {
+            const val TABLE_NAME = "user"
+            const val ID_FIELD = "id"
+            const val LOGIN_FIELD = "login"
+            const val PASSWORD_FIELD = "password"
+            const val EMAIL_FIELD = "email"
+            const val LANG_KEY_FIELD = "lang_key"
+            const val VERSION_FIELD = "version"
+            const val LOGIN_IDX_FIELD = "idx_${TABLE_NAME}_$LOGIN_FIELD"
+            const val EMAIL_IDX_FIELD = "idx_${TABLE_NAME}_$EMAIL_FIELD"
+            const val PASSWORD_IDX_FIELD = "idx_${TABLE_NAME}_$PASSWORD_FIELD"
+
+        }
 
         const val FIND_ALL_USERS = """SELECT * FROM "$TABLE_NAME";"""
         const val LOGIN_AND_EMAIL_AVAILABLE_COLUMN = "login_and_email_available"
@@ -189,25 +204,25 @@ data class User(
         """
 
         const val FIND_USER_WITH_AUTHS_BY_EMAILOGIN = """
-                            SELECT 
-                                u."$ID_FIELD",
-                                u."$EMAIL_FIELD",
-                                u."$LOGIN_FIELD",
-                                u."$PASSWORD_FIELD",
-                                u.$LANG_KEY_FIELD,
-                                u.$VERSION_FIELD,
-                                STRING_AGG(DISTINCT a."${Role.Relations.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
-                            FROM "$TABLE_NAME" as u
-                            LEFT JOIN 
-                                user_authority ua ON u."$ID_FIELD" = ua."${UserRole.Relations.Fields.USER_ID_FIELD}"
-                            LEFT JOIN 
-                                authority as a ON UPPER(ua."${UserRole.Relations.Fields.ROLE_FIELD}") = UPPER(a."${Role.Attributes.ID_ATTR}")
-                            WHERE 
-                                lower(u."$EMAIL_FIELD") = lower(:$EMAIL_OR_LOGIN) 
-                                OR 
-                                lower(u."$LOGIN_FIELD") = lower(:$EMAIL_OR_LOGIN)
-                            GROUP BY 
-                                u."$ID_FIELD", u."$LOGIN_FIELD",u."$EMAIL_FIELD";
+        SELECT
+            u."$ID_FIELD",
+            u."$EMAIL_FIELD",
+            u."$LOGIN_FIELD",
+            u."$PASSWORD_FIELD",
+            u.$LANG_KEY_FIELD,
+            u.$VERSION_FIELD,
+            STRING_AGG(DISTINCT a."${Role.Relations.Fields.ID_FIELD}", ', ') AS $ROLES_MEMBER
+        FROM "$TABLE_NAME" as u
+        LEFT JOIN
+            user_authority ua ON u."$ID_FIELD" = ua."${UserRole.Relations.Fields.USER_ID_FIELD}"
+        LEFT JOIN
+            authority as a 
+            ON UPPER(ua."${UserRole.Relations.Fields.ROLE_FIELD}") = UPPER(a."${Role.Attributes.ID_ATTR}")
+        WHERE
+            lower(u."$EMAIL_FIELD") = lower(:$EMAIL_OR_LOGIN)
+        OR
+            lower(u."$LOGIN_FIELD") = lower(:$EMAIL_OR_LOGIN)
+        GROUP BY u."$ID_FIELD", u."$LOGIN_FIELD",u."$EMAIL_FIELD";
                         """
     }
 

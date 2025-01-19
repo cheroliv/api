@@ -11,7 +11,7 @@ import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_IDX_FIELD
-import app.users.signup.UserActivation.Relations.Fields.DATE_IDX_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_IDX_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ID_FIELD
 import app.users.signup.UserActivation.Relations.Fields.TABLE_NAME
 import jakarta.validation.constraints.Size
@@ -21,11 +21,6 @@ import java.time.Instant
 import java.time.Instant.now
 import java.util.UUID
 
-// TODO: Reprendre le scenario et la table user_activation,
-// ajouter un colonne user_id FK, et id est generé par la db,
-// uniq(user_id,date)
-// uniq(key)
-// ajouter la version
 data class UserActivation(
     val id: UUID,
     @field:Size(max = ACTIVATION_KEY_SIZE)
@@ -53,8 +48,7 @@ data class UserActivation(
     }
 
     object Attributes {
-        //Class
-        const val ID_ATTR = ID_FIELD
+        const val ID_ATTR = User.Attributes.ID_ATTR
         const val ACTIVATION_KEY_ATTR = "activationKey"
         const val CREATED_DATE_ATTR = "createdDate"
         const val ACTIVATION_DATE_ATTR = "activationDate"
@@ -62,14 +56,13 @@ data class UserActivation(
 
     object Relations {
         object Fields {
-            //SQL
             @Suppress("MemberVisibilityCanBePrivate")
             const val TABLE_NAME = "user_activation"
-            const val ID_FIELD = User.Relations.Fields.ID_FIELD
+            const val ID_FIELD = ID_ATTR
             const val ACTIVATION_KEY_FIELD = "activation_key"
             const val ACTIVATION_DATE_FIELD = "activation_date"
             const val CREATED_DATE_FIELD = "created_date"
-            const val DATE_IDX_FIELD = "idx_user_activation_date"
+            const val ACTIVATION_DATE_IDX_FIELD = "idx_user_activation_date"
             const val CREATED_DATE_IDX_FIELD = "idx_user_activation_creation_date"
         }
 
@@ -84,10 +77,8 @@ data class UserActivation(
             REFERENCES "${User.Relations.Fields.TABLE_NAME}" ("$ID_FIELD")
             ON DELETE CASCADE ON UPDATE CASCADE
         );
-      
-        CREATE INDEX IF NOT EXISTS "$DATE_IDX_FIELD"
+        CREATE INDEX IF NOT EXISTS "$ACTIVATION_DATE_IDX_FIELD"
         ON "$TABLE_NAME" ("$ACTIVATION_DATE_FIELD");
-
         CREATE INDEX IF NOT EXISTS "$CREATED_DATE_IDX_FIELD"
         ON "$TABLE_NAME" ("$CREATED_DATE_FIELD");
         """
