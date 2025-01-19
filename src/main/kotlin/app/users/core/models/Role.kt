@@ -22,6 +22,13 @@ data class Role(
             const val TABLE_NAME = "authority"
             const val ID_FIELD = "role"
         }
+        val foo="""CREATE TABLE IF NOT EXISTS "authority" (
+    "role" VARCHAR(50) PRIMARY KEY
+);
+
+INSERT INTO authority ("role") VALUES ('ADMIN'), ('USER'), ('ANONYMOUS')
+ON CONFLICT ("role") DO NOTHING;
+"""
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" VARCHAR(50) PRIMARY KEY

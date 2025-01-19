@@ -104,6 +104,17 @@ data class User(
             const val VERSION_FIELD = "version"
         }
 
+        val foo = """CREATE TABLE IF NOT EXISTS "user"(
+"id"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+"login"    TEXT NOT NULL,
+"password" TEXT NOT NULL,
+"email"    TEXT NOT NULL,
+"lang_key" VARCHAR DEFAULT 'fr',
+"version"  BIGINT DEFAULT 0);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_login" ON "user" ("login");
+CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_email" ON "user" ("email");
+"""
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
         "$ID_FIELD"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),

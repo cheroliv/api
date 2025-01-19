@@ -30,6 +30,21 @@ data class UserRole(
             const val USER_ID_FIELD = "user_id"
             const val ROLE_FIELD = Role.Relations.Fields.ID_FIELD
         }
+        val foo="""CREATE SEQUENCE IF NOT EXISTS user_authority_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE IF NOT EXISTS "user_authority"(
+    "id"  BIGINT DEFAULT nextval('user_authority_seq') PRIMARY KEY,
+    "user_id"      UUID NOT NULL,
+    "role"       VARCHAR NOT NULL,
+    FOREIGN KEY ("user_id") REFERENCES "user" (id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY ("role") REFERENCES authority ("role")
+    ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_user_authority
+ON "user_authority" ("role", "user_id");
+"""
         const val SQL_SCRIPT = """
     CREATE SEQUENCE IF NOT EXISTS user_authority_seq
     START WITH 1 INCREMENT BY 1;

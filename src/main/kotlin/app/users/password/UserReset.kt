@@ -71,6 +71,7 @@ data class UserReset(
             const val VERSION_FIELD = "version"
         }
 
+        val foo = """"""
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
             "$ID_FIELD"             UUID PRIMARY KEY DEFAULT gen_random_uuid(),

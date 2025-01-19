@@ -69,6 +69,19 @@ data class UserActivation(
             const val CREATED_DATE_FIELD = "created_date"
         }
 
+        val foo = """CREATE TABLE IF NOT EXISTS "user_activation" (
+    "id" UUID PRIMARY KEY,
+    "activation_key" VARCHAR NOT NULL,
+    "created_date" TIMESTAMP NOT NULL,
+    "activation_date" TIMESTAMP DEFAULT NULL,
+    FOREIGN KEY ("id")
+    REFERENCES "user" ("id")
+    ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_user_activation_key
+ON "user_activation" ("activation_key");
+"""
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" UUID PRIMARY KEY,
