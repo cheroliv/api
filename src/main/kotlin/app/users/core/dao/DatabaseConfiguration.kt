@@ -40,6 +40,95 @@ class DatabaseConfiguration(private val context: ApplicationContext) {
     companion object {
         @JvmStatic
         fun main(args: Array<String>) = CREATE_TABLES.run { "CREATE_TABLES: $this" }.run(Loggers::i)
+        val testCreateTables: String = """
+SET search_path = test;
+
+DROP TABLE IF EXISTS user_authority;
+DROP TABLE IF EXISTS user_activation;
+DROP TABLE IF EXISTS user_reset;
+DROP TABLE IF EXISTS authority;
+DROP TABLE IF EXISTS "user";
+
+DROP SEQUENCE IF EXISTS user_authority_seq;
+DROP SEQUENCE IF EXISTS user_reset_seq;
+
+DROP INDEX IF EXISTS uniq_idx_user_login;
+DROP INDEX IF EXISTS uniq_idx_user_email;
+DROP INDEX IF EXISTS uniq_idx_user_authority;
+DROP INDEX IF EXISTS uniq_idx_user_activation_key;
+DROP INDEX IF EXISTS idx_user_reset_id;
+DROP INDEX IF EXISTS idx_user_reset_date;
+DROP INDEX IF EXISTS idx_user_reset_userid_resetdate;
+DROP INDEX IF EXISTS idx_user_reset_active;
+
+CREATE TABLE IF NOT EXISTS "user"(
+    "id"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    "login"    TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "email"    TEXT NOT NULL,
+    "lang_key" VARCHAR DEFAULT 'fr',
+    "version"  BIGINT DEFAULT 0
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_login" ON "user" ("login");
+CREATE UNIQUE INDEX IF NOT EXISTS "uniq_idx_user_email" ON "user" ("email");
+
+CREATE TABLE IF NOT EXISTS "authority" (
+    "role" VARCHAR(50) PRIMARY KEY
+);
+
+INSERT INTO authority ("role") VALUES ('ADMIN'), ('USER'), ('ANONYMOUS')
+    ON CONFLICT ("role") DO NOTHING;
+
+CREATE SEQUENCE IF NOT EXISTS user_authority_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE IF NOT EXISTS "user_authority"(
+    "id"  BIGINT DEFAULT nextval('user_authority_seq') PRIMARY KEY,
+    "user_id"      UUID NOT NULL,
+    "role"       VARCHAR NOT NULL,
+    FOREIGN KEY ("user_id") REFERENCES "user" (id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY ("role") REFERENCES authority ("role")
+    ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_user_authority
+    ON "user_authority" ("role", "user_id");
+
+CREATE TABLE IF NOT EXISTS "user_activation" (
+    "id" UUID PRIMARY KEY,
+    "activation_key" VARCHAR NOT NULL,
+    "created_date" TIMESTAMP NOT NULL,
+    "activation_date" TIMESTAMP DEFAULT NULL,
+    FOREIGN KEY ("id")
+    REFERENCES "user" ("id")
+    ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_idx_user_activation_key
+    ON "user_activation" ("activation_key");
+
+CREATE SEQUENCE IF NOT EXISTS user_reset_seq START WITH 1 INCREMENT BY 1;
+
+CREATE TABLE IF NOT EXISTS "user_reset" (
+    "id"  BIGINT DEFAULT nextval('user_reset_seq') PRIMARY KEY,
+    "user_id"        UUID NOT NULL,
+    "reset_key"      VARCHAR NOT NULL,
+    "reset_date"     TIMESTAMP NOT NULL,
+    "change_date"    TIMESTAMP NULL,
+    "is_active"      BOOLEAN NOT NULL,
+    "version"        BIGINT DEFAULT 0,
+    FOREIGN KEY ("user_id") REFERENCES "user"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE("reset_key")
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_reset_id ON "user_reset" ("user_id");
+CREATE INDEX IF NOT EXISTS idx_user_reset_active ON "user_reset" ("is_active");
+CREATE INDEX IF NOT EXISTS idx_user_reset_date ON "user_reset" ("reset_date");
+CREATE INDEX IF NOT EXISTS idx_user_reset_userid_resetdate
+    ON "user_reset" ("user_id", "reset_date" DESC);
+""".trimIndent()
     }
 
     //TODO: https://reflectoring.io/spring-bean-lifecycle/

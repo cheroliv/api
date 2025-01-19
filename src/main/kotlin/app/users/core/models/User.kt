@@ -100,7 +100,7 @@ data class User(
             const val LOGIN_FIELD = "login"
             const val PASSWORD_FIELD = "password"
             const val EMAIL_FIELD = "email"
-            const val LANG_KEY_FIELD = "lang_key"
+            const val LANG_KEY_FIELD = "lang_key"            
             const val VERSION_FIELD = "version"
         }
 

@@ -1,6 +1,5 @@
 package app.users.password
 
-
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USER
 import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
@@ -10,13 +9,6 @@ import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.password.UserReset.Relations.Fields.TABLE_NAME
 import app.users.password.UserReset.Relations.Fields.USER_ID_FIELD
 import app.users.password.UserReset.Relations.Fields.VERSION_FIELD
-//import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
-//import app.users.core.models.User.Relations.Fields.ID_FIELD
-//import app.users.core.models.User.Relations.Fields.LANG_KEY_FIELD
-//import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
-//import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
-//import app.users.core.models.User.Relations.Fields.TABLE_NAME
-//import app.users.core.models.User.Relations.Fields.VERSION_FIELD
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
@@ -33,6 +25,8 @@ data class UserReset(
     @field:NotNull
     val resetDate: Instant,
     val changeDate: Instant? = null,
+    @field:NotNull
+    val isActive: Boolean,
     @field:JsonIgnore
     val version: Long = 0,
 ) {
@@ -57,6 +51,7 @@ data class UserReset(
         const val RESET_KEY_ATTR = "resetKey"
         const val RESET_DATE_ATTR = "password"
         const val CHANGE_DATE_ATTR = "password"
+        const val IS_ACTIVE_ATTR = "isActive"
         const val VERSION_ATTR = "version"
     }
 
@@ -68,10 +63,11 @@ data class UserReset(
             const val RESET_KEY_FIELD = "reset_key"
             const val RESET_DATE_FIELD = "reset_date"
             const val CHANGE_DATE_FIELD = "change_date"
+            const val IS_ACTIVE_FIELD = "is_active"
             const val VERSION_FIELD = "version"
         }
 
-        val foo = """"""
+        const val foo = """"""
         const val SQL_SCRIPT = """
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
             "$ID_FIELD"             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -80,7 +76,7 @@ data class UserReset(
             "$RESET_DATE_FIELD"     TIMESTAMP NOT NULL,
             "$CHANGE_DATE_FIELD"    TIMESTAMP NULL,
             "$VERSION_FIELD"        BIGINT DEFAULT 0,
-            FOREIGN KEY ("$ID_FIELD") 
+            FOREIGN KEY ("$USER_ID_FIELD")
                 REFERENCES "${User.Relations.Fields.TABLE_NAME}"("${User.Relations.Fields.ID_FIELD}")
                 ON DELETE CASCADE ON UPDATE CASCADE
         );
