@@ -19,6 +19,9 @@ import app.users.core.Constants.VIRGULE
 import app.users.core.Loggers.i
 import app.users.core.models.EntityModel
 import app.users.core.models.EntityModel.Members.withId
+import app.users.core.models.Role
+import app.users.core.models.Role.Relations
+import app.users.core.models.Role.Relations.DELETE_AUTHORITY_BY_ROLE
 import app.users.core.models.User
 import app.users.core.models.User.Attributes.EMAIL_ATTR
 import app.users.core.models.User.Attributes.ID_ATTR
@@ -28,15 +31,13 @@ import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
 import app.users.core.models.User.Relations.Fields.LANG_KEY_FIELD
 import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
 import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
-import app.users.core.models.User.Relations.Fields.VERSION_FIELD
 import app.users.core.models.User.Relations.Fields.TABLE_NAME
-import app.users.core.models.Role
-import app.users.core.models.Role.Relations
-import app.users.core.models.Role.Relations.DELETE_AUTHORITY_BY_ROLE
+import app.users.core.models.User.Relations.Fields.VERSION_FIELD
 import app.users.core.models.UserRole
 import app.users.core.models.UserRole.Attributes.USER_ID_ATTR
 import app.users.core.models.UserRole.Relations.Fields.ROLE_FIELD
 import app.users.core.models.UserRole.Relations.Fields.USER_ID_FIELD
+import app.users.password.UserReset
 import app.users.signup.Signup
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
@@ -127,6 +128,7 @@ object TestUtils {
                     : SecurityContext = SecurityContextHolder.createEmptyContext()
         }
     }
+
     suspend fun ApplicationContext.countRoles(): Int = Relations.COUNT
         .let(getBean<DatabaseClient>()::sql)
         .fetch()
@@ -165,14 +167,16 @@ object TestUtils {
         .toString()
         .toInt()
 
-    const val COUNT_USER_ACTIVATION = """SELECT COUNT(*) FROM "${UserActivation.Relations.Fields.TABLE_NAME}";"""
+    const val COUNT_USER_ACTIVATION =
+        """SELECT COUNT(*) FROM "${UserActivation.Relations.Fields.TABLE_NAME}";"""
 
     const val FIND_BY_ACTIVATION_KEY = """
         SELECT * FROM "${UserActivation.Relations.Fields.TABLE_NAME}" as ua
         WHERE ua."$ACTIVATION_KEY_FIELD" = :$ACTIVATION_KEY_ATTR;
         """
 
-    const val FIND_ALL_USERACTIVATION = """SELECT * FROM "${UserActivation.Relations.Fields.TABLE_NAME}";"""
+    const val FIND_ALL_USERACTIVATION =
+        """SELECT * FROM "${UserActivation.Relations.Fields.TABLE_NAME}";"""
 
     suspend fun ApplicationContext.deleteAllUserAuthorities(): Unit = DELETE_USER_AUTHORITIES
         .trimIndent()
@@ -209,7 +213,8 @@ object TestUtils {
                     |where "user_id" = (
                     |select u."id" from "user" as u where u."login" = :login
                     |);"""
-    const val DELETE_USER_BY_ID = """DELETE FROM "$TABLE_NAME" AS u WHERE u."${User.Relations.Fields.ID_FIELD}" = :$ID_ATTR;"""
+    const val DELETE_USER_BY_ID =
+        """DELETE FROM "$TABLE_NAME" AS u WHERE u."${User.Relations.Fields.ID_FIELD}" = :$ID_ATTR;"""
 
     suspend fun ApplicationContext.countUserAuthority(): Int = COUNT_USER_AUTH
         .trimIndent()
@@ -320,7 +325,7 @@ object TestUtils {
         .toString()
         .toInt()
 
-    suspend fun ApplicationContext.countUserResets(): Int = """SELECT COUNT(*) FROM "user_reset";"""
+    suspend fun ApplicationContext.countUserResets(): Int = COUNT_USER_RESET
         .trimIndent()
         .let(getBean<DatabaseClient>()::sql)
         .fetch()
@@ -329,7 +334,6 @@ object TestUtils {
         .first()
         .toString()
         .toInt()
-
 
 
     object Data {
@@ -421,6 +425,9 @@ object TestUtils {
                 WHERE "login" LIKE 'user%'
             );"""
     }
+
+    const val COUNT_USER_RESET =
+        """SELECT COUNT(*) FROM "${UserReset.Relations.Fields.TABLE_NAME}";"""
 
     val ApplicationContext.PATTERN_LOCALE_2: Pattern
         get() = Pattern.compile("([a-z]{2})-([a-z]{2})")

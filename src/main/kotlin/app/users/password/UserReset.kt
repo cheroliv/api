@@ -101,5 +101,15 @@ data class UserReset(
         CREATE INDEX IF NOT EXISTS "$ID_DATE_IDX_FIELD"
             ON "$TABLE_NAME" ("$USER_ID_FIELD", "$RESET_DATE_FIELD" DESC);        
         """
+
+        const val INSERT="""
+        INSERT INTO user_reset (user_id, reset_key, reset_date, is_active, version)
+        VALUES (
+            (SELECT id FROM "user" WHERE email = :email),
+                :resetKey,
+                NOW(),
+                TRUE,
+                0
+        );"""
     }
 }
