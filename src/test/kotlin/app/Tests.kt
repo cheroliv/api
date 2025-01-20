@@ -89,6 +89,7 @@ import app.users.password.PasswordService
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
+import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
 import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.signup.Signup
@@ -216,6 +217,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.SecureRandom
 import java.time.Duration.ofSeconds
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
 import java.util.*
@@ -2553,7 +2555,7 @@ class Tests {
 
         @Test
         @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
-        fun `test Finish Password Reset`(): Unit = runBlocking {
+        fun `test finish password reset, reset password scenario`(): Unit = runBlocking {
             assertThat(user.id).isNull()
             context.tripleCounts().run {
                 val uuid: UUID = (user.copy(
@@ -2625,10 +2627,11 @@ class Tests {
                         // finish reset password
                         resetKey.run { "reset key : $this" }.run(::i)
 
+                        val newPassword = "$PASSWORD&"
                         client.post()
                             .uri(API_RESET_PASSWORD_FINISH_PATH)
                             .contentType(APPLICATION_PROBLEM_JSON)
-                            .bodyValue(KeyAndPassword(resetKey, "$PASSWORD&"))
+                            .bodyValue(KeyAndPassword(resetKey, newPassword))
                             .exchange()
                             .expectStatus()
                             .isOk
@@ -2637,34 +2640,38 @@ class Tests {
                             .logBody()
                             .apply(::assertThat)
                             .isEmpty()
-                        // TODO: test change is effective in database
+
+                        FIND_ALL_USERS
+                            .trimIndent()
+                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .fetch()
+                            .awaitSingle().run {
+                                PASSWORD_FIELD.run(::get).toString().run {
+                                    context.getBean<PasswordEncoder>()
+                                        .matches(newPassword, this)
+                                }.run(::assertThat).isTrue
+                            }
+
+                        FIND_ALL_USER_RESETS
+                            .trimIndent()
+                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .fetch()
+                            .awaitSingle().run {
+                                IS_ACTIVE_FIELD.run(::get).toString()
+                                    .apply(Boolean::parseBoolean)
+                                    .run(::assertThat).asBoolean().isFalse
+
+                                CHANGE_DATE_FIELD.run(::get).toString()
+                                    .apply(Instant::parse)
+                                    .apply { "$CHANGE_DATE_FIELD : $this".run(::i) }
+                                    .toLong()
+                                    .run(::assertThat)
+                                    .isNotNull()
+                            }
 
                     }
             }
         }
-
-
-////        val user = User(
-////            password = RandomStringUtils.random(60),
-////            login = "finish-password-reset",
-////            email = "finish-password-reset@example.com",
-////            resetDate = Instant.now().plusSeconds(60),
-////            createdBy = SYSTEM_ACCOUNT,
-////            resetKey = "reset key"
-////        )
-////
-////        userRepository.save(user).block()
-////
-////        val keyAndPassword = KeyAndPasswordVM(key = user.resetKey, newPassword = "new password")
-////
-////        accountWebTestClient.post().uri("/api/account/reset-password/finish")
-////            .contentType(MediaType.APPLICATION_JSON)
-////            .bodyValue(convertObjectToJsonBytes(keyAndPassword))
-////            .exchange()
-////            .expectStatus().isOk
-////
-////        val updatedUser = userRepository.findOneByLogin(user.login!!).block()
-////        assertThat(passwordEncoder.matches(keyAndPassword.newPassword, updatedUser.password)).isTrue
 
 
         @Test

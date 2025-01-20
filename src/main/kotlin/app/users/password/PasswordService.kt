@@ -123,7 +123,7 @@ class PasswordService(val context: ApplicationContext) {
 
 
     /**
-     * {@code POST   /user/reset-password/finish} : Finish to reset the password of the user.
+     * {@code 200 POST   /user/reset-password/finish} : Finish to reset the password of the user.
      *
      * @param keyAndPassword the generated key and the new password.
      * @throws InvalidPasswordProblem {@code 400 (Bad Request)} if the password is incorrect.
@@ -134,6 +134,7 @@ class PasswordService(val context: ApplicationContext) {
         exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> {
         InvalidPasswordException().run {
+//            exchange.validator.validateProperty()
 //        when {
 //            validator
 //                .validateProperty(
