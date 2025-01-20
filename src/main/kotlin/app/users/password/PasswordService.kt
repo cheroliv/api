@@ -26,14 +26,11 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
-import org.springframework.http.ResponseEntity.internalServerError
 import org.springframework.http.ResponseEntity.of
 import org.springframework.http.ResponseEntity.ok
 import org.springframework.r2dbc.core.awaitRowsUpdated
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import org.springframework.transaction.reactive.TransactionalOperator
-import org.springframework.transaction.reactive.executeAndAwait
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.server.ServerWebExchange
 
@@ -43,18 +40,18 @@ class PasswordService(val context: ApplicationContext) {
 
     suspend fun reset(mail: String, exchange: ServerWebExchange)
             : ResponseEntity<ProblemDetail> = try {
-            val res = requestPasswordReset(mail)
-            when (res.isRight()) {
-                true -> res.map { mail(mail to it) }
-                    .run { ok().build() }
+        val res = requestPasswordReset(mail)
+        when (res.isRight()) {
+            true -> res.map { mail(mail to it) }
+                .run { ok().build() }
 
-                else -> of(
-                    forStatusAndDetail(
-                        INTERNAL_SERVER_ERROR,
-                        res.swap().getOrNull()!!.message
-                    )
-                ).build()
-            }
+            else -> of(
+                forStatusAndDetail(
+                    INTERNAL_SERVER_ERROR,
+                    res.swap().getOrNull()!!.message
+                )
+            ).build()
+        }
     } catch (t: Throwable) {
         of(forStatusAndDetail(BAD_REQUEST, t.message)).build()
     }
@@ -79,7 +76,7 @@ class PasswordService(val context: ApplicationContext) {
         """
         INSERT INTO user_reset (user_id, reset_key, reset_date, is_active, version)
         VALUES (
-            (SELECT id FROM "user" WHERE email = :email),
+            (SELECT id FROM "user" WHERE LOWER(email) = LOWER(:email)),
                 :resetKey,
                 NOW(),
                 TRUE,
