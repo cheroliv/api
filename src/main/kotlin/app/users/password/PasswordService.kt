@@ -38,7 +38,7 @@ import org.springframework.web.server.ServerWebExchange
 @Validated
 class PasswordService(val context: ApplicationContext) {
     private suspend fun mail(mailKeyPair: Pair<String, String>) {
-        i("generated key for reset password : $generateResetKey\nTODO: link to finish reset password")
+        i("generated key for reset password : ${mailKeyPair.second}\n\tTODO: link to finish reset password")
 //        i("generated key for reset password : ${mailKeyPair.second}")
 //        return userRepository
 //            .findOneByEmail(mail)
@@ -94,7 +94,7 @@ class PasswordService(val context: ApplicationContext) {
             .awaitRowsUpdated()
             .right()
     } catch (e: Throwable) {
-        e.left()
+        Throwable(message = "Email not found", cause = e.cause).left()
     }
 
 
