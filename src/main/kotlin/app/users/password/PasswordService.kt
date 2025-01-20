@@ -10,8 +10,6 @@ import app.users.core.security.SecurityUtils.generateResetKey
 import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
-import app.users.password.UserReset.Attributes.IS_ACTIVE_ATTR
-import app.users.password.UserReset.Attributes.RESET_DATE_ATTR
 import app.users.password.UserReset.Attributes.RESET_KEY_ATTR
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
 import app.users.signup.SignupService.Companion.ZERO_ROW_UPDATED
@@ -28,14 +26,16 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.internalServerError
 import org.springframework.http.ResponseEntity.of
 import org.springframework.http.ResponseEntity.ok
 import org.springframework.r2dbc.core.awaitRowsUpdated
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.reactive.TransactionalOperator
+import org.springframework.transaction.reactive.executeAndAwait
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.server.ServerWebExchange
-import java.time.Instant.now
 
 @Service
 @Validated
@@ -43,23 +43,18 @@ class PasswordService(val context: ApplicationContext) {
 
     suspend fun reset(mail: String, exchange: ServerWebExchange)
             : ResponseEntity<ProblemDetail> = try {
-        requestPasswordReset(mail).map {
-            mail(mail to it)
-            return ok().build()
-        }.mapLeft {
-            return of(
-                forStatusAndDetail(
-                    INTERNAL_SERVER_ERROR,
-                    it.message
-                )
-            ).build()
-        }
-        of(
-            forStatusAndDetail(
-                BAD_REQUEST,
-                "Password reset requested for non existing mail"
-            )
-        ).build()
+            val res = requestPasswordReset(mail)
+            when (res.isRight()) {
+                true -> res.map { mail(mail to it) }
+                    .run { ok().build() }
+
+                else -> of(
+                    forStatusAndDetail(
+                        INTERNAL_SERVER_ERROR,
+                        res.swap().getOrNull()!!.message
+                    )
+                ).build()
+            }
     } catch (t: Throwable) {
         of(forStatusAndDetail(BAD_REQUEST, t.message)).build()
     }
@@ -68,12 +63,12 @@ class PasswordService(val context: ApplicationContext) {
         generateResetKey.run {
             ((mail to this) to context).reset().map {
                 when (it) {
-                    ONE_ROW_UPDATED -> right()
+                    ONE_ROW_UPDATED -> return right()
                     ZERO_ROW_UPDATED -> throw IllegalStateException("user_reset not saved")
                     else -> throw IllegalStateException("not expected to save more than one user_reset")
                 }
             }
-        }.mapLeft { it.left() }.run { UnknownEmailException().left() }
+        }
     } catch (e: Exception) {
         e.left()
     }
@@ -103,6 +98,7 @@ class PasswordService(val context: ApplicationContext) {
 
     suspend fun mail(mailKeyPair: Pair<String, String>) {
         i("generated key for reset password : $generateResetKey\nTODO: link to finish reset password")
+//        i("generated key for reset password : ${mailKeyPair.second}")
 //        return userRepository
 //            .findOneByEmail(mail)
 //            .apply {

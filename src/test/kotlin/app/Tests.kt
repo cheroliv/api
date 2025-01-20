@@ -14,6 +14,7 @@ import app.TestUtils.Data.signup
 import app.TestUtils.Data.user
 import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USERACTIVATION
+import app.TestUtils.FIND_ALL_USER_RESETS
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
 import app.TestUtils.FIND_USER_BY_LOGIN
 import app.TestUtils.countRoles
@@ -85,6 +86,8 @@ import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.PasswordService
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
+import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
+import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.Signup.Constraints.PASSWORD_MAX
@@ -201,6 +204,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
+import java.lang.Boolean
 import java.net.URI
 import java.nio.charset.Charset
 import java.nio.file.Path
@@ -2314,24 +2318,45 @@ class Tests {
                                 message = "password should be encoded"
                             )
                             // Given a user well signed up
-                            // Man at work!
                             assertThat(context.countUserResets()).isEqualTo(0)
                             client.post()
                                 .uri(API_RESET_PASSWORD_INIT_PATH)
                                 .contentType(APPLICATION_PROBLEM_JSON)
                                 .bodyValue(user.email)
                                 .exchange()
-//                            .expectStatus()
-//                            .isOk
+                                .expectStatus()
+                                .isOk
                                 .returnResult<ProblemDetail>()
                                 .responseBodyContent!!
-                                .logBody()
                                 .apply(::assertThat)
                                 .isEmpty()
+
                             assertThat(context.countUserResets()).isEqualTo(1)
 
-                            //TODO: retrieve the key in DB to test size against generator
-
+                            FIND_ALL_USER_RESETS
+                                .trimIndent()
+                                .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                .fetch()
+                                .awaitSingle().run {
+                                    IS_ACTIVE_FIELD
+                                        .run(::get)
+                                        .toString()
+                                        .apply(Boolean::parseBoolean)
+                                        .run(::assertThat)
+                                        .asBoolean()
+                                        .isTrue
+                                    RESET_KEY_FIELD
+                                        .run(::get)
+                                        .toString()
+                                        .run(::assertThat)
+                                        .isNotNull
+                                        .hasSize(
+                                            context
+                                                .getBean<PasswordEncoder>()
+                                                .encode(generateResetKey)
+                                                .length
+                                        )
+                                }
                         }
                 }
             }
@@ -3301,7 +3326,7 @@ class Tests {
         }
     }
 
-    @Ignore
+//    @Ignore
     @Nested
     @TestInstance(PER_CLASS)
     inner class AiTests {

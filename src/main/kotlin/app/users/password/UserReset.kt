@@ -111,5 +111,6 @@ data class UserReset(
                 TRUE,
                 0
         );"""
+
     }
 }
