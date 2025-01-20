@@ -2873,7 +2873,7 @@ class Tests {
 
     @Nested
     @TestInstance(PER_CLASS)
-    inner class EmaiSendingTests {
+    inner class EmailSendingTests {
         @Test
         fun `test sendEmail`() {
             mailService.sendEmail(

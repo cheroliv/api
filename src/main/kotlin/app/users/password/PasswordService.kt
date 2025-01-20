@@ -37,63 +37,7 @@ import org.springframework.web.server.ServerWebExchange
 @Service
 @Validated
 class PasswordService(val context: ApplicationContext) {
-
-    suspend fun reset(mail: String, exchange: ServerWebExchange)
-            : ResponseEntity<ProblemDetail> = try {
-        val res = requestPasswordReset(mail)
-        when (res.isRight()) {
-            true -> res.map { mail(mail to it) }
-                .run { ok().build() }
-
-            else -> of(
-                forStatusAndDetail(
-                    INTERNAL_SERVER_ERROR,
-                    res.swap().getOrNull()!!.message
-                )
-            ).build()
-        }
-    } catch (t: Throwable) {
-        of(forStatusAndDetail(BAD_REQUEST, t.message)).build()
-    }
-
-    suspend fun requestPasswordReset(mail: String): Either<Throwable, /*Reset key*/String> = try {
-        generateResetKey.run {
-            ((mail to this) to context).reset().map {
-                when (it) {
-                    ONE_ROW_UPDATED -> return right()
-                    ZERO_ROW_UPDATED -> throw IllegalStateException("user_reset not saved")
-                    else -> throw IllegalStateException("not expected to save more than one user_reset")
-                }
-            }
-        }
-    } catch (e: Exception) {
-        e.left()
-    }
-
-    //TODO: find user id by key and update at the same time using the posted pair keyPassword
-    suspend fun Pair<Pair</*mail*/String, /*key*/String>, ApplicationContext>.reset()
-            : Either<Throwable, Long> = try {
-        """
-        INSERT INTO user_reset (user_id, reset_key, reset_date, is_active, version)
-        VALUES (
-            (SELECT id FROM "user" WHERE LOWER(email) = LOWER(:email)),
-                :resetKey,
-                NOW(),
-                TRUE,
-                0
-        );""".trimIndent()
-            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-            .bind(EMAIL_ATTR, first.first)
-            .bind(RESET_KEY_ATTR, first.second.run(context.getBean<PasswordEncoder>()::encode))
-            .fetch()
-            .awaitRowsUpdated()
-            .right()
-    } catch (e: Throwable) {
-        e.left()
-    }
-
-
-    suspend fun mail(mailKeyPair: Pair<String, String>) {
+    private suspend fun mail(mailKeyPair: Pair<String, String>) {
         i("generated key for reset password : $generateResetKey\nTODO: link to finish reset password")
 //        i("generated key for reset password : ${mailKeyPair.second}")
 //        return userRepository
@@ -107,6 +51,54 @@ class PasswordService(val context: ApplicationContext) {
 //            }
     }
 
+    suspend fun reset(mail: String, exchange: ServerWebExchange): ResponseEntity<ProblemDetail> =
+        try {
+            requestPasswordReset(mail).run {
+                when (isRight()) {
+                    true -> map { mail(mailKeyPair = mail to it) }.run { ok() }
+
+                    else -> of(
+                        forStatusAndDetail(
+                            INTERNAL_SERVER_ERROR,
+                            swap().getOrNull()?.message
+                        )
+                    )
+                }
+            }
+        } catch (t: Throwable) {
+            of(forStatusAndDetail(BAD_REQUEST, t.message))
+        }.build()
+
+    private suspend fun requestPasswordReset(mail: String): Either<Throwable, /*Reset key*/String> =
+        try {
+            generateResetKey.run {
+                ((mail to this) to context).reset().map {
+                    when (it) {
+                        ONE_ROW_UPDATED -> return right()
+                        ZERO_ROW_UPDATED -> throw IllegalStateException("user_reset not saved")
+                        else -> throw IllegalStateException("not expected to save more than one user_reset")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.left()
+        }
+
+    private suspend fun Pair<Pair</*mail*/String, /*key*/String>, ApplicationContext>.reset()
+            : Either<Throwable, Long> = try {
+        UserReset.Relations.INSERT.trimIndent()
+            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .bind(EMAIL_ATTR, first.first)
+            .bind(RESET_KEY_ATTR, first.second.run(context.getBean<PasswordEncoder>()::encode))
+            .fetch()
+            .awaitRowsUpdated()
+            .right()
+    } catch (e: Throwable) {
+        e.left()
+    }
+
+
+    //TODO: find user id by key and update at the same time using the posted pair keyPassword
     suspend fun completePasswordReset(newPassword: String, key: String): User? {
         //        accountRepository.findOneByResetKey(key).run {
 //            if (this != null && resetDate?.isAfter(Instant.now().minusSeconds(86400)) == true) {
@@ -183,25 +175,23 @@ class PasswordService(val context: ApplicationContext) {
     suspend fun change(
         passwordChange: PasswordChange,
         exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = exchange
-        .validator
-        .validateProperty(
-            passwordChange,
-            NEW_PASSWORD_ATTR
-        ).run {
-            when {
-                isNotEmpty() -> of(
-                    forStatusAndDetail(BAD_REQUEST, iterator().next().message)
-                )
+    ): ResponseEntity<ProblemDetail> = exchange.validator.validateProperty(
+        passwordChange,
+        NEW_PASSWORD_ATTR
+    ).run {
+        when {
+            isNotEmpty() -> of(
+                forStatusAndDetail(BAD_REQUEST, iterator().next().message)
+            )
 
-                else -> try {
-                    change(passwordChange)
-                    ok()
-                } catch (t: Throwable) {
-                    of(forStatusAndDetail(BAD_REQUEST, t.message))
-                }
+            else -> try {
+                change(passwordChange)
+                ok()
+            } catch (t: Throwable) {
+                of(forStatusAndDetail(BAD_REQUEST, t.message))
             }
-        }.build()
+        }
+    }.build()
 }
 
 
