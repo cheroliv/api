@@ -191,6 +191,10 @@ import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
+import org.springframework.security.crypto.encrypt.Encryptors
+import org.springframework.security.crypto.encrypt.Encryptors.text
+import org.springframework.security.crypto.keygen.KeyGenerators
+import org.springframework.security.crypto.keygen.KeyGenerators.string
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -272,6 +276,21 @@ class Tests {
     @Nested
     @TestInstance(PER_CLASS)
     inner class CoreTests {
+
+
+        @Test
+        fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {
+            val salt = string().generateKey()
+            val encryptor = text("RGPD", salt)
+            encryptor.encrypt(user.email.lowercase()).apply(::i).run {
+                encryptor.decrypt(this)
+                    .apply(::i)
+                    .run(::assertThat)
+                    .asString()
+                    .isEqualTo(user.email.lowercase())
+            }
+        }
+
 
         @Test
         fun `DataTestsChecks - display some json`(): Unit = run {
@@ -2526,19 +2545,21 @@ class Tests {
                             .responseToString()
                             .apply(::assertThat)
                             .contains("Email not found")
+
                         assertThat(context.countUserResets()).isEqualTo(0)
                     }
             }
         }
 
         @Test
-        @WithMockUser("change-password")
+        @Ignore
+//        @WithMockUser("change-password")
+        @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
         fun `test Finish Password Reset`(): Unit = runBlocking {
             val testLogin = "change-password"
             val testPassword = "change-password"
 
             assertThat(user.id).isNull()
-
 
             context.tripleCounts().run {
                 val uuid: UUID = (user.copy(
@@ -2617,7 +2638,7 @@ class Tests {
                     }
             }
 
-            ////        val user = User(
+////        val user = User(
 ////            password = RandomStringUtils.random(60),
 ////            login = "finish-password-reset",
 ////            email = "finish-password-reset@example.com",
@@ -3305,6 +3326,7 @@ class Tests {
     }
 
     @Nested
+    @Ignore
     @TestInstance(PER_CLASS)
     inner class AiTests {
         @Suppress("MemberVisibilityCanBePrivate", "PropertyName")

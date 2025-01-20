@@ -18,6 +18,7 @@ import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.right
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Email
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
@@ -51,7 +52,7 @@ class PasswordService(val context: ApplicationContext) {
 //            }
     }
 
-    suspend fun reset(mail: String, exchange: ServerWebExchange): ResponseEntity<ProblemDetail> =
+    suspend fun reset(@Email mail: String, exchange: ServerWebExchange): ResponseEntity<ProblemDetail> =
         try {
             requestPasswordReset(mail).run {
                 when (isRight()) {
@@ -69,7 +70,7 @@ class PasswordService(val context: ApplicationContext) {
             of(forStatusAndDetail(BAD_REQUEST, t.message))
         }.build()
 
-    private suspend fun requestPasswordReset(mail: String): Either<Throwable, /*Reset key*/String> =
+    private suspend fun requestPasswordReset(@Email mail: String): Either<Throwable, /*Reset key*/String> =
         try {
             generateResetKey.run {
                 ((mail to this) to context).reset().map {
