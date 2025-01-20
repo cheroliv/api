@@ -52,7 +52,10 @@ class PasswordService(val context: ApplicationContext) {
 //            }
     }
 
-    suspend fun reset(@Email mail: String, exchange: ServerWebExchange): ResponseEntity<ProblemDetail> =
+    suspend fun reset(
+        @Email mail: String,
+        exchange: ServerWebExchange
+    ): ResponseEntity<ProblemDetail> =
         try {
             requestPasswordReset(mail).run {
                 when (isRight()) {
