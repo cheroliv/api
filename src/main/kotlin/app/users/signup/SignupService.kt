@@ -133,6 +133,7 @@ class SignupService(private val context: ApplicationContext) {
     }
 
     companion object {
+        const val ZERO_ROW_UPDATED = 0L
         const val ONE_ROW_UPDATED = 1L
 
         

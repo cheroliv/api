@@ -320,6 +320,16 @@ object TestUtils {
         .toString()
         .toInt()
 
+    suspend fun ApplicationContext.countUserResets(): Int = """SELECT COUNT(*) FROM "user_reset";"""
+        .trimIndent()
+        .let(getBean<DatabaseClient>()::sql)
+        .fetch()
+        .awaitSingle()
+        .values
+        .first()
+        .toString()
+        .toInt()
+
 
 
     object Data {
