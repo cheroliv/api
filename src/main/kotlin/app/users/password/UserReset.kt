@@ -79,6 +79,7 @@ data class UserReset(
         }
 
         const val SQL_SCRIPT = """
+        
         CREATE SEQUENCE IF NOT EXISTS "$USER_RESET_SEQ_FIELD" START WITH 1 INCREMENT BY 1;
         
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
@@ -100,6 +101,7 @@ data class UserReset(
         CREATE INDEX IF NOT EXISTS "$DATE_IDX_FIELD" ON "$TABLE_NAME" ("$RESET_DATE_FIELD");
         CREATE INDEX IF NOT EXISTS "$ID_DATE_IDX_FIELD"
             ON "$TABLE_NAME" ("$USER_ID_FIELD", "$RESET_DATE_FIELD" DESC);        
+        
         """
 
         const val INSERT="""

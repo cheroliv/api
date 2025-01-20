@@ -105,6 +105,7 @@ data class User(
 
         @Suppress("RemoveRedundantQualifierName")
         val testCreateTables = """
+            
             SET search_path = test;
             
             DROP TABLE IF EXISTS "${UserRole.Relations.Fields.TABLE_NAME}";
@@ -128,9 +129,11 @@ data class User(
             DROP INDEX IF EXISTS "uniq_idx_user_email";
             DROP INDEX IF EXISTS "uniq_idx_user_authority";
             DROP INDEX IF EXISTS "uniq_idx_user_activation_key";
+        
         """.trimIndent()
 
         const val SQL_SCRIPT = """
+        
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
             "$ID_FIELD"       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             "$LOGIN_FIELD"    TEXT NOT NULL,

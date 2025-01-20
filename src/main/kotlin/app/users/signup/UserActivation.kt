@@ -67,6 +67,7 @@ data class UserActivation(
         }
 
         const val SQL_SCRIPT = """
+        
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" UUID PRIMARY KEY,
             "$ACTIVATION_KEY_FIELD" VARCHAR NOT NULL,
@@ -81,6 +82,7 @@ data class UserActivation(
         ON "$TABLE_NAME" ("$ACTIVATION_DATE_FIELD");
         CREATE INDEX IF NOT EXISTS "$CREATED_DATE_IDX_FIELD"
         ON "$TABLE_NAME" ("$CREATED_DATE_FIELD");
+        
         """
 
         const val INSERT = """

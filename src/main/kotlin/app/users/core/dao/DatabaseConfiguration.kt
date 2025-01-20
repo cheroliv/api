@@ -39,8 +39,8 @@ class DatabaseConfiguration(private val context: ApplicationContext) {
 
     companion object {
         @JvmStatic
-        fun main(args: Array<String>) = CREATE_TABLES
-            .run { "CREATE_TABLES: $this" }
+        fun main(args: Array<String>) = "$testCreateTables$CREATE_TABLES"
+            .trimIndent()
             .run(::i)
     }
 

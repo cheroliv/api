@@ -23,6 +23,7 @@ data class Role(
         }
 
         const val SQL_SCRIPT = """
+        
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" VARCHAR(50) PRIMARY KEY
         );
@@ -32,6 +33,7 @@ data class Role(
                ('USER'), 
                ('ANONYMOUS')
         ON CONFLICT ("$ID_FIELD") DO NOTHING;
+        
         """
         const val COUNT = """SELECT COUNT(*) FROM "$TABLE_NAME";"""
         const val DELETE_AUTHORITY_BY_ROLE = """

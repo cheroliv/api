@@ -37,6 +37,7 @@ data class UserRole(
         }
 
         const val SQL_SCRIPT = """
+        
         CREATE SEQUENCE IF NOT EXISTS "$USER_ROLE_ID_SEQ_FIELD"
             START WITH 1 INCREMENT BY 1;        
         
@@ -55,11 +56,12 @@ data class UserRole(
         
         CREATE INDEX IF NOT EXISTS "$USER_ID_ROLE_IDX_FIELD"
             ON "$TABLE_NAME" ("$USER_ID_FIELD", "$ROLE_FIELD");
+        
         """
 
         const val INSERT = """
         INSERT INTO "$TABLE_NAME" ("$USER_ID_FIELD","${Role.Relations.Fields.ID_FIELD}")
-            VALUES (:${Attributes.USER_ID_ATTR}, :${Attributes.ROLE_ATTR})
+            VALUES (:${Attributes.USER_ID_ATTR}, :${Attributes.ROLE_ATTR});
         """
     }
 }
