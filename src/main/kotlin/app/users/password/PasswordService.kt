@@ -73,7 +73,7 @@ class PasswordService(val context: ApplicationContext) {
             of(forStatusAndDetail(BAD_REQUEST, t.message))
         }.build()
 
-    private suspend fun requestPasswordReset(@Email mail: String): Either<Throwable, /*Reset key*/String> =
+    suspend fun requestPasswordReset(@Email mail: String): Either<Throwable, /*Reset key*/String> =
         try {
             generateResetKey.run {
                 ((mail to this) to context).reset().map {

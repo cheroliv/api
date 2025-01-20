@@ -1,8 +1,9 @@
 @file:Suppress(
+    "PLATFORM_CLASS_MAPPED_TO_KOTLIN",
+    "RedundantUnitReturnType",
     "NonAsciiCharacters",
     "SqlResolve",
-    "RedundantUnitReturnType",
-    "unused"
+    "unused",
 )
 
 package app
@@ -86,6 +87,7 @@ import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.PasswordService
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
+import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
@@ -237,11 +239,6 @@ class Tests {
     lateinit var client: WebTestClient
     lateinit var mailService: MailService
 
-    @Spy
-    lateinit var javaMailSender: JavaMailSenderImpl
-
-    @Captor
-    lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
     val gmailConfig by lazy {
         GoogleAuthConfig(
             clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
@@ -253,6 +250,13 @@ class Tests {
             redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
         )
     }
+
+    @Spy
+    lateinit var javaMailSender: JavaMailSenderImpl
+
+    @Captor
+    lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
+
 
     @BeforeTest
     fun setUp(context: ApplicationContext) {
@@ -288,7 +292,6 @@ class Tests {
                     .isEqualTo(user.email.lowercase())
             }
         }
-
 
         @Test
         fun `DataTestsChecks - display some json`(): Unit = run {
@@ -2385,7 +2388,6 @@ class Tests {
             }
         }
 
-
         @Test
         @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
         fun `test request password reset with uppercased email`(): Unit = runBlocking {
@@ -2550,8 +2552,6 @@ class Tests {
         }
 
         @Test
-        @Ignore
-//        @WithMockUser("change-password")
         @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
         fun `test Finish Password Reset`(): Unit = runBlocking {
             assertThat(user.id).isNull()
@@ -2599,19 +2599,13 @@ class Tests {
                             ).apply { "passwords matches : ${toString()}".run(::i) },
                             message = "password should be encoded"
                         )
+
                         // Given a user well signed up
                         assertThat(context.countUserResets()).isEqualTo(0)
-                        client.post()
-                            .uri(API_RESET_PASSWORD_INIT_PATH)
-                            .contentType(APPLICATION_PROBLEM_JSON)
-                            .bodyValue(user.email)
-                            .exchange()
-                            .expectStatus()
-                            .isOk
-                            .returnResult<ProblemDetail>()
-                            .responseBodyContent!!
-                            .apply(::assertThat)
-                            .isEmpty()
+
+                        val resetKey = context.getBean<PasswordService>()
+                            .requestPasswordReset(user.email)
+                            .getOrNull()!!
 
                         assertThat(context.countUserResets()).isEqualTo(1)
 
@@ -2620,28 +2614,31 @@ class Tests {
                             .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
                             .fetch()
                             .awaitSingle().run {
-                                IS_ACTIVE_FIELD
-                                    .run(::get)
-                                    .toString()
+                                IS_ACTIVE_FIELD.run(::get).toString()
                                     .apply(Boolean::parseBoolean)
-                                    .run(::assertThat)
-                                    .asBoolean()
-                                    .isTrue
-                                RESET_KEY_FIELD
-                                    .run(::get)
-                                    .toString()
-                                    .run(::assertThat)
-                                    .isNotNull
-                                    .hasSize(
-                                        context
-                                            .getBean<PasswordEncoder>()
-                                            .encode(generateResetKey)
-                                            .length
-                                    )
+                                    .run(::assertThat).asBoolean().isTrue
+                                RESET_KEY_FIELD.run(::get).toString().run {
+                                    context.getBean<PasswordEncoder>()
+                                        .matches(resetKey, /* encodedPassword = */this)
+                                }.run(::assertThat).isTrue
                             }
                         // finish reset password
-                        // TODO: spy key on passwordService.requestPasswordReset
-                        val keyAndPassword = KeyAndPassword()
+                        resetKey.run { "reset key : $this" }.run(::i)
+
+                        client.post()
+                            .uri(API_RESET_PASSWORD_FINISH_PATH)
+                            .contentType(APPLICATION_PROBLEM_JSON)
+                            .bodyValue(KeyAndPassword(resetKey, "$PASSWORD&"))
+                            .exchange()
+                            .expectStatus()
+                            .isOk
+                            .returnResult<ProblemDetail>()
+                            .responseBodyContent!!
+                            .logBody()
+                            .apply(::assertThat)
+                            .isEmpty()
+                        // TODO: test change is effective in database
+
                     }
             }
         }
