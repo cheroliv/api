@@ -12,6 +12,7 @@ import app.users.core.web.HttpUtils.validator
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.UserReset.Attributes.RESET_KEY_ATTR
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
+import app.users.signup.SignupService.Companion.TWO_ROW_UPDATED
 import app.users.signup.SignupService.Companion.ZERO_ROW_UPDATED
 import arrow.core.Either
 import arrow.core.getOrElse
@@ -29,11 +30,14 @@ import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.http.ResponseEntity.of
 import org.springframework.http.ResponseEntity.ok
+import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.r2dbc.core.awaitOne
 import org.springframework.r2dbc.core.awaitRowsUpdated
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.server.ServerWebExchange
+import java.util.UUID
 
 @Service
 @Validated
@@ -102,55 +106,70 @@ class PasswordService(val context: ApplicationContext) {
     }
 
 
-    //TODO: find user id by key and update at the same time using the posted pair keyPassword
-    suspend fun completePasswordReset(newPassword: String, key: String): User? {
-        //        accountRepository.findOneByResetKey(key).run {
-//            if (this != null && resetDate?.isAfter(Instant.now().minusSeconds(86400)) == true) {
-//                d("Reset account password for reset key $key")
-//                return@completePasswordReset toCredentialsModel
-//                //                return saveUser(
-//                //                apply {
-//                ////                    password = passwordEncoder.encode(newPassword)
-//                //                    resetKey = null
-//                //                    resetDate = null
-//                //                })
-//            } else {
-//                d("$key is not a valid reset account password key")
-//                return@completePasswordReset null
-//            }
-        return null
-    }
-
-
     /**
-     * {@code 200 POST   /user/reset-password/finish} : Finish to reset the password of the user.
+     * {@code 200 (Ok) POST   /user/reset-password/finish} : Finish to reset the password of the user.
      *
      * @param keyAndPassword the generated key and the new password.
      * @throws InvalidPasswordProblem {@code 400 (Bad Request)} if the password is incorrect.
      * @throws RuntimeException         {@code 500 (Internal Application Error)} if the password could not be reset.
      */
     suspend fun finish(
-        keyAndPassword: KeyAndPassword,
+        @Valid keyAndPassword: KeyAndPassword,
         exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> {
-        InvalidPasswordException().run {
-//            exchange.validator.validateProperty()
-//        when {
-//            validator
-//                .validateProperty(
-//                    AccountCredentials(password = keyAndPassword.newPassword),
-//                    PASSWORD_FIELD
-//                ).isNotEmpty() -> throw this
-//
-//            keyAndPassword.newPassword != null
-//                    && keyAndPassword.key != null
-//                    && passwordService.completePasswordReset(
-//                keyAndPassword.newPassword,
-//                keyAndPassword.key
-//            ) == null -> throw PasswordException("No user was found for this reset key")
+    ): ResponseEntity<ProblemDetail> = try {
+        when (TWO_ROW_UPDATED) {
+            finish(
+                keyAndPassword.newPassword!!,
+                keyAndPassword.key!!
+            ).apply { "Row updated: $this".run(::i) } -> ok()
+
+            else -> of(
+                forStatusAndDetail(
+                    INTERNAL_SERVER_ERROR,
+                    "No user was found for this reset key"
+                )
+            )
         }
-        return ok().build()
+    } catch (t: Throwable) {
+        of(forStatusAndDetail(BAD_REQUEST, t.message))
+    }.build()
+
+
+    suspend fun finish(newPassword: String, key: String): Long {
+        var res: Long = 0L
+        val userId = context.getBean<DatabaseClient>()
+            .sql("""SELECT ur."user_id" FROM "user_reset" ur WHERE ur."reset_key" = :key""")
+            .bind("key", key)
+            .fetch()
+            .awaitOne()["user_id"].toString()
+            .run(UUID::fromString)
+//        context.getBean<TransactionalOperator>().executeAndAwait {
+        //mise a jour du user_reset
+        res += """
+        UPDATE user_reset 
+        SET is_active = FALSE, 
+        change_date = NOW()
+        WHERE reset_key = :reset_key                
+        """.trimIndent().run(context.getBean<DatabaseClient>()::sql)
+            .bind("reset_key", key)
+            .fetch()
+            .awaitRowsUpdated()
+//            context.getBean<TransactionalOperator>().executeAndAwait {
+        res += context.getBean<DatabaseClient>().sql(
+            """
+                        UPDATE "user" 
+                        SET password = :password, version = version + 1
+                        WHERE id = :id
+                    """
+        ).bind("password", context.getBean<PasswordEncoder>().encode(newPassword))
+            .bind("id", userId)
+            .fetch()
+            .awaitRowsUpdated()
+//            }
+//        }
+        return res
     }
+
 
     suspend fun change(@Valid changePassword: PasswordChange): Long {
         getCurrentUserLogin().apply {
@@ -198,112 +217,3 @@ class PasswordService(val context: ApplicationContext) {
         }
     }.build()
 }
-
-
-/*
-package community.accounts.password
-
-import community.API_ACCOUNT
-import community.API_RESET_INIT
-import community.accounts.Account
-import community.accounts.Account.Companion.EMAIL_FIELD
-import community.accounts.AccountRepository
-import community.accounts.signup.logResetAttempt
-import community.accounts.validate
-import community.core.http.badResponse
-import community.core.logging.d
-import community.validationProblems
-import org.springframework.http.HttpStatus.OK
-import org.springframework.http.ProblemDetail
-import org.springframework.http.ResponseEntity
-import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.server.ServerWebExchange
-import java.time.Instant.now
-
-@Service
-@Transactional
-open class PasswordService(private val accountRepository: AccountRepository) {
-
-    suspend fun getAccountByEmail(email: String) = accountRepository.findOne(email)
-
-    suspend fun reset(email: String, exchange: ServerWebExchange? = null)
-            : Triple<ResponseEntity<ProblemDetail>, Account?, String?/*:key*/> {
-//    suspend fun requestPasswordReset(mail: String): Account? =
-//        accountRepository
-//            .findOne(mail)
-//            .apply {
-//                if (this != null && this.activated) {
-//                   copy(resetKey = generateResetKey,
-//                    resetDate = now())
-//                    saveUser(this)
-//                } else return null
-//            }
-
-//        val errors = account
-//            .validate(signupFields, exchange)
-//            .apply { account.logSignupAttempt }
-
-
-        val errors = Account(email = email)
-            .apply { logResetAttempt }
-            .validate(setOf(EMAIL_FIELD), exchange)
-
-        val problems = validationProblems.copy(
-            path = "$API_ACCOUNT$API_RESET_INIT"
-        ).run {
-            if (errors.isNotEmpty())
-                return Triple(
-                    badResponse(errors),
-                    null,
-                    null
-                )
-        }
-
-//        val account = accountRepository
-//            .findOne(email)
-//            .apply {
-//
-//                if (this != null && this.activated) {
-//                    copy(//TODO: repo.generateResetKey(account)
-//                        resetKey = generateResetKey,
-//                        resetDate = now()
-//                    )
-//                    saveUser(this)
-//                } else return null
-//
-//            }
-
-        accountRepository.generateResetKey(email).run {
-
-        }
-        val result = ResponseEntity<ProblemDetail>(OK)
-
-
-        return Triple(result ,null,null)
-
-    }
-
-
-    suspend fun change(currentPassword: String, newPassword: String) {
-        TODO("Not yet implemented")
-    }
-
-    suspend fun complete(newPassword: String, key: String): Account? =
-        accountRepository.findOneByResetKey(key).run {
-            if (this != null && second.resetDate?.isAfter(now().minusSeconds(86400)) == true) {
-                d("Reset account password for reset key $key")
-                return@complete first
-                //                return saveUser(
-                //                apply {
-                ////                    password = passwordEncoder.encode(newPassword)
-                //                    resetKey = null
-                //                    resetDate = null
-                //                })
-            } else {
-                d("$key is not a valid reset account password key")
-                return@complete null
-            }
-        }
-}
- */

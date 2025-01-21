@@ -81,15 +81,12 @@ import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
 import app.users.core.web.Web.Companion.configuration
 import app.users.password.InvalidPasswordException
-import app.users.password.KeyAndPassword
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.PasswordService
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
-import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
-import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
 import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.signup.Signup
@@ -184,7 +181,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
 import org.springframework.core.env.get
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON
@@ -193,6 +189,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.mail.MailSendException
 import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.r2dbc.core.DatabaseClient
+import org.springframework.r2dbc.core.awaitRowsUpdated
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.security.crypto.encrypt.Encryptors.text
@@ -217,7 +214,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.SecureRandom
 import java.time.Duration.ofSeconds
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
 import java.util.*
@@ -931,7 +927,7 @@ class Tests {
                 assertDoesNotThrow {
                     FIND_ALL_USERS
                         .trimIndent()
-                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .run(context.getBean<DatabaseClient>()::sql)
                         .fetch()
                         .all()
                         .collect {
@@ -1320,7 +1316,7 @@ class Tests {
                             second.run(::i)
                             context.getBean<TransactionalOperator>().executeAndAwait {
                                 FIND_BY_ACTIVATION_KEY
-                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .run(context.getBean<DatabaseClient>()::sql)
                                     .bind(ACTIVATION_KEY_ATTR, second)
                                     .fetch()
                                     .awaitSingle()
@@ -1365,7 +1361,7 @@ class Tests {
                         "null",
                         FIND_ALL_USERACTIVATION
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
                             .toString()
@@ -1387,7 +1383,7 @@ class Tests {
                         "null",
                         FIND_ALL_USERACTIVATION
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingleOrNull()!!
                             .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
@@ -1452,7 +1448,7 @@ class Tests {
                         "null",
                         FIND_ALL_USERACTIVATION
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
                             .toString()
@@ -1474,7 +1470,7 @@ class Tests {
                         "null",
                         FIND_ALL_USERACTIVATION
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingleOrNull()!!
                             .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
@@ -1523,7 +1519,7 @@ class Tests {
                         "null",
                         FIND_ALL_USERACTIVATION
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
                             .toString()
@@ -1602,7 +1598,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -1627,7 +1623,7 @@ class Tests {
                                 context.getBean<PasswordEncoder>().matches(
                                     this, FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
@@ -1657,7 +1653,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -1685,7 +1681,7 @@ class Tests {
                                 context.getBean<PasswordEncoder>().matches(
                                     this, FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
@@ -1716,7 +1712,7 @@ class Tests {
 
                     FIND_ALL_USERS
                         .trimIndent()
-                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        .run(context.getBean<DatabaseClient>()::sql)
                         .fetch().awaitSingle().run {
                             (this[ID_FIELD].toString()
                                 .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -1760,7 +1756,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch()
                     .awaitSingle()
                     .run {
@@ -1876,7 +1872,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -1899,7 +1895,7 @@ class Tests {
                                 context.getBean<PasswordEncoder>().matches(
                                     testPassword, FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
@@ -1990,7 +1986,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -2013,7 +2009,7 @@ class Tests {
                                 context.getBean<PasswordEncoder>().matches(
                                     testPassword, FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
@@ -2104,7 +2100,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -2127,7 +2123,7 @@ class Tests {
                                 context.getBean<PasswordEncoder>().matches(
                                     testPassword, FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
@@ -2221,7 +2217,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -2245,7 +2241,7 @@ class Tests {
                                     testPassword,
                                     FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
@@ -2316,7 +2312,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         @Suppress("RemoveRedundantQualifierName")
                         (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
@@ -2338,7 +2334,7 @@ class Tests {
                             context.getBean<PasswordEncoder>().matches(
                                 PASSWORD, FIND_ALL_USERS
                                     .trimIndent()
-                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .run(context.getBean<DatabaseClient>()::sql)
                                     .fetch()
                                     .awaitSingle()[PASSWORD_FIELD]
                                     .toString()
@@ -2364,7 +2360,7 @@ class Tests {
 
                         FIND_ALL_USER_RESETS
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingle().run {
                                 IS_ACTIVE_FIELD
@@ -2408,7 +2404,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         @Suppress("RemoveRedundantQualifierName")
                         (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
@@ -2430,7 +2426,7 @@ class Tests {
                             context.getBean<PasswordEncoder>().matches(
                                 PASSWORD, FIND_ALL_USERS
                                     .trimIndent()
-                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .run(context.getBean<DatabaseClient>()::sql)
                                     .fetch()
                                     .awaitSingle()[PASSWORD_FIELD]
                                     .toString()
@@ -2457,7 +2453,7 @@ class Tests {
                         // And
                         FIND_ALL_USER_RESETS
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingle().run {
                                 IS_ACTIVE_FIELD
@@ -2501,7 +2497,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         @Suppress("RemoveRedundantQualifierName")
                         (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
@@ -2523,7 +2519,7 @@ class Tests {
                             context.getBean<PasswordEncoder>().matches(
                                 PASSWORD, FIND_ALL_USERS
                                     .trimIndent()
-                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .run(context.getBean<DatabaseClient>()::sql)
                                     .fetch()
                                     .awaitSingle()[PASSWORD_FIELD]
                                     .toString()
@@ -2571,7 +2567,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         @Suppress("RemoveRedundantQualifierName")
                         (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
@@ -2593,7 +2589,7 @@ class Tests {
                             context.getBean<PasswordEncoder>().matches(
                                 PASSWORD, FIND_ALL_USERS
                                     .trimIndent()
-                                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                    .run(context.getBean<DatabaseClient>()::sql)
                                     .fetch()
                                     .awaitSingle()[PASSWORD_FIELD]
                                     .toString()
@@ -2613,7 +2609,7 @@ class Tests {
 
                         FIND_ALL_USER_RESETS
                             .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
                             .awaitSingle().run {
                                 IS_ACTIVE_FIELD.run(::get).toString()
@@ -2628,56 +2624,90 @@ class Tests {
                         resetKey.run { "reset key : $this" }.run(::i)
 
                         val newPassword = "$PASSWORD&"
-                        client.post()
-                            .uri(API_RESET_PASSWORD_FINISH_PATH)
-                            .contentType(APPLICATION_PROBLEM_JSON)
-                            .bodyValue(KeyAndPassword(resetKey, newPassword))
-                            .exchange()
-                            .expectStatus()
-                            .isOk
-                            .returnResult<ProblemDetail>()
-                            .responseBodyContent!!
-                            .logBody()
-                            .apply(::assertThat)
-                            .isEmpty()
 
-                        FIND_ALL_USERS
-                            .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
-                            .fetch()
-                            .awaitSingle().run {
-                                PASSWORD_FIELD.run(::get).toString().run {
-                                    context.getBean<PasswordEncoder>()
-                                        .matches(newPassword, this)
-                                }.run(::assertThat).isTrue
-                            }
+//                        client.post()
+//                            .uri(API_RESET_PASSWORD_FINISH_PATH)
+//                            .contentType(APPLICATION_PROBLEM_JSON)
+//                            .bodyValue(KeyAndPassword(resetKey, newPassword))
+//                            .exchange()
+//                            .expectStatus()
+//                            .isOk
+//                            .returnResult<ProblemDetail>()
+//                            .responseBodyContent!!
+//                            .logBody()
+//                            .apply(::assertThat)
+//                            .isEmpty()
 
-                        FIND_ALL_USER_RESETS
-                            .trimIndent()
-                            .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                        """select * from "user_reset";"""
+                            .run(context.getBean<DatabaseClient>()::sql)
                             .fetch()
-                            .awaitSingle().run {
-                                IS_ACTIVE_FIELD.run(::get).toString()
+                            .all()
+                            .collect { it.toString().run(::i) }
+
+
+                        """
+                        UPDATE "user_reset" 
+                        SET "is_active" = FALSE, 
+                            "change_date" = NOW()
+                        WHERE "reset_key" = :resetKey 
+                        AND "is_active" = TRUE;
+                        """.trimIndent().run(context.getBean<DatabaseClient>()::sql)
+                            .bind("resetKey", resetKey)
+                            .fetch()
+                            .awaitRowsUpdated()
+
+
+                        val other = """
+                        UPDATE "user" 
+                        SET "password" = :password--,
+                            --"version" = "version" + 1
+                        WHERE "id" = :id;"""
+
+
+                        """select "is_active" from "user_reset";"""
+                            .run(context.getBean<DatabaseClient>()::sql)
+                            .fetch()
+                            .all()
+                            .collect {
+                                it["is_active"].toString()
                                     .apply(Boolean::parseBoolean)
                                     .run(::assertThat).asBoolean().isFalse
-
-                                CHANGE_DATE_FIELD.run(::get).toString()
-                                    .apply(Instant::parse)
-                                    .apply { "$CHANGE_DATE_FIELD : $this".run(::i) }
-                                    .toLong()
-                                    .run(::assertThat)
-                                    .isNotNull()
                             }
 
+//                        FIND_ALL_USER_RESETS
+//                            .trimIndent()
+//                            .run(context.getBean<DatabaseClient>()::sql)
+//                            .fetch()
+//                            .awaitSingle().run {
+//                                IS_ACTIVE_FIELD.run(::get).toString()
+//                                    .apply(Boolean::parseBoolean)
+//                                    .run(::assertThat).asBoolean().isFalse
+
+//                                CHANGE_DATE_FIELD.run(::get).toString()
+//                                    .apply(Instant::parse)
+//                                    .apply { "$CHANGE_DATE_FIELD : $this".run(::i) }
+//                                    .toLong()
+//                                    .run(::assertThat)
+//                                    .isNotNull()
+//                            }
+//                        FIND_ALL_USERS
+//                            .trimIndent()
+//                            .run(context.getBean<DatabaseClient>()::sql)
+//                            .fetch()
+//                            .awaitSingle().run {
+//                                PASSWORD_FIELD.run(::get).toString().run {
+//                                    context.getBean<PasswordEncoder>()
+//                                        .matches(newPassword, this)
+//                                }.run(::assertThat).isTrue
+//                            }
                     }
             }
         }
 
-
         @Test
 //    @Throws(Exception::class)
         @WithMockUser("change-password")
-        fun `test Finish Password Reset Too Small`(): Unit = runBlocking {
+        fun `test finish password reset too small`(): Unit = runBlocking {
             val testLogin = "change-password"
             val testPassword = "change-password"
 
@@ -2698,7 +2728,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -2721,7 +2751,7 @@ class Tests {
                                 context.getBean<PasswordEncoder>().matches(
                                     testPassword, FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
@@ -2808,7 +2838,7 @@ class Tests {
 
                 FIND_ALL_USERS
                     .trimIndent()
-                    .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                    .run(context.getBean<DatabaseClient>()::sql)
                     .fetch().awaitSingle().run {
                         (this[ID_FIELD].toString()
                             .run(::fromString) to this[PASSWORD_FIELD].toString())
@@ -2831,7 +2861,7 @@ class Tests {
                                 context.getBean<PasswordEncoder>().matches(
                                     testPassword, FIND_ALL_USERS
                                         .trimIndent()
-                                        .run(context.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+                                        .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()

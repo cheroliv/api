@@ -135,6 +135,7 @@ class SignupService(private val context: ApplicationContext) {
     companion object {
         const val ZERO_ROW_UPDATED = 0L
         const val ONE_ROW_UPDATED = 1L
+        const val TWO_ROW_UPDATED = 2L
 
         
         val SIGNUP_AVAILABLE = Triple(true, true, true)
