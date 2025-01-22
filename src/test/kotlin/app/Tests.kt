@@ -222,12 +222,13 @@ import java.util.UUID.randomUUID
 import kotlin.io.path.pathString
 import kotlin.test.*
 
-
 @ActiveProfiles("test")
 @TestInstance(PER_CLASS)
-@SpringBootTest(classes = [API::class], properties = ["spring.main.web-application-type=reactive"])
+@SpringBootTest(
+    classes = [API::class/*, TestConfig::class*/],
+    properties = ["spring.main.web-application-type=reactive"]
+)
 class Tests {
-
     @Autowired
     lateinit var context: ApplicationContext
     lateinit var client: WebTestClient
@@ -269,6 +270,34 @@ class Tests {
 
     @AfterTest
     fun cleanUp(context: ApplicationContext): Unit = runBlocking { context.deleteAllUsersOnly() }
+
+//    @org.springframework.boot.test.context.TestConfiguration
+//    @org.springframework.context.annotation.EnableAspectJAutoProxy
+//    class TestConfig {
+//        @org.aspectj.lang.annotation.Aspect
+//        @org.springframework.stereotype.Component
+//        class PasswordResetAdvice {
+//            @org.aspectj.lang.annotation.AfterReturning(
+//                pointcut = "execution(* app.users.password.PasswordService.reset(..))",
+//                returning = "resetKey"
+//            )
+//            fun afterResetPassword(): String = when {
+//                result.isRight() -> {
+//                    val resetKey = result.getOrNull()!!
+//                    // Traitez la resetKey ici, par exemple, enregistrez-la dans les logs
+//                    i("Reset key generated: $resetKey")
+//                    resetKey // Retournez la resetKey
+//                }
+//
+//                else -> {
+//                    // Gérez l'erreur si nécessaire
+//                    e("Password reset failed: ${result.swap().getOrNull()}")
+//                    null // Retournez null en cas d'erreur
+//                }
+//            }
+//        }
+//    }
+
 
     @Nested
     @TestInstance(PER_CLASS)
@@ -2535,6 +2564,7 @@ class Tests {
             }
         }
 
+
         //        private suspend fun `Given a user well signed up user`() {}
 //./gradlew test --tests 'app.Tests$UserResetPasswordTests.test service finish password reset, reset password scenario'
 //        @Ignore
@@ -2593,8 +2623,11 @@ class Tests {
                             .returnResult<ProblemDetail>()
                             .responseBodyContent!!
                             .apply(::assertThat).isEmpty()
-                        val resetKey: String = ""
-                        resetKey.apply { "Spyed resetKey: $this".apply(::i) }
+                        // Here I get the advice return with resetKey
+//                        var result: Either<Throwable, String>? = null
+//                        val resetKey: String = context.getBean<TestConfig.PasswordResetAdvice>()
+//                            .afterResetPassword(result)!!
+//                        resetKey.apply { "Spyed resetKey: $this".apply(::i) }
                         assertThat(context.countUserResets()).isEqualTo(1)
                         // Let's retrieve the user_reset
                         FIND_ALL_USER_RESETS.trimIndent()
@@ -3495,7 +3528,6 @@ class Tests {
     }
 
     @Nested
-    @Ignore
     @TestInstance(PER_CLASS)
     inner class AiTests {
         @Suppress("MemberVisibilityCanBePrivate", "PropertyName")
@@ -3521,6 +3553,7 @@ class Tests {
             context.configuration.run(::assertThat).isNotEmpty
         }
 
+        @Ignore
         @Test
         fun `test trivial ai api`(): Unit = runBlocking {
             client.mutate()
@@ -3539,6 +3572,7 @@ class Tests {
                 .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
         }
 
+        @Ignore
         @Test
         fun `test simple ai api, json format response`(): Unit = runBlocking {
             client.mutate()

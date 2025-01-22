@@ -59,7 +59,6 @@ object Constants {
 
 val Project.sep: String get() = FileSystems.getDefault().separator
 
-
 data class DockerHub(
     val username: String = properties["docker_hub_login"].toString(),
     val password: String = properties["docker_hub_password"].toString(),
@@ -76,10 +75,7 @@ repositories {
     maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
 }
 
-//dependencyManagement {
-//    imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") }
-//}
-
+//dependencyManagement { imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") } }
 
 dependencies {
     testImplementation("org.assertj:assertj-swing:3.17.1")
@@ -145,6 +141,9 @@ dependencies {
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:${properties["spring_cloud_starter.version"]}") {
         exclude(module = "commons-collections")
     }
+
+    // Spring AOP
+    testImplementation("org.springframework.boot:spring-boot-starter-aop")
 
     // Spring tests
     // Spring-Shell
@@ -216,6 +215,8 @@ dependencies {
     // misc
     implementation("org.apache.commons:commons-lang3")
     testImplementation("org.apache.commons:commons-collections4:4.5.0-M1")
+
+
 }
 
 files("node_modules").run(idea.module.excludeDirs::plusAssign)
