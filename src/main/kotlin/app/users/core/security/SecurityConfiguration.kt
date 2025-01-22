@@ -1,5 +1,6 @@
 package app.users.core.security
 
+import app.users.core.Constants.ENCRYPTER_BEAN_NAME
 import app.users.core.Constants.ROLE_ADMIN
 import app.users.core.Loggers.d
 import app.users.core.Properties
@@ -18,6 +19,10 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder.HT
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.encrypt.Encryptors
+import org.springframework.security.crypto.encrypt.Encryptors.text
+import org.springframework.security.crypto.encrypt.TextEncryptor
+import org.springframework.security.crypto.keygen.KeyGenerators.string
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.header.ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY
@@ -82,46 +87,52 @@ class SecurityConfiguration(private val context: ApplicationContext) {
     @Bean("passwordEncoder")
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
-    @Bean
-    fun reactiveAuthenticationManager(): ReactiveAuthenticationManager =
-        context.getBean<ReactiveUserDetailsService>()
-            .run(::UserDetailsRepositoryReactiveAuthenticationManager)
-            .apply { setPasswordEncoder(passwordEncoder()) }
+    @Bean(ENCRYPTER_BEAN_NAME)
+    fun encrypter(): TextEncryptor = text(
+        context.getBean<Properties>().encrypter.secret,
+        string().generateKey()
+    )
 
     @Bean
-    fun springSecurityFilterChain(http: ServerHttpSecurity)
-            : SecurityWebFilterChain = http.securityMatcher(
-        NegatedServerWebExchangeMatcher(
-            OrServerWebExchangeMatcher(
-                pathMatchers(
-                    "/app/**",
-                    "/i18n/**",
-                    "/content/**",
-                    "/swagger-ui/**",
-                    "/test/**",
-                    "/webjars/**"
-                ), pathMatchers(OPTIONS, "/**")
+    fun reactiveAuthenticationManager(): ReactiveAuthenticationManager = context
+        .getBean<ReactiveUserDetailsService>()
+        .run(::UserDetailsRepositoryReactiveAuthenticationManager)
+        .apply { setPasswordEncoder(passwordEncoder()) }
+
+    @Bean
+    fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
+        http.securityMatcher(
+            NegatedServerWebExchangeMatcher(
+                OrServerWebExchangeMatcher(
+                    pathMatchers(
+                        "/app/**",
+                        "/i18n/**",
+                        "/content/**",
+                        "/swagger-ui/**",
+                        "/test/**",
+                        "/webjars/**"
+                    ), pathMatchers(OPTIONS, "/**")
+                )
             )
-        )
-    ).csrf { csrf ->
-        csrf.disable()
-            .addFilterAt(SpaWebFilter(), AUTHENTICATION)
-            .addFilterAt(JwtFilter(context), HTTP_BASIC)
-            .authenticationManager(reactiveAuthenticationManager())
-            .exceptionHandling { }
-            .headers { h ->
-                h.contentSecurityPolicy { p ->
-                    p.policyDirectives(CONTENT_SECURITY_POLICY)
+        ).csrf { csrf ->
+            csrf.disable()
+                .addFilterAt(SpaWebFilter(), AUTHENTICATION)
+                .addFilterAt(JwtFilter(context), HTTP_BASIC)
+                .authenticationManager(reactiveAuthenticationManager())
+                .exceptionHandling { }
+                .headers { h ->
+                    h.contentSecurityPolicy { p ->
+                        p.policyDirectives(CONTENT_SECURITY_POLICY)
+                    }
+                    h.referrerPolicy { p -> p.policy(STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
+                    h.permissionsPolicy { p -> p.policy(FEATURE_POLICY) }
+                    h.frameOptions { f -> f.disable() }
+                }.authorizeExchange {
+                    it.pathMatchers(*permitAll).permitAll()
+                    it.pathMatchers(*authenticated).authenticated()
+                    it.pathMatchers(*adminAuthority).hasAuthority(ROLE_ADMIN)
                 }
-                h.referrerPolicy { p -> p.policy(STRICT_ORIGIN_WHEN_CROSS_ORIGIN) }
-                h.permissionsPolicy { p -> p.policy(FEATURE_POLICY) }
-                h.frameOptions { f -> f.disable() }
-            }.authorizeExchange {
-                it.pathMatchers(*permitAll).permitAll()
-                it.pathMatchers(*authenticated).authenticated()
-                it.pathMatchers(*adminAuthority).hasAuthority(ROLE_ADMIN)
-            }
-    }.build()
+        }.build()
 
     @Bean
     fun corsFilter(): WebFilter = CorsWebFilter(UrlBasedCorsConfigurationSource().apply source@{

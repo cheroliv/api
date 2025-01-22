@@ -428,7 +428,7 @@ object TestUtils {
 
     const val COUNT_USER_RESET =
         """SELECT COUNT(*) FROM "${UserReset.Relations.Fields.TABLE_NAME}";"""
-    val FIND_ALL_USER_RESETS = """SELECT * FROM "${UserReset.Relations.Fields.TABLE_NAME}";"""
+    const val FIND_ALL_USER_RESETS = """SELECT * FROM "${UserReset.Relations.Fields.TABLE_NAME}";"""
 
     val ApplicationContext.PATTERN_LOCALE_2: Pattern
         get() = Pattern.compile("([a-z]{2})-([a-z]{2})")
@@ -487,7 +487,7 @@ object TestUtils {
             : Either<Throwable, UserActivation> = try {
         FIND_BY_ACTIVATION_KEY
             .trimIndent()
-            .run(getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .run(getBean<DatabaseClient>()::sql)
             .bind(ACTIVATION_KEY_ATTR, key)
             .fetch()
             .awaitSingleOrNull()

@@ -1,5 +1,6 @@
 package app.users.core
 
+import app.users.core.Properties.Security.SymetricEncrypter
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.bind.ConstructorBinding
 import org.springframework.context.annotation.PropertySource
@@ -28,7 +29,10 @@ class Properties @ConstructorBinding constructor(
     val cache: Cache = Cache(),
     val security: Security = Security(),
     val cors: CorsConfiguration = CorsConfiguration(),
+    val encrypter: SymetricEncrypter = SymetricEncrypter(""),
 ) {
+
+
     class MailBox(
         val signup: Mail = Mail(),
         val password: Mail = Mail(),
@@ -117,5 +121,7 @@ class Properties @ConstructorBinding constructor(
             var clientId: String = "",
             var clientSecret: String = ""
         )
+
+        class SymetricEncrypter(var secret: String)
     }
 }

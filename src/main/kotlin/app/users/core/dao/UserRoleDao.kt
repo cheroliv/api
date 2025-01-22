@@ -11,12 +11,12 @@ import arrow.core.right
 import kotlinx.coroutines.reactive.collect
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
+import org.springframework.r2dbc.core.DatabaseClient
 
 object UserRoleDao {
     suspend fun Pair<UserRole, ApplicationContext>.signup(): Either<Throwable, Long> = try {
         INSERT.trimIndent()
-            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .run(second.getBean<DatabaseClient>()::sql)
             .bind(USER_ID_ATTR, first.userId)
             .bind(ROLE_ATTR, first.role)
             .fetch()

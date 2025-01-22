@@ -64,7 +64,7 @@ object UserDao {
     suspend fun Pair<User, ApplicationContext>.save(): Either<Throwable, UUID> = try {
         INSERT
             .trimIndent()
-            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .run(second.getBean<DatabaseClient>()::sql)
             .bind(LOGIN_ATTR, first.login)
             .bind(EMAIL_ATTR, first.email)
             .bind(PASSWORD_ATTR, first.password)
@@ -176,7 +176,7 @@ object UserDao {
             : Either<Throwable, Triple<Boolean/*OK*/, Boolean/*email*/, Boolean/*login*/>> = try {
         SELECT_SIGNUP_AVAILABILITY
             .trimIndent()
-            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .run(second.getBean<DatabaseClient>()::sql)
             .bind(LOGIN_ATTR, first.login)
             .bind(EMAIL_ATTR, first.email)
             .fetch()
@@ -197,7 +197,7 @@ object UserDao {
             : Either<Throwable, Long> = try {
         UPDATE_PASSWORD
             .trimIndent()
-            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .run(second.getBean<DatabaseClient>()::sql)
             .bind(ID_ATTR, first.id!!)
             .bind(PASSWORD_ATTR, first.password.run(second.getBean<PasswordEncoder>()::encode))
             .bind(VERSION_ATTR, first.version)

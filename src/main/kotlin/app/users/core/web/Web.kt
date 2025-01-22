@@ -36,10 +36,8 @@ import java.util.regex.Pattern
 class Web(private val context: ApplicationContext) : WebFluxConfigurer {
     companion object {
         @Bean
-        
         fun validationPostProcessor() = MethodValidationPostProcessor()
 
-        
         val ApplicationContext.configuration: Properties
             get() = Properties().apply {
                 "private.properties"

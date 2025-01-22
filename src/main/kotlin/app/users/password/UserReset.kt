@@ -103,7 +103,7 @@ data class UserReset(
             ON "$TABLE_NAME" ("$USER_ID_FIELD", "$RESET_DATE_FIELD" DESC);        
         
         """
-        val INSERT = """
+        const val INSERT = """
         INSERT INTO user_reset (user_id, reset_key, reset_date, is_active, version)
         VALUES (
             (SELECT id FROM "user" WHERE LOWER(email) = LOWER(:email)),

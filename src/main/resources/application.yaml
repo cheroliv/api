@@ -37,6 +37,9 @@ app:
     allow-credentials: true
     max-age: 1800
 
+  encrypter:
+    secret: RGPD
+
 spring:
   profiles:
     default: dev

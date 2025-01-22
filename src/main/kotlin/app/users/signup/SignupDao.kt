@@ -67,7 +67,7 @@ object SignupDao {
     suspend fun Pair<UserActivation, ApplicationContext>.save()
             : Either<Throwable, Long> = try {
         INSERT.trimIndent()
-            .run(second.getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .run(second.getBean<DatabaseClient>()::sql)
             .bind(ID_ATTR, first.id)
             .bind(ACTIVATION_KEY_ATTR, first.activationKey)
             .bind(CREATED_DATE_ATTR, first.createdDate)
@@ -89,7 +89,7 @@ object SignupDao {
     suspend fun ApplicationContext.activate(key: String): Either<Throwable, Long> = try {
         UPDATE_ACTIVATION_BY_KEY
             .trimIndent()
-            .run(getBean<R2dbcEntityTemplate>().databaseClient::sql)
+            .run(getBean<DatabaseClient>()::sql)
             .bind(ACTIVATION_KEY_ATTR, key)
             .fetch()
             .awaitRowsUpdated()
