@@ -9,7 +9,6 @@ import java.util.regex.Pattern
 import java.util.regex.Pattern.compile
 
 object Constants {
-//    const val ENCRYPTER_BEAN_NAME = "GRPD"
     const val ROOT_PACKAGE = "app"
     const val BLANK = ""
     val languages = arrayOf("en", "fr", "de", "it", "es")

@@ -144,11 +144,9 @@ class PasswordService(val context: ApplicationContext) {
 
     suspend fun finish(newPassword: String, key: String): Long = try {
         val database = context.getBean<DatabaseClient>()
-//        context.getBean<TransactionalOperator>().executeAndAwait {
         "finish(), key : $key".run(::i)
         var i = 0
         var res: Long = 0L
-
         val encryptedNewPassword = newPassword
             .run(context.getBean<PasswordEncoder>()::encode)
 
@@ -156,10 +154,10 @@ class PasswordService(val context: ApplicationContext) {
 
         """
         SELECT ur."user_id" FROM "user_reset" AS ur
-        WHERE ur."is_active" is TRUE;
-        """.trimMargin()// AND ur."reset_key" = :resetKey ;
+        WHERE ur."is_active" is TRUE AND ur."reset_key" = :resetKey ;
+        """.trimMargin()
             .run(database::sql)
-//            .bind("resetKey", encryptedKey)
+            .bind("resetKey", key)
             .fetch()
             .awaitSingleOrNull()
             ?.let { it["user_id"].toString().run(::i) }
@@ -203,9 +201,7 @@ class PasswordService(val context: ApplicationContext) {
 //                    .awaitRowsUpdated()
 //
 //                "row updated ${++i}: $res".run(::i)
-//                }
         res
-//        }
     } catch (t: Throwable) {
         throw Exception("No user was found for this reset key", t.cause)
     }
