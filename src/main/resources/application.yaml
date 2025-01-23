@@ -39,6 +39,7 @@ app:
 
   encrypter:
     secret: RGPD
+    salt: 33a9ef2640cb9830
 
 spring:
   profiles:

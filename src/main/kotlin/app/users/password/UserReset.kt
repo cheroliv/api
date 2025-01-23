@@ -85,12 +85,12 @@ data class UserReset(
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
             "$ID_FIELD"             BIGINT DEFAULT nextval('$USER_RESET_SEQ_FIELD') PRIMARY KEY,
             "$USER_ID_FIELD"        UUID NOT NULL,
-            "$RESET_KEY_FIELD"      VARCHAR NOT NULL,
+            "$RESET_KEY_FIELD"      TEXT,
             "$RESET_DATE_FIELD"     TIMESTAMP NOT NULL,
             "$CHANGE_DATE_FIELD"    TIMESTAMP NULL,
             "$IS_ACTIVE_FIELD"      BOOLEAN NOT NULL,            
             "$VERSION_FIELD"        BIGINT DEFAULT 0,
-            UNIQUE ("$USER_ID_FIELD"),
+            UNIQUE ("$USER_ID_FIELD", "$RESET_DATE_FIELD"),
             UNIQUE ("$RESET_KEY_FIELD"),        
             FOREIGN KEY ("$USER_ID_FIELD")
                 REFERENCES "${User.Relations.Fields.TABLE_NAME}"("${User.Relations.Fields.ID_FIELD}")
@@ -114,16 +114,16 @@ data class UserReset(
         );"""
 
         const val UPDATE_USER_AND_RESET_PASSWORD = """
-UPDATE "user" 
-SET password = :new_password,
-WHERE id = (
-    UPDATE user_reset 
-    SET is_active = FALSE, 
-        change_date = NOW()
-    WHERE reset_key = :reset_key 
-    AND is_active = TRUE
-    RETURNING user_id
-);
+        UPDATE "user" 
+        SET "password" = :newPassword
+        WHERE "id" = (
+            UPDATE "user_reset" 
+            SET "is_active" = FALSE, 
+                "change_date" = NOW()
+            WHERE "reset_key" = :resetKey 
+            AND "is_active" = TRUE
+            RETURNING "user_id"
+        );
         """
 
         val deux_query = """

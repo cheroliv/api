@@ -39,6 +39,7 @@ import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
+import app.users.core.Constants.ENCRYPTER_BEAN_NAME
 import app.users.core.Constants.PASSWORD
 import app.users.core.Constants.PATTERN_LOCALE_2
 import app.users.core.Constants.PATTERN_LOCALE_3
@@ -89,6 +90,7 @@ import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
+import app.users.password.UserReset.Relations.Fields.USER_ID_FIELD
 import app.users.signup.Signup
 import app.users.signup.Signup.Companion.objectName
 import app.users.signup.Signup.Constraints.PASSWORD_MAX
@@ -192,6 +194,7 @@ import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.security.crypto.encrypt.Encryptors.text
+import org.springframework.security.crypto.encrypt.TextEncryptor
 import org.springframework.security.crypto.keygen.KeyGenerators.string
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
@@ -225,7 +228,7 @@ import kotlin.test.*
 @ActiveProfiles("test")
 @TestInstance(PER_CLASS)
 @SpringBootTest(
-    classes = [API::class/*, TestConfig::class*/],
+    classes = [API::class],
     properties = ["spring.main.web-application-type=reactive"]
 )
 class Tests {
@@ -271,33 +274,6 @@ class Tests {
     @AfterTest
     fun cleanUp(context: ApplicationContext): Unit = runBlocking { context.deleteAllUsersOnly() }
 
-//    @org.springframework.boot.test.context.TestConfiguration
-//    @org.springframework.context.annotation.EnableAspectJAutoProxy
-//    class TestConfig {
-//        @org.aspectj.lang.annotation.Aspect
-//        @org.springframework.stereotype.Component
-//        class PasswordResetAdvice {
-//            @org.aspectj.lang.annotation.AfterReturning(
-//                pointcut = "execution(* app.users.password.PasswordService.reset(..))",
-//                returning = "resetKey"
-//            )
-//            fun afterResetPassword(): String = when {
-//                result.isRight() -> {
-//                    val resetKey = result.getOrNull()!!
-//                    // Traitez la resetKey ici, par exemple, enregistrez-la dans les logs
-//                    i("Reset key generated: $resetKey")
-//                    resetKey // Retournez la resetKey
-//                }
-//
-//                else -> {
-//                    // Gérez l'erreur si nécessaire
-//                    e("Password reset failed: ${result.swap().getOrNull()}")
-//                    null // Retournez null en cas d'erreur
-//                }
-//            }
-//        }
-//    }
-
 
     @Nested
     @TestInstance(PER_CLASS)
@@ -305,7 +281,7 @@ class Tests {
 
         @Test
         fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {
-            val salt = string().generateKey()
+            val salt = string().generateKey().apply { "salt: $this".run(::i) }
             val encryptor = text("RGPD", salt)
             encryptor.encrypt(user.email.lowercase()).apply(::i).run {
                 encryptor.decrypt(this)
@@ -314,7 +290,6 @@ class Tests {
                     .asString()
                     .isEqualTo(user.email.lowercase())
             }
-
         }
 
         @Test
@@ -2565,9 +2540,7 @@ class Tests {
         }
 
 
-        //        private suspend fun `Given a user well signed up user`() {}
-//./gradlew test --tests 'app.Tests$UserResetPasswordTests.test service finish password reset, reset password scenario'
-//        @Ignore
+        //./gradlew test --tests 'app.Tests$UserResetPasswordTests.test service finish password reset, reset password scenario'
         @Test
         @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
         fun `test service finish password reset, reset password scenario`(): Unit = runBlocking {
@@ -2584,23 +2557,37 @@ class Tests {
                 FIND_ALL_USERS
                     .trimIndent()
                     .run(context.getBean<DatabaseClient>()::sql)
-                    .fetch().awaitSingle().run {
+                    .fetch().awaitSingle().let { allUsers ->
                         @Suppress("RemoveRedundantQualifierName")
-                        (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                                to this[PASSWORD_FIELD].toString())
-                    }.run {
-                        "user.id retrieved before update password: $first".apply(::i)
-                        assertEquals(uuid, first, "user.id should be the same")
+                        (allUsers[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                                to allUsers[PASSWORD_FIELD].toString())
+                    }.let { uuidEncodedPasswordPair ->
+
+                        uuidEncodedPasswordPair
+                            .first
+                            .run { "user.id retrieved before update password: $this" }
+                            .run(::i)
+
+                        assertEquals(
+                            uuid,
+                            uuidEncodedPasswordPair.first,
+                            "user.id should be the same"
+                        )
+
                         assertNotEquals(
                             PASSWORD,
-                            second,
+                            uuidEncodedPasswordPair.second,
                             "password should be encoded and not the same"
                         )
+
                         assertTrue(
-                            context.getBean<PasswordEncoder>().matches(PASSWORD, second),
+                            context.getBean<PasswordEncoder>()
+                                .matches(PASSWORD, uuidEncodedPasswordPair.second),
                             message = "password should not be different"
                         )
+
                         assertThat(USER).isEqualTo(getCurrentUserLogin())
+
                         assertTrue(
                             context.getBean<PasswordEncoder>().matches(
                                 PASSWORD, FIND_ALL_USERS
@@ -2613,21 +2600,13 @@ class Tests {
                             ).apply { "passwords matches : ${toString()}".run(::i) },
                             message = "password should be encoded"
                         )
+
                         // Given a user well signed up user
                         assertThat(context.countUserResets()).isEqualTo(0)
-                        client.post()
-                            .uri(API_RESET_PASSWORD_INIT_PATH)
-                            .contentType(APPLICATION_PROBLEM_JSON)
-                            .bodyValue(user.email)
-                            .exchange().expectStatus().isOk
-                            .returnResult<ProblemDetail>()
-                            .responseBodyContent!!
-                            .apply(::assertThat).isEmpty()
-                        // Here I get the advice return with resetKey
-//                        var result: Either<Throwable, String>? = null
-//                        val resetKey: String = context.getBean<TestConfig.PasswordResetAdvice>()
-//                            .afterResetPassword(result)!!
-//                        resetKey.apply { "Spyed resetKey: $this".apply(::i) }
+                        val resetKey: String = context
+                            .getBean<PasswordService>()
+                            .reset(user.email).getOrNull()!!
+                            .apply { "After request reset password - resetKey: $this".run(::i) }
                         assertThat(context.countUserResets()).isEqualTo(1)
                         // Let's retrieve the user_reset
                         FIND_ALL_USER_RESETS.trimIndent()
@@ -2638,12 +2617,21 @@ class Tests {
                                     .apply(Boolean::parseBoolean)
                                     .run(::assertThat).asBoolean().isTrue
                                 RESET_KEY_FIELD.run(::get).toString()
-                                    .run { i("Encrypted retrieved key: $this") }
+                                    .apply { i("Encrypted retrieved key: $this") }
+                                    .run(context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME)::decrypt)
+                                    .run(::assertThat).asString()
+                                    .isEqualTo(resetKey)
+                                USER_ID_FIELD.run(::get)
+                                    .apply { i("Retrieved user_id: $this") }
+                                    .run(::assertThat).asString().isNotBlank()
                             }
-                    }
-            }
-        }
-//                        val newPassword = "$PASSWORD&"
+
+//                        // Here is the deal.
+                        val newPassword = "$PASSWORD&"
+                        context.getBean<PasswordService>()
+                            .finish(newPassword, resetKey)
+                            .toString()
+                            .run(::i)
 //                        client.post()
 //                            .uri(API_RESET_PASSWORD_FINISH_PATH)
 //                            .contentType(APPLICATION_PROBLEM_JSON)
@@ -2652,12 +2640,14 @@ class Tests {
 ////                            .expectStatus()
 ////                            .isOk
 //                            .returnResult<ProblemDetail>()
-//                            .responseBodyContent!!
-//                            .logBody()
-////                            .apply(::assertThat)
-////                            .isEmpty()
+//                            .responseBodyContent!!.apply { logBody() }
+//                            .apply(::assertThat)
+//                            .isEmpty()
 
 
+                    }
+            }
+        }
 //                        .run(::assertThat).isEqualTo(1)
 
 //                        FIND_ALL_USER_RESETS
