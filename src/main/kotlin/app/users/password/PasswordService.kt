@@ -1,6 +1,5 @@
 package app.users.password
 
-import app.users.core.Constants.ENCRYPTER_BEAN_NAME
 import app.users.core.Loggers.d
 import app.users.core.Loggers.i
 import app.users.core.dao.UserDao.change
@@ -104,15 +103,13 @@ class PasswordService(val context: ApplicationContext) {
      */
     suspend fun Pair<Pair<String, String>, ApplicationContext>.reset()
             : Either<Throwable, Long> = try {
-        context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME).run {
             UserReset.Relations.INSERT.trimIndent()
                 .run(second.getBean<DatabaseClient>()::sql)
                 .bind(EMAIL_ATTR, first.first)
-                .bind(RESET_KEY_ATTR, first.second.trimIndent().run(::encrypt))
+                .bind(RESET_KEY_ATTR, first.second)
                 .fetch()
                 .awaitRowsUpdated()
                 .right()
-        }
     } catch (e: Throwable) {
         Throwable(message = "Email not found", cause = e.cause).left()
     }
@@ -151,8 +148,6 @@ class PasswordService(val context: ApplicationContext) {
         "finish(), key : $key".run(::i)
         var i = 0
         var res: Long = 0L
-        val encryptedKey = context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME).encrypt(key)
-        .apply { i("finish(), encrypted key: $this") }
 
         val encryptedNewPassword = newPassword
             .run(context.getBean<PasswordEncoder>()::encode)

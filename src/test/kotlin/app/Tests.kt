@@ -39,7 +39,6 @@ import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
-import app.users.core.Constants.ENCRYPTER_BEAN_NAME
 import app.users.core.Constants.PASSWORD
 import app.users.core.Constants.PATTERN_LOCALE_2
 import app.users.core.Constants.PATTERN_LOCALE_3
@@ -292,15 +291,15 @@ class Tests {
             }
         }
 
-        @Test
-        fun `test encryption secret properties`(): Unit {
-            context.getBean<Properties>()
-                .encrypter
-                .secret
-                .run(::assertThat)
-                .asString()
-                .isEqualTo("RGPD")
-        }
+//        @Test
+//        fun `test encryption secret properties`(): Unit {
+//            context.getBean<Properties>()
+//                .encrypter
+//                .secret
+//                .run(::assertThat)
+//                .asString()
+//                .isEqualTo("RGPD")
+//        }
 
 
         @Test
@@ -2618,7 +2617,7 @@ class Tests {
                                     .run(::assertThat).asBoolean().isTrue
                                 RESET_KEY_FIELD.run(::get).toString()
                                     .apply { i("Encrypted retrieved key: $this") }
-                                    .run(context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME)::decrypt)
+//                                    .run(context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME)::decrypt)
                                     .run(::assertThat).asString()
                                     .isEqualTo(resetKey)
                                 USER_ID_FIELD.run(::get)
