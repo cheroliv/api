@@ -33,7 +33,6 @@ data class UserRole(
             const val ROLE_FIELD = Role.Relations.Fields.ID_FIELD
             const val USER_ROLE_ID_SEQ_FIELD = "user_authority_seq"
             const val USER_ID_ROLE_IDX_FIELD = "idx_user_id_role"
-
         }
 
         const val SQL_SCRIPT = """

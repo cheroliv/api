@@ -87,6 +87,7 @@ import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.PasswordService
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
+import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
 import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.password.UserReset.Relations.Fields.USER_ID_FIELD
@@ -193,7 +194,6 @@ import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
 import org.springframework.security.crypto.encrypt.Encryptors.text
-import org.springframework.security.crypto.encrypt.TextEncryptor
 import org.springframework.security.crypto.keygen.KeyGenerators.string
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
@@ -215,8 +215,11 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.SecureRandom
 import java.time.Duration.ofSeconds
+import java.time.Instant.now
 import java.time.LocalDateTime
+import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset.UTC
+import java.time.ZonedDateTime.ofInstant
 import java.util.*
 import java.util.Locale.*
 import java.util.UUID.fromString
@@ -2539,7 +2542,6 @@ class Tests {
         }
 
 
-        //./gradlew test --tests 'app.Tests$UserResetPasswordTests.test service finish password reset, reset password scenario'
         @Test
         @WithMockUser(username = USER, password = PASSWORD, roles = [ROLE_USER])
         fun `test service finish password reset, reset password scenario`(): Unit = runBlocking {
@@ -2616,8 +2618,7 @@ class Tests {
                                     .apply(Boolean::parseBoolean)
                                     .run(::assertThat).asBoolean().isTrue
                                 RESET_KEY_FIELD.run(::get).toString()
-                                    .apply { i("Encrypted retrieved key: $this") }
-//                                    .run(context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME)::decrypt)
+                                    .apply { i("Retrieved key: $this") }
                                     .run(::assertThat).asString()
                                     .isEqualTo(resetKey)
                                 USER_ID_FIELD.run(::get)
@@ -2625,79 +2626,44 @@ class Tests {
                                     .run(::assertThat).asString().isNotBlank()
                             }
 
-//                        // Here is the deal.
                         val newPassword = "$PASSWORD&"
                         context.getBean<PasswordService>()
                             .finish(newPassword, resetKey)
                             .toString()
                             .run(::i)
-//                        client.post()
-//                            .uri(API_RESET_PASSWORD_FINISH_PATH)
-//                            .contentType(APPLICATION_PROBLEM_JSON)
-//                            .bodyValue(KeyAndPassword(resetKey, newPassword))
-//                            .exchange()
-////                            .expectStatus()
-////                            .isOk
-//                            .returnResult<ProblemDetail>()
-//                            .responseBodyContent!!.apply { logBody() }
-//                            .apply(::assertThat)
-//                            .isEmpty()
 
+                        context.countUserResets().run(::assertThat).isEqualTo(1)
 
+                        FIND_ALL_USER_RESETS
+                            .trimIndent()
+                            .run(context.getBean<DatabaseClient>()::sql)
+                            .fetch()
+                            .awaitSingleOrNull()!!.run {
+                                IS_ACTIVE_FIELD.run(::get).toString()
+                                    .apply(Boolean::parseBoolean)
+                                    .run(::assertThat).asBoolean().isFalse
+
+                                CHANGE_DATE_FIELD.run(::get).toString()
+                                    .run(::assertThat).asString()
+                                    .containsAnyOf(
+                                        ofInstant(now(), systemDefault()).year.toString(),
+                                        ofInstant(now(), systemDefault()).month.toString(),
+                                        ofInstant(now(), systemDefault()).dayOfMonth.toString(),
+                                        ofInstant(now(), systemDefault()).hour.toString(),
+                                    )
+                            }
+
+                        FIND_ALL_USERS
+                            .trimIndent()
+                            .run(context.getBean<DatabaseClient>()::sql)
+                            .fetch()
+                            .awaitSingleOrNull()!![PASSWORD_FIELD].toString().run {
+                            context.getBean<PasswordEncoder>()
+                                .matches(newPassword, this)
+                        }.run(::assertThat).isTrue
                     }
             }
         }
-//                        .run(::assertThat).isEqualTo(1)
-
-//                        FIND_ALL_USER_RESETS
-//                            .trimIndent()
-//                            .run(context.getBean<DatabaseClient>()::sql)
-//                            .fetch()
-//                            .all()
-//                            .collect { it.toString().run(::i) }
-
-//
-////                        val other = """
-////                        UPDATE "user"
-////                        SET "password" = :password--,
-////                            --"version" = "version" + 1
-////                        WHERE "id" = :id;"""
-//                        """select "is_active" from "user_reset";"""
-//                            .run(context.getBean<DatabaseClient>()::sql)
-//                            .fetch()
-//                            .all()
-//                            .collect {
-//                                it["is_active"].toString()
-//                                    .apply(Boolean::parseBoolean)
-//                                    .run(::assertThat).asBoolean().isFalse
-//                            }
-//
-//                        FIND_ALL_USER_RESETS
-//                            .trimIndent()
-//                            .run(context.getBean<DatabaseClient>()::sql)
-//                            .fetch()
-//                            .awaitSingle().run {
-//                                IS_ACTIVE_FIELD.run(::get).toString()
-//                                    .apply(Boolean::parseBoolean)
-//                                    .run(::assertThat).asBoolean().isFalse
-//
-//                                CHANGE_DATE_FIELD.run(::get).toString()
-//                                    .apply(Instant::parse)
-//                                    .apply { "$CHANGE_DATE_FIELD : $this".run(::i) }
-//                                    .toLong()
-//                                    .run(::assertThat)
-//                                    .isNotNull()
-//                            }
-//                        FIND_ALL_USERS
-//                            .trimIndent()
-//                            .run(context.getBean<DatabaseClient>()::sql)
-//                            .fetch()
-//                            .awaitSingle().run {
-//                                PASSWORD_FIELD.run(::get).toString().run {
-//                                    context.getBean<PasswordEncoder>()
-//                                        .matches(newPassword, this)
-//                                }.run(::assertThat).isTrue
-//                            }
 
 
         @Ignore
@@ -2776,17 +2742,16 @@ class Tests {
                         resetKey.run { "reset key : $this" }.run(::i)
 
                         val newPassword = "$PASSWORD&"
-
+//
 //                        client.post()
 //                            .uri(API_RESET_PASSWORD_FINISH_PATH)
 //                            .contentType(APPLICATION_PROBLEM_JSON)
 //                            .bodyValue(KeyAndPassword(resetKey, newPassword))
 //                            .exchange()
-//                            .expectStatus()
-//                            .isOk
+////                            .expectStatus()
+////                            .isOk
 //                            .returnResult<ProblemDetail>()
-//                            .responseBodyContent!!
-//                            .logBody()
+//                            .responseBodyContent!!.apply { logBody() }
 //                            .apply(::assertThat)
 //                            .isEmpty()
 

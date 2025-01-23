@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package app.users.core.dao
 
 import app.users.core.Constants.ROOT_PACKAGE

@@ -80,12 +80,6 @@ class SecurityConfiguration(private val context: ApplicationContext) {
 
     }
 
-//    @Bean(ENCRYPTER_BEAN_NAME)
-//    fun GRPD(): TextEncryptor = text(
-//        context.getBean<Properties>().encrypter.secret,
-//        context.getBean<Properties>().encrypter.salt
-//    )
-
     @Bean("passwordEncoder")
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 

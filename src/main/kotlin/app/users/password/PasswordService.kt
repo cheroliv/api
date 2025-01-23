@@ -12,6 +12,7 @@ import app.users.core.web.HttpUtils.validator
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.UserReset.Attributes.RESET_KEY_ATTR
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
+import app.users.signup.SignupService.Companion.TWO_ROWS_UPDATED
 import app.users.signup.SignupService.Companion.ZERO_ROW_UPDATED
 import arrow.core.Either
 import arrow.core.getOrElse
@@ -19,8 +20,6 @@ import arrow.core.left
 import arrow.core.right
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.reactive.collect
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus.BAD_REQUEST
@@ -31,12 +30,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.ResponseEntity.of
 import org.springframework.http.ResponseEntity.ok
 import org.springframework.r2dbc.core.DatabaseClient
-import org.springframework.r2dbc.core.awaitOne
 import org.springframework.r2dbc.core.awaitRowsUpdated
-import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
-import org.springframework.r2dbc.core.flow
-import org.springframework.security.crypto.encrypt.TextEncryptor
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.reactive.TransactionalOperator
@@ -103,13 +98,13 @@ class PasswordService(val context: ApplicationContext) {
      */
     suspend fun Pair<Pair<String, String>, ApplicationContext>.reset()
             : Either<Throwable, Long> = try {
-            UserReset.Relations.INSERT.trimIndent()
-                .run(second.getBean<DatabaseClient>()::sql)
-                .bind(EMAIL_ATTR, first.first)
-                .bind(RESET_KEY_ATTR, first.second)
-                .fetch()
-                .awaitRowsUpdated()
-                .right()
+        UserReset.Relations.INSERT.trimIndent()
+            .run(second.getBean<DatabaseClient>()::sql)
+            .bind(EMAIL_ATTR, first.first)
+            .bind(RESET_KEY_ATTR, first.second)
+            .fetch()
+            .awaitRowsUpdated()
+            .right()
     } catch (e: Throwable) {
         Throwable(message = "Email not found", cause = e.cause).left()
     }
@@ -124,11 +119,12 @@ class PasswordService(val context: ApplicationContext) {
     suspend fun finish(
         @Valid keyAndPassword: KeyAndPassword, exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = try {
-        finish(
-            keyAndPassword.newPassword!!.trimIndent(),
-            keyAndPassword.key!!.trimIndent()
-        ).apply { "Row updated: $this".run(::i) }
-        ok()
+        val (cred, resetKey) = keyAndPassword
+        when {
+            finish(cred!!, resetKey!!) == TWO_ROWS_UPDATED -> ok()
+
+            else -> throw Exception("No user was found for this reset key")
+        }
     } catch (t: Throwable) {
         of(
             forStatusAndDetail(
@@ -143,65 +139,44 @@ class PasswordService(val context: ApplicationContext) {
 
 
     suspend fun finish(newPassword: String, key: String): Long = try {
-        val database = context.getBean<DatabaseClient>()
-        "finish(), key : $key".run(::i)
-        var i = 0
-        var res: Long = 0L
-        val encryptedNewPassword = newPassword
-            .run(context.getBean<PasswordEncoder>()::encode)
+        context.getBean<TransactionalOperator>().executeAndAwait {
+            val database = context.getBean<DatabaseClient>()
+            var res = 0L
+            val encryptedNewPassword = newPassword
+                .run(context.getBean<PasswordEncoder>()::encode)
 
-        "row updated ${++i}: $res".run(::i)
-
-        """
+            val userId: UUID = """
         SELECT ur."user_id" FROM "user_reset" AS ur
         WHERE ur."is_active" is TRUE AND ur."reset_key" = :resetKey ;
-        """.trimMargin()
-            .run(database::sql)
-            .bind("resetKey", key)
-            .fetch()
-            .awaitSingleOrNull()
-            ?.let { it["user_id"].toString().run(::i) }
-
-
-//                .run(UUID::fromString)
-
-//                .map {
-//                    val userId: UUID = it.apply { "finish(), user_id: $this".run(::i) }["user_id"]
-//                        .toString()
-//                        .run(UUID::fromString)
-//                    it.apply { "finish(), enc_reset_key: $this".run(::i) }["reset_key"]
-//                        .toString()
-//                        .run(context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME)::decrypt)
-//                        .run { "finish(), dec_reset_key: $this" }
-//                        .run(::i)
-
-//                //mise a jour du user_reset
-//                res += """
-//                UPDATE "user_reset"
-//                SET "is_active" = FALSE,
-//                "change_date" = NOW()
-//                WHERE "is_active" is TRUE
-//                AND "reset_key" = :resetKey
-//                """.trimIndent()
-//                    .run(context.getBean<DatabaseClient>()::sql)
-//                    .bind("resetKey", encryptedKey)
-//                    .fetch()
-//                    .awaitRowsUpdated()
-//                "row updated ${++i}: $res".run(::i)
-//                //mise a jour du user
-//                res += """
-//                UPDATE "user"
-//                SET "password" = :password, "version" = version + 1
-//                WHERE "id" = :id
-//                """.trimIndent()
-//                    .run(context.getBean<DatabaseClient>()::sql)
-//                    .bind("password", encryptedNewPassword)
-//                    .bind("id", userId)
-//                    .fetch()
-//                    .awaitRowsUpdated()
-//
-//                "row updated ${++i}: $res".run(::i)
-        res
+        """.trimMargin().run(database::sql)
+                .bind("resetKey", key)
+                .fetch().awaitSingleOrNull()?.get("user_id")
+                .toString().run(UUID::fromString)
+            //mise a jour du user_reset
+            res += """
+                UPDATE "user_reset"
+                SET "is_active" = FALSE,
+                "change_date" = NOW()
+                WHERE "is_active" is TRUE
+                AND "reset_key" = :resetKey
+                """.trimIndent()
+                .run(context.getBean<DatabaseClient>()::sql)
+                .bind("resetKey", key)
+                .fetch()
+                .awaitRowsUpdated()
+            //mise a jour du user
+            res += """
+                UPDATE "user"
+                SET "password" = :password, "version" = version + 1
+                WHERE "id" = :id
+                """.trimIndent()
+                .run(context.getBean<DatabaseClient>()::sql)
+                .bind("password", encryptedNewPassword)
+                .bind("id", userId)
+                .fetch()
+                .awaitRowsUpdated()
+            res
+        }
     } catch (t: Throwable) {
         throw Exception("No user was found for this reset key", t.cause)
     }

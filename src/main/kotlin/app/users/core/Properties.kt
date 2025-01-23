@@ -28,17 +28,13 @@ class Properties @ConstructorBinding constructor(
     val cache: Cache = Cache(),
     val security: Security = Security(),
     val cors: CorsConfiguration = CorsConfiguration(),
-//    val encrypter: SymetricEncrypter = SymetricEncrypter(),
 ) {
-
-
     class MailBox(
         val signup: Mail = Mail(),
         val password: Mail = Mail(),
         val contact: Mail = Mail(),
         val test: Mail = Mail(),
     )
-
 
     class ClientApp(val name: String = "")
     class Database(
@@ -120,10 +116,5 @@ class Properties @ConstructorBinding constructor(
             var clientId: String = "",
             var clientSecret: String = ""
         )
-
-//        class SymetricEncrypter(
-//            var secret: String = "",
-//            var salt: String = ""
-//        )
     }
 }
