@@ -2606,7 +2606,7 @@ class Tests {
                         val resetKey: String = context
                             .getBean<PasswordService>()
                             .reset(user.email).getOrNull()!!
-                            .apply { "After request reset password - resetKey: $this".run(::i) }
+                        resetKey.apply { "After request reset password - resetKey: $this".run(::i) }
                         assertThat(context.countUserResets()).isEqualTo(1)
                         // Let's retrieve the user_reset
                         FIND_ALL_USER_RESETS.trimIndent()

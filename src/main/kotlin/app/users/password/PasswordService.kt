@@ -146,6 +146,7 @@ class PasswordService(val context: ApplicationContext) {
 
 
     suspend fun finish(newPassword: String, key: String): Long = try {
+        val database=context.getBean<DatabaseClient>()
 //        context.getBean<TransactionalOperator>().executeAndAwait {
         "finish(), key : $key".run(::i)
         var i = 0
@@ -159,10 +160,10 @@ class PasswordService(val context: ApplicationContext) {
         "row updated ${++i}: $res".run(::i)
         """
         SELECT ur."user_id" FROM "user_reset" AS ur
-        WHERE ur."is_active" is TRUE AND ur."reset_key" = :resetKey;
-        """.trimMargin()
-            .run(context.getBean<DatabaseClient>()::sql)
-            .bind("resetKey", encryptedKey.trimIndent())
+        WHERE ur."is_active" is TRUE
+        """.trimMargin()// AND ur."reset_key" = :resetKey;
+            .run(database::sql)
+//            .bind("resetKey", encryptedKey.trimIndent())
             .fetch()
             .awaitSingleOrNull()
             ?.let { it["user_id"].toString().run(::i) }
