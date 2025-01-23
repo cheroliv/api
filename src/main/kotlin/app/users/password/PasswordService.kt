@@ -128,8 +128,8 @@ class PasswordService(val context: ApplicationContext) {
         @Valid keyAndPassword: KeyAndPassword, exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = try {
         finish(
-            keyAndPassword.newPassword!!,
-            keyAndPassword.key!!
+            keyAndPassword.newPassword!!.trimIndent(),
+            keyAndPassword.key!!.trimIndent()
         ).apply { "Row updated: $this".run(::i) }
         ok()
     } catch (t: Throwable) {
@@ -146,24 +146,25 @@ class PasswordService(val context: ApplicationContext) {
 
 
     suspend fun finish(newPassword: String, key: String): Long = try {
-        val database=context.getBean<DatabaseClient>()
+        val database = context.getBean<DatabaseClient>()
 //        context.getBean<TransactionalOperator>().executeAndAwait {
         "finish(), key : $key".run(::i)
         var i = 0
         var res: Long = 0L
         val encryptedKey = context.getBean<TextEncryptor>(ENCRYPTER_BEAN_NAME).encrypt(key)
-
-        encryptedKey.run { i("finish(), encrypted key: $this") }
+        .apply { i("finish(), encrypted key: $this") }
 
         val encryptedNewPassword = newPassword
             .run(context.getBean<PasswordEncoder>()::encode)
+
         "row updated ${++i}: $res".run(::i)
+
         """
         SELECT ur."user_id" FROM "user_reset" AS ur
-        WHERE ur."is_active" is TRUE
-        """.trimMargin()// AND ur."reset_key" = :resetKey;
+        WHERE ur."is_active" is TRUE;
+        """.trimMargin()// AND ur."reset_key" = :resetKey ;
             .run(database::sql)
-//            .bind("resetKey", encryptedKey.trimIndent())
+//            .bind("resetKey", encryptedKey)
             .fetch()
             .awaitSingleOrNull()
             ?.let { it["user_id"].toString().run(::i) }

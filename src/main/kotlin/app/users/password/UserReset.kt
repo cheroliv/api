@@ -85,7 +85,7 @@ data class UserReset(
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME"(
             "$ID_FIELD"             BIGINT DEFAULT nextval('$USER_RESET_SEQ_FIELD') PRIMARY KEY,
             "$USER_ID_FIELD"        UUID NOT NULL,
-            "$RESET_KEY_FIELD"      TEXT,
+            "$RESET_KEY_FIELD"      VARCHAR NOT NULL,
             "$RESET_DATE_FIELD"     TIMESTAMP NOT NULL,
             "$CHANGE_DATE_FIELD"    TIMESTAMP NULL,
             "$IS_ACTIVE_FIELD"      BOOLEAN NOT NULL,            

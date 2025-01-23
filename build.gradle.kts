@@ -143,7 +143,7 @@ dependencies {
     }
 
     // Spring AOP
-    testImplementation("org.springframework.boot:spring-boot-starter-aop")
+//    testImplementation("org.springframework.boot:spring-boot-starter-aop")
 
     // Spring tests
     // Spring-Shell
