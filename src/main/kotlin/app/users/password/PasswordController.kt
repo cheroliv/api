@@ -4,6 +4,7 @@ import app.users.core.models.User.EndPoint.API_USER
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
@@ -33,7 +34,7 @@ class PasswordController(private val service: PasswordService) {
 
     @PostMapping(API_RESET_PASSWORD_FINISH)
     suspend fun finish(
-        @RequestBody keyAndPassword: KeyAndPassword,
+        @RequestBody @Valid resetPassword: ResetPassword,
         exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = service.finish(keyAndPassword, exchange)
+    ): ResponseEntity<ProblemDetail> = service.finish(resetPassword, exchange)
 }

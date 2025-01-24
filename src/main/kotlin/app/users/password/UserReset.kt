@@ -112,36 +112,17 @@ data class UserReset(
                 TRUE,
                 0
         );"""
-
-        const val UPDATE_USER_AND_RESET_PASSWORD = """
-        UPDATE "user" 
-        SET "password" = :newPassword
-        WHERE "id" = (
-            UPDATE "user_reset" 
-            SET "is_active" = FALSE, 
+        const  val FIND_BY_KEY = """
+        SELECT ur."user_id" FROM "user_reset" AS ur
+        WHERE ur."is_active" IS TRUE
+        AND ur."reset_key" = :resetKey ;
+        """
+        val UPDATE_CHANGE_DATE_IS_ACTIVE = """
+                UPDATE "user_reset"
+                SET "is_active" = FALSE,
                 "change_date" = NOW()
-            WHERE "reset_key" = :resetKey 
-            AND "is_active" = TRUE
-            RETURNING "user_id"
-        );
-        """
-
-        val deux_query = """
--- Première requête - Vérifie et désactive la demande de reset
-BEGIN TRANSACTION;
-UPDATE user_reset 
-SET is_active = FALSE, 
-    change_date = NOW()
-WHERE reset_key = :reset_key 
-AND is_active = TRUE
-RETURNING user_id;
-
--- Deuxième requête - Met à jour le mot de passe si la première requête a réussi
-UPDATE "user" 
-SET password = :new_password,
-    version = version + 1
-WHERE id = :user_id;
-COMMIT;        
-        """
+                WHERE "is_active" is TRUE
+                AND "reset_key" = :resetKey
+                """
     }
 }

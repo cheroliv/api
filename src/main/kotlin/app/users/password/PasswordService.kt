@@ -6,11 +6,15 @@ import app.users.core.dao.UserDao.change
 import app.users.core.dao.UserDao.findOne
 import app.users.core.models.User
 import app.users.core.models.User.Attributes.EMAIL_ATTR
+import app.users.core.models.User.Relations.UPDATE_PASSWORD
+import app.users.core.models.User.Relations.UPDATE_PASSWORD_RESET
 import app.users.core.security.SecurityUtils.generateResetKey
 import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.UserReset.Attributes.RESET_KEY_ATTR
+import app.users.password.UserReset.Relations.FIND_BY_KEY
+import app.users.password.UserReset.Relations.UPDATE_CHANGE_DATE_IS_ACTIVE
 import app.users.signup.SignupService.Companion.ONE_ROW_UPDATED
 import app.users.signup.SignupService.Companion.TWO_ROWS_UPDATED
 import app.users.signup.SignupService.Companion.ZERO_ROW_UPDATED
@@ -112,64 +116,50 @@ class PasswordService(val context: ApplicationContext) {
     /**
      * {@code 200 (Ok) POST   /user/reset-password/finish} : Finish to reset the password of the user.
      *
-     * @param keyAndPassword            the generated key and the new password.
+     * @param reset            the generated key and the new password.
      * @throws InvalidPasswordProblem   {@code 400 (Bad Request)} if the password is incorrect.
      * @throws RuntimeException         {@code 500 (Internal Application Error)} if the password could not be reset.
      */
     suspend fun finish(
-        @Valid keyAndPassword: KeyAndPassword, exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> = try {
-        val (cred, resetKey) = keyAndPassword
-        when {
-            finish(cred!!, resetKey!!) == TWO_ROWS_UPDATED -> ok()
+        @Valid reset: ResetPassword, exchange: ServerWebExchange
+    ): ResponseEntity<ProblemDetail> {
+        try {
+            return when (finish(reset.newPassword, reset.key)) {
+                TWO_ROWS_UPDATED -> ok().build()
 
-            else -> throw Exception("No user was found for this reset key")
+                else -> throw Exception("No user was found for this reset key")
+            }
+        } catch (t: Throwable) {
+           return of(
+                forStatusAndDetail(
+                    when (t.message) {
+                        "No user was found for this reset key" -> INTERNAL_SERVER_ERROR
+                        else -> BAD_REQUEST
+                    },
+                    t.message
+                )
+            ).build()
         }
-    } catch (t: Throwable) {
-        of(
-            forStatusAndDetail(
-                when (t.message) {
-                    "No user was found for this reset key" -> INTERNAL_SERVER_ERROR
-                    else -> BAD_REQUEST
-                },
-                t.message
-            )
-        )
-    }.build()
+    }
 
-
-    suspend fun finish(newPassword: String, key: String): Long = try {
+    suspend fun finish(@Valid newPassword: String, key: String): Long = try {
         context.getBean<TransactionalOperator>().executeAndAwait {
             val database = context.getBean<DatabaseClient>()
             var res = 0L
             val encryptedNewPassword = newPassword
                 .run(context.getBean<PasswordEncoder>()::encode)
-
-            val userId: UUID = """
-        SELECT ur."user_id" FROM "user_reset" AS ur
-        WHERE ur."is_active" is TRUE AND ur."reset_key" = :resetKey ;
-        """.trimMargin().run(database::sql)
+            val userId: UUID = FIND_BY_KEY.trimMargin().run(database::sql)
                 .bind("resetKey", key)
                 .fetch().awaitSingleOrNull()?.get("user_id")
                 .toString().run(UUID::fromString)
             //mise a jour du user_reset
-            res += """
-                UPDATE "user_reset"
-                SET "is_active" = FALSE,
-                "change_date" = NOW()
-                WHERE "is_active" is TRUE
-                AND "reset_key" = :resetKey
-                """.trimIndent()
+            res += UPDATE_CHANGE_DATE_IS_ACTIVE.trimIndent()
                 .run(context.getBean<DatabaseClient>()::sql)
                 .bind("resetKey", key)
                 .fetch()
                 .awaitRowsUpdated()
-            //mise a jour du user
-            res += """
-                UPDATE "user"
-                SET "password" = :password, "version" = version + 1
-                WHERE "id" = :id
-                """.trimIndent()
+            //mise a jour du user UPDATE_PASSWORD
+            res += UPDATE_PASSWORD_RESET.trimIndent()
                 .run(context.getBean<DatabaseClient>()::sql)
                 .bind("password", encryptedNewPassword)
                 .bind("id", userId)

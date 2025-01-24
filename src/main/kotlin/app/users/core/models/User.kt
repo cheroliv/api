@@ -175,11 +175,15 @@ data class User(
             :$LOGIN_ATTR, :$EMAIL_ATTR, :$PASSWORD_ATTR,
             :$LANG_KEY_ATTR, :$VERSION_ATTR );
         """
-
+        const val UPDATE_PASSWORD_RESET="""
+        UPDATE "user"
+        SET "password" = :password, "version" = "version" + 1
+        WHERE "id" = :id;
+        """
         const val UPDATE_PASSWORD = """
             UPDATE "$TABLE_NAME"
             SET "$PASSWORD_FIELD" = :$PASSWORD_ATTR,
-                    "$VERSION_FIELD" = :$VERSION_ATTR
+                    "$VERSION_FIELD" = :$VERSION_ATTR + 1
             WHERE "$ID_FIELD" = :$ID_ATTR;"""
 
         const val SELECT_SIGNUP_AVAILABILITY = """
