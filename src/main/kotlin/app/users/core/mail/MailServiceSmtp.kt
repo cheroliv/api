@@ -22,8 +22,8 @@ import kotlin.text.Charsets.UTF_8
 class MailServiceSmtp(
     private val properties: Properties,
     private val mailSender: JavaMailSender,
-    private val messageSource: MessageSource,
-    private val templateEngine: SpringTemplateEngine
+    messageSource: MessageSource,
+    templateEngine: SpringTemplateEngine
 ) : AbstractThymeleafMailService(
     properties,
     messageSource,

@@ -24,6 +24,7 @@ class MailConfiguration(private val properties: Properties) {
         val clientSecret: String,
         val redirectUris: List<String>
     )
+
     @Bean
     @Profile("!$MAILSLURP & !$GMAIL")
     fun javaMailSender(): JavaMailSender = JavaMailSenderImpl().apply {

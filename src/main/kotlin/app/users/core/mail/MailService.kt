@@ -2,7 +2,6 @@ package app.users.core.mail
 
 import app.users.core.models.User
 
-
 interface MailService {
     fun sendEmail(
         to: String,

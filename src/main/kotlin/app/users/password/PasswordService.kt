@@ -1,7 +1,6 @@
 package app.users.password
 
 import app.users.core.Loggers.d
-import app.users.core.Loggers.i
 import app.users.core.dao.UserDao.change
 import app.users.core.dao.UserDao.findOne
 import app.users.core.models.User
@@ -46,26 +45,19 @@ import java.util.UUID
 @Service
 @Validated
 class PasswordService(val context: ApplicationContext) {
-    private suspend fun mail(mailKeyPair: Pair<String, String>) {
-        i("generated key for reset password : ${mailKeyPair.second}\n\tTODO: link to finish reset password")
-//        i("generated key for reset password : ${mailKeyPair.second}")
-//        return userRepository
-//            .findOneByEmail(mail)
-//            .apply {
-//                if (this != null && this.activated) {
-//                    resetKey = generateResetKey
-//                    resetDate = now()
-//                    saveUser(this)
-//                } else return null
-//            }
-    }
-
     suspend fun reset(
         @Email mail: String, exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = try {
         reset(mail).run {
             when (isRight()) {
-                true -> map { mail(mailKeyPair = mail to it) }.run { ok() }
+                true ->
+//                    map { key ->
+//                    context.findOne<User>(mail).map { user ->
+//                        context.getBean<MailServiceSmtp>()
+//                            .sendPasswordResetMail(user to key)
+//                    }
+//                }.
+                    run { ok() }
 
                 else -> of(
                     forStatusAndDetail(
@@ -86,7 +78,10 @@ class PasswordService(val context: ApplicationContext) {
         generateResetKey.let { resetKey ->
             ((mail to resetKey) to context).reset().map {
                 when (it) {
-                    ONE_ROW_UPDATED -> return resetKey.right()
+                    ONE_ROW_UPDATED -> return resetKey
+//                        .apply { mail(context.findOne<User>(mail).getOrNull()!! to resetKey) }
+                        .right()
+
                     ZERO_ROW_UPDATED -> throw IllegalStateException("user_reset not saved")
                     else -> throw IllegalStateException("not expected to save more than one user_reset")
                 }

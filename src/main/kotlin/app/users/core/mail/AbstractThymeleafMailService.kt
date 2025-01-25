@@ -35,9 +35,7 @@ abstract class AbstractThymeleafMailService(
         templateName: String,
         titleKey: String
     ) {
-        @Suppress(
-            "SENSELESS_NULL_IN_WHEN"
-        )
+        @Suppress("SENSELESS_NULL_IN_WHEN")
         when ((map[User.objectName] as User).email) {
             null -> {
                 d("Email doesn't exist for user '${(map[User.objectName] as User).login}'")

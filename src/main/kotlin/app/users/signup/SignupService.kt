@@ -4,6 +4,7 @@ import app.users.core.Loggers.i
 import app.users.core.dao.UserDao.availability
 import app.users.core.dao.UserDao.signup
 import app.users.core.dao.UserDao.user
+import app.users.core.mail.MailService
 import app.users.core.models.EntityModel.Members.withId
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USERS
@@ -22,6 +23,7 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.right
+import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.core.env.get
 import org.springframework.http.HttpStatus.CREATED
@@ -48,7 +50,10 @@ class SignupService(private val context: ApplicationContext) {
                 return apply {
                     i("Activation key: ${it.second}")
                     i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
-                }.withId(it.first).right()
+                }.withId(it.first).apply {
+                    (this to it.second)
+                        .run(context.getBean<MailService>()::sendActivationEmail)
+                }.right()
             }
         }
     } catch (t: Throwable) {
@@ -137,16 +142,16 @@ class SignupService(private val context: ApplicationContext) {
         const val ONE_ROW_UPDATED = 1L
         const val TWO_ROWS_UPDATED = 2L
 
-        
+
         val SIGNUP_AVAILABLE = Triple(true, true, true)
 
-        
+
         val SIGNUP_LOGIN_NOT_AVAILABLE = Triple(false, true, false)
 
-        
+
         val SIGNUP_EMAIL_NOT_AVAILABLE = Triple(false, false, true)
 
-        
+
         val SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE = Triple(false, false, false)
     }
 }
