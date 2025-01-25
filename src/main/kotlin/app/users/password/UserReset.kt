@@ -117,7 +117,7 @@ data class UserReset(
         WHERE ur."is_active" IS TRUE
         AND ur."reset_key" = :resetKey ;
         """
-        val UPDATE_CHANGE_DATE_IS_ACTIVE = """
+        const val UPDATE_CHANGE_DATE_IS_ACTIVE = """
                 UPDATE "user_reset"
                 SET "is_active" = FALSE,
                 "change_date" = NOW()

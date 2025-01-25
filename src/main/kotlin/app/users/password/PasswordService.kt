@@ -126,6 +126,7 @@ class PasswordService(val context: ApplicationContext) {
             isNotEmpty() -> of(
                 forStatusAndDetail(BAD_REQUEST, iterator().next().message)
             )
+
             else -> try {
                 when (finish(reset.newPassword, reset.key)) {
                     TWO_ROWS_UPDATED -> ok()
@@ -233,3 +234,170 @@ class PasswordService(val context: ApplicationContext) {
         }
     }.build()
 }
+//package app.users.core.mail
+//
+//import app.users.core.models.User
+//
+//
+//interface MailService {
+//    fun sendEmail(
+//        to: String,
+//        subject: String,
+//        content: String,
+//        isMultipart: Boolean,
+//        isHtml: Boolean
+//    )
+//
+//    fun sendEmailFromTemplate(
+//        map: Map<String, Any>,
+//        templateName: String,
+//        titleKey: String
+//    )
+//
+//    fun sendPasswordResetMail(userResetKeyPair: Pair<User, String>)
+//    fun sendActivationEmail(pairUserActivationKey: Pair<User, String>)
+//    fun sendCreationEmail(userResetKeyPair: Pair<User, String>)
+//}
+
+
+//package app.users.core.mail
+//
+//import app.users.core.Constants.GMAIL
+//import app.users.core.Constants.MAILSLURP
+//import app.users.core.Loggers.d
+//import app.users.core.Loggers.w
+//import app.users.core.Properties
+//import jakarta.mail.MessagingException
+//import org.springframework.context.MessageSource
+//import org.springframework.context.annotation.Profile
+//import org.springframework.mail.MailException
+//import org.springframework.mail.javamail.JavaMailSender
+//import org.springframework.mail.javamail.MimeMessageHelper
+//import org.springframework.scheduling.annotation.Async
+//import org.springframework.stereotype.Service
+//import org.thymeleaf.spring6.SpringTemplateEngine
+//import kotlin.text.Charsets.UTF_8
+//
+//@Async
+//@Service
+//@Profile("!$MAILSLURP & !$GMAIL")
+//class MailServiceSmtp(
+//    private val properties: Properties,
+//    private val mailSender: JavaMailSender,
+//    private val messageSource: MessageSource,
+//    private val templateEngine: SpringTemplateEngine
+//) : AbstractThymeleafMailService(
+//    properties,
+//    messageSource,
+//    templateEngine
+//) {
+//    override fun sendEmail(
+//        to: String,
+//        subject: String,
+//        content: String,
+//        isMultipart: Boolean,
+//        isHtml: Boolean
+//    ) = mailSender.createMimeMessage().run {
+//        try {
+//            MimeMessageHelper(
+//                this,
+//                isMultipart,
+//                UTF_8.name()
+//            ).apply {
+//                setTo(to)
+//                setFrom(properties.mail.from)
+//                setSubject(subject)
+//                setText(content, isHtml)
+//            }
+//            mailSender.send(this)
+//            d("Sent email to User '$to'")
+//        } catch (e: MailException) {
+//            w("Email could not be sent to user '$to'", e)
+//        } catch (e: MessagingException) {
+//            w("Email could not be sent to user '$to'", e)
+//        }
+//    }
+//}
+
+
+//package app.users.core.mail
+//
+//import app.users.core.Constants.BASE_URL
+//import app.users.core.Constants.TEMPLATE_NAME_CREATION
+//import app.users.core.Constants.TEMPLATE_NAME_PASSWORD
+//import app.users.core.Constants.TEMPLATE_NAME_SIGNUP
+//import app.users.core.Constants.TITLE_KEY_PASSWORD
+//import app.users.core.Constants.TITLE_KEY_SIGNUP
+//import app.users.core.Constants.USER
+//import app.users.core.Loggers.d
+//import app.users.core.Properties
+//import app.users.core.models.User
+//import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
+//import org.springframework.context.MessageSource
+//import org.thymeleaf.context.Context
+//import org.thymeleaf.spring6.SpringTemplateEngine
+//import java.util.Locale.forLanguageTag
+//
+//abstract class AbstractThymeleafMailService(
+//    private val properties: Properties,
+//    private val messageSource: MessageSource,
+//    private val templateEngine: SpringTemplateEngine
+//) : MailService {
+//
+//    abstract override fun sendEmail(
+//        to: String,
+//        subject: String,
+//        content: String,
+//        isMultipart: Boolean,
+//        isHtml: Boolean
+//    )
+//
+//    override fun sendEmailFromTemplate(
+//        map: Map<String, Any>,
+//        templateName: String,
+//        titleKey: String
+//    ) {
+//        @Suppress(
+//            "SENSELESS_NULL_IN_WHEN"
+//        )
+//        when ((map[User.objectName] as User).email) {
+//            null -> {
+//                d("Email doesn't exist for user '${(map[User.objectName] as User).login}'")
+//                return
+//            }
+//
+//            else -> forLanguageTag((map[User.objectName] as User).langKey).apply {
+//                sendEmail(
+//                    (map[User.objectName] as User).email,
+//                    messageSource.getMessage(titleKey, null, this),
+//                    templateEngine.process(templateName, Context(this).apply {
+//                        setVariable(USER, map[User.objectName])
+//                        setVariable(ACTIVATION_KEY_ATTR, map[ACTIVATION_KEY_ATTR])
+//                        setVariable(BASE_URL, properties.mail.baseUrl)
+//                        setVariable("resetKey", map["resetKey"].toString())
+//                    }),
+//                    isMultipart = false,
+//                    isHtml = true
+//                )
+//            }
+//        }
+//    }
+//
+//    override fun sendActivationEmail(pairUserActivationKey: Pair<User, String>) = sendEmailFromTemplate(
+//        mapOf(User.objectName to pairUserActivationKey.first.apply {
+//            d("Sending activation email to $email")
+//        }), TEMPLATE_NAME_SIGNUP, TITLE_KEY_SIGNUP
+//    )
+//
+//    override fun sendCreationEmail(userResetKeyPair: Pair<User, String>) = sendEmailFromTemplate(
+//        mapOf(User.objectName to userResetKeyPair.apply {
+//            d("Sending creation email to '${first.email}'")
+//        }.first, "resetKey" to userResetKeyPair.second), TEMPLATE_NAME_CREATION, TITLE_KEY_PASSWORD
+//    )
+//
+//    override fun sendPasswordResetMail(userResetKeyPair: Pair<User, String>) = sendEmailFromTemplate(
+//        mapOf(User.objectName to userResetKeyPair.apply {
+//            d("Sending password reset email to '${first.email}'")
+//        }.first, "resetKey" to userResetKeyPair.second), TEMPLATE_NAME_PASSWORD, TITLE_KEY_PASSWORD
+//    )
+//}
