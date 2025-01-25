@@ -20,7 +20,6 @@ import arrow.core.right
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.*
 import org.springframework.web.server.ServerWebExchange
 import java.util.*

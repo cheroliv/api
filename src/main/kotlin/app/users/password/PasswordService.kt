@@ -6,7 +6,6 @@ import app.users.core.dao.UserDao.change
 import app.users.core.dao.UserDao.findOne
 import app.users.core.models.User
 import app.users.core.models.User.Attributes.EMAIL_ATTR
-import app.users.core.models.User.Relations.UPDATE_PASSWORD
 import app.users.core.models.User.Relations.UPDATE_PASSWORD_RESET
 import app.users.core.security.SecurityUtils.generateResetKey
 import app.users.core.security.SecurityUtils.getCurrentUserLogin
@@ -121,28 +120,44 @@ class PasswordService(val context: ApplicationContext) {
      * @throws RuntimeException         {@code 500 (Internal Application Error)} if the password could not be reset.
      */
     suspend fun finish(
-        @Valid reset: ResetPassword, exchange: ServerWebExchange
-    ): ResponseEntity<ProblemDetail> {
-        try {
-            return when (finish(reset.newPassword, reset.key)) {
-                TWO_ROWS_UPDATED -> ok().build()
+        reset: ResetPassword, exchange: ServerWebExchange
+    ): ResponseEntity<ProblemDetail> = exchange.validator.validate(reset).run {
+        when {
+            isNotEmpty() -> of(
+                forStatusAndDetail(BAD_REQUEST, iterator().next().message)
+            )
+            else -> try {
+                when (finish(reset.newPassword, reset.key)) {
+                    TWO_ROWS_UPDATED -> ok()
 
-                else -> throw Exception("No user was found for this reset key")
+                    else -> of(
+                        forStatusAndDetail(
+                            INTERNAL_SERVER_ERROR,
+                            "No user was found for this reset key"
+                        )
+                    )
+                }
+            } catch (t: Throwable) {
+                when {
+                    t.message?.contains("No user was found for this reset key") == true -> of(
+                        forStatusAndDetail(
+                            INTERNAL_SERVER_ERROR,
+                            t.message
+                        )
+                    )
+
+                    else -> of(
+                        forStatusAndDetail(
+                            BAD_REQUEST,
+                            t.message
+                        )
+                    )
+                }
             }
-        } catch (t: Throwable) {
-           return of(
-                forStatusAndDetail(
-                    when (t.message) {
-                        "No user was found for this reset key" -> INTERNAL_SERVER_ERROR
-                        else -> BAD_REQUEST
-                    },
-                    t.message
-                )
-            ).build()
         }
-    }
+    }.build()
 
-    suspend fun finish(@Valid newPassword: String, key: String): Long = try {
+    suspend fun finish(newPassword: String, key: String): Long = try {
         context.getBean<TransactionalOperator>().executeAndAwait {
             val database = context.getBean<DatabaseClient>()
             var res = 0L

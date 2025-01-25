@@ -34,7 +34,7 @@ class PasswordController(private val service: PasswordService) {
 
     @PostMapping(API_RESET_PASSWORD_FINISH)
     suspend fun finish(
-        @RequestBody @Valid resetPassword: ResetPassword,
+        @RequestBody resetPassword: ResetPassword,
         exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = service.finish(resetPassword, exchange)
 }
