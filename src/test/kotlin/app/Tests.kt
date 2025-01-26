@@ -338,6 +338,7 @@ class Tests {
 
         @Test
         fun `DataTestsChecks - display some json`(): Unit = run {
+
             assertDoesNotThrow {
                 context.getBean<ObjectMapper>().run {
                     writeValueAsString(users).run(::i)
