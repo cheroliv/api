@@ -4,7 +4,7 @@ import app.users.core.Loggers.i
 import app.users.core.dao.UserDao.availability
 import app.users.core.dao.UserDao.signup
 import app.users.core.dao.UserDao.user
-import app.users.core.mail.MailService
+import app.users.mail.UserMailService
 import app.users.core.models.EntityModel.Members.withId
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USERS
@@ -52,7 +52,7 @@ class SignupService(private val context: ApplicationContext) {
                     i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
                 }.withId(it.first).apply {
                     (this to it.second)
-                        .run(context.getBean<MailService>()::sendActivationEmail)
+                        .run(context.getBean<UserMailService>()::sendActivationEmail)
                 }.right()
             }
         }

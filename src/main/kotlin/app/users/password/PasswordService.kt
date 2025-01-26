@@ -50,14 +50,7 @@ class PasswordService(val context: ApplicationContext) {
     ): ResponseEntity<ProblemDetail> = try {
         reset(mail).run {
             when (isRight()) {
-                true ->
-//                    map { key ->
-//                    context.findOne<User>(mail).map { user ->
-//                        context.getBean<MailServiceSmtp>()
-//                            .sendPasswordResetMail(user to key)
-//                    }
-//                }.
-                    run { ok() }
+                true -> ok()
 
                 else -> of(
                     forStatusAndDetail(
@@ -76,10 +69,13 @@ class PasswordService(val context: ApplicationContext) {
      */
     suspend fun reset(@Email mail: String): Either<Throwable, String> = try {
         generateResetKey.let { resetKey ->
-            ((mail to resetKey) to context).reset().map {
-                when (it) {
+            ((mail to resetKey) to context).reset().map { updatedRows ->
+                when (updatedRows) {
                     ONE_ROW_UPDATED -> return resetKey
-//                        .apply { mail(context.findOne<User>(mail).getOrNull()!! to resetKey) }
+//                        .apply {
+//                            context.findOne<User>(mail)
+//                                .map { user -> (user to resetKey).run(context.getBean<app.users.mail.SMTPUserMailService>()::sendPasswordResetMail) }
+//                        }
                         .right()
 
                     ZERO_ROW_UPDATED -> throw IllegalStateException("user_reset not saved")

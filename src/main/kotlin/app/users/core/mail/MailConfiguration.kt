@@ -1,7 +1,7 @@
+@file:Suppress("unused")
+
 package app.users.core.mail
 
-import app.users.core.Constants.GMAIL
-import app.users.core.Constants.MAILSLURP
 import app.users.core.Constants.MAIL_DEBUG
 import app.users.core.Constants.MAIL_SMTP_AUTH
 import app.users.core.Constants.MAIL_TRANSPORT_PROTOCOL
@@ -9,7 +9,6 @@ import app.users.core.Constants.MAIL_TRANSPORT_STARTTLS_ENABLE
 import app.users.core.Properties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Profile
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.JavaMailSenderImpl
 
@@ -26,7 +25,6 @@ class MailConfiguration(private val properties: Properties) {
     )
 
     @Bean
-    @Profile("!$MAILSLURP & !$GMAIL")
     fun javaMailSender(): JavaMailSender = JavaMailSenderImpl().apply {
         host = properties.mail.host
         port = properties.mail.port

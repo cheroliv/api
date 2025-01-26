@@ -1,8 +1,8 @@
-package app.users.core.mail
+package app.users.mail
 
 import app.users.core.models.User
 
-interface MailService {
+interface UserMailService {
     fun sendEmail(
         to: String,
         subject: String,

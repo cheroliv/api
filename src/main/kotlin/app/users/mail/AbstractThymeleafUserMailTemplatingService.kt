@@ -1,4 +1,4 @@
-package app.users.core.mail
+package app.users.mail
 
 import app.users.core.Constants.BASE_URL
 import app.users.core.Constants.TEMPLATE_NAME_CREATION
@@ -16,11 +16,11 @@ import org.thymeleaf.context.Context
 import org.thymeleaf.spring6.SpringTemplateEngine
 import java.util.Locale.forLanguageTag
 
-abstract class AbstractThymeleafMailService(
+abstract class AbstractThymeleafUserMailTemplatingService(
     private val properties: Properties,
     private val messageSource: MessageSource,
     private val templateEngine: SpringTemplateEngine
-) : MailService {
+) : UserMailService {
 
     abstract override fun sendEmail(
         to: String,

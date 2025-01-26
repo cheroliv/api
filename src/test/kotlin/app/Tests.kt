@@ -59,8 +59,8 @@ import app.users.core.dao.UserDao.findOne
 import app.users.core.dao.UserDao.save
 import app.users.core.dao.UserDao.signup
 import app.users.core.mail.MailConfiguration.GoogleAuthConfig
-import app.users.core.mail.MailService
-import app.users.core.mail.MailServiceSmtp
+import app.users.mail.UserMailService
+import app.users.mail.SMTPUserMailService
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
@@ -268,7 +268,7 @@ class Tests {
     @Autowired
     lateinit var context: ApplicationContext
     lateinit var client: WebTestClient
-    lateinit var mailService: MailService
+    lateinit var mailService: UserMailService
 
     val gmailConfig by lazy {
         GoogleAuthConfig(
@@ -296,7 +296,7 @@ class Tests {
         doNothing()
             .`when`(javaMailSender)
             .send(any(MimeMessage::class.java))
-        mailService = MailServiceSmtp(
+        mailService = SMTPUserMailService(
             context.getBean<Properties>(),
             javaMailSender,
             context.getBean<MessageSource>(),

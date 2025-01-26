@@ -1,4 +1,4 @@
-package app.users.core.mail
+package app.users.mail
 
 import app.users.core.Constants.EMPTY_STRING
 import jakarta.validation.constraints.Email

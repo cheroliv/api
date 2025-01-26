@@ -74,8 +74,6 @@ object Constants {
     const val NO_LIQUIBASE = "no-liquibase"
     const val K8S = "k8s"
     const val CLI = "utils"
-    const val GMAIL = "gmail"
-    const val MAILSLURP = "mailslurp"
 
     //Properties
     const val DEV_HOST = "localhost"
