@@ -166,6 +166,7 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import jakarta.mail.Folder
 import jakarta.mail.MessagingException
 import jakarta.mail.Multipart
 import jakarta.mail.Session.getDefaultInstance
@@ -178,6 +179,7 @@ import jakarta.validation.ValidationException
 import jakarta.validation.Validator
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -298,25 +300,39 @@ class FunctionalTests {
         setAdditionalProfiles(SPRING_PROFILE_TEST)
     }
 
+    val String.usernameFromEmail: String
+        get() = AT_SYMBOLE.run(::indexOf).let { index ->
+            when {
+                index != -1 -> return substring(0, index)
+                else -> throw "Invalid email format: $this"
+                    .run(::IllegalArgumentException)
+            }
+        }
 
-    val establishConnection: Store
+    val Triple<String, String, String>.establishConnection: Store
         @Throws(MessagingException::class)
         get() = IMAPS_MAIL_STORE_PROTOCOL.run(
             getDefaultInstance(
                 getProperties().apply {
-                    setProperty(
-                        MAIL_STORE_PROTOCOL_PROP,
-                        IMAPS_MAIL_STORE_PROTOCOL
-                    )
+                    setProperty(MAIL_STORE_PROTOCOL_PROP, IMAPS_MAIL_STORE_PROTOCOL)
                 },
                 null
             )::getStore
-        ).apply {
-            connect(
-                GMAIL_IMAP_HOST,
-                privateProperties["test.mail"].toString(),
-                privateProperties["test.mail.password"].toString()
-            )
+        ).apply { connect(first, second, third) }
+
+    val Store.emailCount: Int
+        @Throws(MessagingException::class)
+        get() = run {
+            val inbox = getFolder("inbox")
+            val spam = getFolder("[Gmail]/Spam")
+            inbox.open(Folder.READ_ONLY)
+            i("nb of Messages : " + inbox.messageCount)
+            i("nb of Unread Messages : " + inbox.unreadMessageCount)
+            i("nb of Messages in spam : " + spam.messageCount)
+            i("nb of Unread Messages in spam : " + spam.unreadMessageCount)
+            val count = inbox.messageCount
+            inbox.close(true)
+            count
         }
 
     @BeforeTest
@@ -336,126 +352,142 @@ class FunctionalTests {
         }
     }
 
-    val String.usernameFromEmail: String
-        get() {
-            AT_SYMBOLE.run(::indexOf).let { index ->
-                when {
-                    index != -1 -> return substring(0, index)
-                    else -> throw IllegalArgumentException("Invalid email format: $this")
-                }
-            }
-        }
-
     @Test
-    fun `functional test finish reset password scenario with mail service provider`(): Unit =
-        runBlocking {
-            Signup(
-                login = privateProperties["test.mail"].toString().usernameFromEmail,
-                email = privateProperties["test.mail"].toString(),
-                password = privateProperties["test.mail.password"].toString(),
-                repassword = privateProperties["test.mail.password"].toString()
-            ).run {
-                context.tripleCounts().run {
-                    val uuid: UUID = (User(
-                        login = login,
-                        email = email,
-                        langKey = FRENCH.language
-                    ) to context).signup().getOrNull()!!.first
-                        .apply { "user.id from signupDao: ${toString()}".apply(::i) }
-                    //TODO: check imap activation mail received
+    fun `functional test finish reset password scenario with mail service provider`()
+            : Unit = runBlocking {
+        Signup(
+            login = privateProperties["test.mail"].toString().usernameFromEmail,
+            email = privateProperties["test.mail"].toString(),
+            password = privateProperties["test.mail.password"].toString(),
+            repassword = privateProperties["test.mail.password"].toString()
+        ).run {
+            val mailCount = Triple(
+                GMAIL_IMAP_HOST,
+                privateProperties["test.mail"].toString(),
+                privateProperties["test.mail.password"].toString()
+            ).establishConnection
+                .emailCount
+                .apply { run(::assertThat).isNotNegative() }
+//            delay(5000)
+            context.tripleCounts().run {
+                val uuid: UUID = (User(
+                    login = login,
+                    email = email,
+                    langKey = FRENCH.language
+                ) to context).signup().getOrNull()!!.first
+                    .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-                    assertThat(context.countUsers()).isEqualTo(first + 1)
-                    assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-                    assertThat(context.countUserActivation()).isEqualTo(third + 1)
+//                delay(5000)
+                Triple(
+                    GMAIL_IMAP_HOST,
+                    privateProperties["test.mail"].toString(),
+                    privateProperties["test.mail.password"].toString()
+                ).establishConnection
+                    .emailCount
+//                        .run(::assertThat)
+//                        .isGreaterThanOrEqualTo(mailCount)
 
-                    FIND_ALL_USERS
-                        .trimIndent()
-                        .run(context.getBean<DatabaseClient>()::sql)
-                        .fetch().awaitSingle().run {
-                            @Suppress("RemoveRedundantQualifierName")
-                            (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                                    to this[PASSWORD_FIELD].toString())
-                        }.run {
-                            "user.id retrieved before update password: $first".apply(::i)
-                            assertEquals(uuid, first, "user.id should be the same")
-                            assertNotEquals(
-                                password,
-                                second,
-                                "password should be encoded and not the same"
-                            )
-                            val resetKey: String = context.apply {
-                                // Given a user well signed up
-                                assertThat(countUserResets()).isEqualTo(0)
-                            }.getBean<PasswordService>()
-                                .reset(email)
-                                .mapLeft { "reset().left: $it".run(::i) }
-                                .getOrNull()!!
-                                .apply {
-                                    assertThat(context.countUserResets()).isEqualTo(1)
-                                    "reset key : $this".run(::i)
-                                }
+                assertThat(context.countUsers()).isEqualTo(first + 1)
+                assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+                assertThat(context.countUserActivation()).isEqualTo(third + 1)
 
+                FIND_ALL_USERS
+                    .trimIndent()
+                    .run(context.getBean<DatabaseClient>()::sql)
+                    .fetch().awaitSingle().run {
+                        @Suppress("RemoveRedundantQualifierName")
+                        (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                                to this[PASSWORD_FIELD].toString())
+                    }.run {
+                        "user.id retrieved before update password: $first".apply(::i)
+                        assertEquals(uuid, first, "user.id should be the same")
+                        assertNotEquals(
+                            password,
+                            second,
+                            "password should be encoded and not the same"
+                        )
+                        val resetKey: String = context.apply {
+                            // Given a user well signed up
+                            assertThat(countUserResets()).isEqualTo(0)
+                        }.getBean<PasswordService>()
+                            .reset(email)
+                            .mapLeft { "reset().left: $it".run(::i) }
+                            .getOrNull()!!.apply {
+                                assertThat(context.countUserResets()).isEqualTo(1)
+                                "reset key : $this".run(::i)
+                            }
+                        // check reset password mail received
+//                        delay(5000)
+                        Triple(
+                            GMAIL_IMAP_HOST,
+                            privateProperties["test.mail"].toString(),
+                            privateProperties["test.mail.password"].toString()
+                        ).establishConnection
+                            .emailCount
+//                                .run(::assertThat)
+//                                .isGreaterThanOrEqualTo(mailCount + 1)
+
+                        FIND_ALL_USER_RESETS
+                            .trimIndent()
+                            .run(context.getBean<DatabaseClient>()::sql)
+                            .fetch()
+                            .awaitSingle().run {
+                                get(IS_ACTIVE_FIELD).toString()
+                                    .apply(Boolean::parseBoolean)
+                                    .run(::assertThat).asBoolean().isTrue
+                                get(RESET_KEY_FIELD).toString()
+                                    .run(::assertThat).asString()
+                                    .isEqualTo(resetKey)
+                            }
+
+                        // finish reset password
+                        "$password&".run {
+                            client.post().uri(
+                                API_RESET_PASSWORD_FINISH_PATH.apply {
+                                    "uri : $this".run(::i)
+                                }).contentType(APPLICATION_PROBLEM_JSON)
+                                .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+                                    "resetKey on select: $this".run(::i)
+                                }, newPassword = this))
+                                .exchange()
+                                .expectStatus()
+                                .isOk
+                                .returnResult<ProblemDetail>()
+                                .responseBodyContent!!
+                                .apply { logBody() }
+                                .apply(::assertThat)
+                                .isEmpty()
+
+                            context.countUserResets().run(::assertThat).isEqualTo(1)
 
                             FIND_ALL_USER_RESETS
                                 .trimIndent()
                                 .run(context.getBean<DatabaseClient>()::sql)
                                 .fetch()
-                                .awaitSingle().run {
-                                    get(IS_ACTIVE_FIELD).toString()
+                                .awaitSingleOrNull()!!.run {
+                                    IS_ACTIVE_FIELD.run(::get).toString()
                                         .apply(Boolean::parseBoolean)
-                                        .run(::assertThat).asBoolean().isTrue
-                                    get(RESET_KEY_FIELD).toString()
+                                        .run(::assertThat).asBoolean().isFalse
+
+                                    CHANGE_DATE_FIELD.run(::get).toString()
                                         .run(::assertThat).asString()
-                                        .isEqualTo(resetKey)
+                                        .containsAnyOf(
+                                            ofInstant(now(), systemDefault()).year.toString(),
+                                            ofInstant(now(), systemDefault()).month.toString(),
+                                            ofInstant(
+                                                now(),
+                                                systemDefault()
+                                            ).dayOfMonth.toString(),
+                                            ofInstant(now(), systemDefault()).hour.toString(),
+                                        )
                                 }
-                            //TODO: check imap reset password mail received
-                            // finish reset password
-                            "${password}&".run {
-                                client.post().uri(
-                                    API_RESET_PASSWORD_FINISH_PATH.apply {
-                                        "uri : $this".run(::i)
-                                    }).contentType(APPLICATION_PROBLEM_JSON)
-                                    .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
-                                        "resetKey on select: $this".run(::i)
-                                    }, newPassword = this))
-                                    .exchange()
-                                    .expectStatus()
-                                    .isOk
-                                    .returnResult<ProblemDetail>()
-                                    .responseBodyContent!!
-                                    .apply { logBody() }
-                                    .apply(::assertThat)
-                                    .isEmpty()
-
-                                context.countUserResets().run(::assertThat).isEqualTo(1)
-
-                                FIND_ALL_USER_RESETS
-                                    .trimIndent()
-                                    .run(context.getBean<DatabaseClient>()::sql)
-                                    .fetch()
-                                    .awaitSingleOrNull()!!.run {
-                                        IS_ACTIVE_FIELD.run(::get).toString()
-                                            .apply(Boolean::parseBoolean)
-                                            .run(::assertThat).asBoolean().isFalse
-
-                                        CHANGE_DATE_FIELD.run(::get).toString()
-                                            .run(::assertThat).asString()
-                                            .containsAnyOf(
-                                                ofInstant(now(), systemDefault()).year.toString(),
-                                                ofInstant(now(), systemDefault()).month.toString(),
-                                                ofInstant(
-                                                    now(),
-                                                    systemDefault()
-                                                ).dayOfMonth.toString(),
-                                                ofInstant(now(), systemDefault()).hour.toString(),
-                                            )
-                                    }
-                            }
                         }
-                }
+                    }
             }
         }
+    }
 }
+
 
 @ActiveProfiles("test")
 @TestInstance(PER_CLASS)
