@@ -141,17 +141,9 @@ class SignupService(private val context: ApplicationContext) {
         const val ZERO_ROW_UPDATED = 0L
         const val ONE_ROW_UPDATED = 1L
         const val TWO_ROWS_UPDATED = 2L
-
-
         val SIGNUP_AVAILABLE = Triple(true, true, true)
-
-
         val SIGNUP_LOGIN_NOT_AVAILABLE = Triple(false, true, false)
-
-
         val SIGNUP_EMAIL_NOT_AVAILABLE = Triple(false, false, true)
-
-
         val SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE = Triple(false, false, false)
     }
 }
