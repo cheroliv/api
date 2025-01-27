@@ -7,6 +7,7 @@ import app.users.core.Constants.MAIL_SMTP_AUTH
 import app.users.core.Constants.MAIL_TRANSPORT_PROTOCOL
 import app.users.core.Constants.MAIL_TRANSPORT_STARTTLS_ENABLE
 import app.users.core.Properties
+import app.users.core.Utils.privateProperties
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -14,7 +15,10 @@ import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.JavaMailSenderImpl
 
 @Configuration
-class MailConfiguration(private val properties: Properties,private val context: ApplicationContext) {
+class MailConfiguration(
+    private val properties: Properties,
+    private val context: ApplicationContext
+) {
     data class GoogleAuthConfig(
         val clientId: String,
         val projectId: String,
@@ -27,19 +31,18 @@ class MailConfiguration(private val properties: Properties,private val context: 
 
     @Bean
     fun javaMailSender(): JavaMailSender = JavaMailSenderImpl().apply {
-        host = properties.mail.host
-        port = properties.mail.port
-        username = properties.mail.from
-        password = properties.mail.password
-        mapOf(
-            MAIL_TRANSPORT_PROTOCOL to properties.mail.property.transport.protocol,
-            MAIL_SMTP_AUTH to properties.mail.property.smtp.auth,
-            MAIL_TRANSPORT_STARTTLS_ENABLE to properties.mail.property.smtp.starttls.enable,
-            MAIL_DEBUG to properties.mail.property.debug,
-            "spring.mail.test-connection" to true,
-            "mail.smtp.ssl.trust" to true,
-            "mail.connect_timeout" to 60000,
-            "mail.auth_api_key" to context.,
-        ).forEach { javaMailProperties[it.key] = it.value }
+        privateProperties.apply {
+            host = get("google.test.mail.host").toString()
+            port = get("google.test.mail.port").toString().toInt()
+            username = get("google.test.mail").toString()
+            password = get("google.test.app.app-password").toString()
+            mapOf(
+                MAIL_SMTP_AUTH to properties.mail.property.smtp.auth,
+                MAIL_TRANSPORT_STARTTLS_ENABLE to properties.mail.property.smtp.starttls.enable,
+                MAIL_TRANSPORT_PROTOCOL to properties.mail.property.transport.protocol,
+                MAIL_DEBUG to properties.mail.property.debug,
+                "spring.mail.test-connection" to true,
+            ).forEach { javaMailProperties[it.key] = it.value }
+        }
     }
 }
