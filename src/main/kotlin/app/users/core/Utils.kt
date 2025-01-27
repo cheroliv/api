@@ -1,20 +1,35 @@
 package app.users.core
 
+import app.users.core.Constants.PRIVATE_PROPERTIES_FILE_PATH
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils.stripAccents
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
+import org.springframework.core.io.ClassPathResource
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileInputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
-import java.nio.file.Files.*
+import java.nio.file.Files.isDirectory
+import java.nio.file.Files.isExecutable
+import java.nio.file.Files.isSymbolicLink
+import java.nio.file.Files.walk
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.reflect.KClass
 import kotlin.streams.asSequence
 
 object Utils {
+    val privateProperties: java.util.Properties
+        get() = java.util.Properties().apply {
+            PRIVATE_PROPERTIES_FILE_PATH
+                .run(::ClassPathResource)
+                .run(ClassPathResource::getFile)
+                .run(::FileInputStream)
+                .run(::load)
+        }
+
     val Pair<Any, ApplicationContext>.toJson: String
         get() = first.run(second.getBean<ObjectMapper>()::writeValueAsString)
 
@@ -26,14 +41,15 @@ object Utils {
             )
         }
 
-    fun List<String>.nameToLogin(): List<String> = map { stripAccents(it.lowercase().replace(' ', '.')) }
+    fun List<String>.nameToLogin(): List<String> =
+        map { stripAccents(it.lowercase().replace(' ', '.')) }
 
 //    fun String.cleanField(): String = StringBuilder(this)
 //        .deleteCharAt(0)
 //        .deleteCharAt(length - 2)
 //        .toString()
 
-    
+
     val String.upperFirstLetter
         get() = run {
             replaceFirst(
@@ -42,7 +58,7 @@ object Utils {
             )
         }
 
-    
+
     val String.lowerFirstLetter
         get() = run {
             replaceFirst(
