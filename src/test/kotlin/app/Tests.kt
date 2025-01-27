@@ -236,6 +236,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.lang.Boolean
+import java.lang.System.getProperties
 import java.net.URI
 import java.nio.charset.Charset
 import java.nio.file.Path
@@ -296,9 +297,7 @@ class FunctionalTests {
     @Throws(MessagingException::class)
     fun establishConnection(): Store = "imaps".run(
         getDefaultInstance(
-            System.getProperties().apply {
-                setProperty("mail.store.protocol", "imaps")
-            },
+            getProperties().apply { setProperty("mail.store.protocol", "imaps") },
             null
         )::getStore
     ).apply {
