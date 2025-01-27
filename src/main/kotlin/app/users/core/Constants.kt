@@ -9,6 +9,7 @@ import java.util.regex.Pattern
 import java.util.regex.Pattern.compile
 
 object Constants {
+    const val PRIVATE_PROPERTIES_FILE_PATH = "private.properties"
     const val ROOT_PACKAGE = "app"
     const val BLANK = ""
     val languages = arrayOf("en", "fr", "de", "it", "es")
@@ -20,7 +21,7 @@ object Constants {
     const val EMPTY_STRING = ""
     const val LINE = "\n"
     const val VIRGULE = ","
-    const val BASE_URL_DEV = "http://localhost:8080"
+    const val BASE_URL_DEV = "http://localhost:8880"
     const val PROBLEM_OBJECT_NAME = "objectName"
     const val PROBLEM_FIELD = "field"
     const val PROBLEM_MESSAGE = "message"
@@ -60,6 +61,8 @@ object Constants {
     val CLI_PROPS by lazy { mapOf("spring.main.web-application-type" to "none") }
     const val SPRING_PROFILE_CONF_DEFAULT_KEY = "spring.profiles.default"
     const val MSG_WRONG_ACTIVATION_KEY = "No user was found for this activation key"
+    const val SPRING_PROFILE_TEST = "test"
+    const val SPRING_PROFILE_DEVELOPMENT = "dev"
 
 
     //Spring profiles
