@@ -303,8 +303,8 @@ class FunctionalTests {
     ).apply {
         connect(
             "imap.googlemail.com",
-            privateProperties["google.test.mail"].toString(),
-            privateProperties["google.test.app.app-password"].toString()
+            privateProperties["test.mail"].toString(),
+            privateProperties["test.mail.password"].toString()
         )
     }
 
@@ -325,61 +325,61 @@ class FunctionalTests {
         }
     }
 
-    fun loginFromEmail(email: String): String = '@'.run(email::indexOf).let { atIdx ->
-        when {
-            atIdx != -1 -> return email.substring(0, atIdx)
-            else -> throw IllegalArgumentException("Invalid email format: $email")
+    val String.usernameFromEmail: String
+        get() = '@'.run(::indexOf).let { atIdx ->
+            when {
+                atIdx != -1 -> return substring(0, atIdx)
+                else -> throw IllegalArgumentException("Invalid email format: $this")
+            }
         }
-    }
 
     @Test
-    fun `functional test finish reset password scenario with gmail`(): Unit = runBlocking {
-        Signup(
-            login = privateProperties["google.test.mail"].toString()
-                .run(::loginFromEmail),
-            email = privateProperties["google.test.mail"].toString(),
-            password = privateProperties["google.test.app.app-password"].toString(),
-            repassword = privateProperties["google.test.app.app-password"].toString()
-        ).run {
-            context.tripleCounts().run {
-                val uuid: UUID = (User(
-                    login = login,
-                    email = email,
-                    langKey = FRENCH.language
-                ) to context).signup()
-                    .getOrNull()!!.first
-                    .apply { "user.id from signupDao: ${toString()}".apply(::i) }
-                //TODO: check imap activation mail received
+    fun `functional test finish reset password scenario with mail service provider`(): Unit =
+        runBlocking {
+            Signup(
+                login = privateProperties["test.mail"].toString().usernameFromEmail,
+                email = privateProperties["test.mail"].toString(),
+                password = privateProperties["test.mail.password"].toString(),
+                repassword = privateProperties["test.mail.password"].toString()
+            ).run {
+                context.tripleCounts().run {
+                    val uuid: UUID = (User(
+                        login = login,
+                        email = email,
+                        langKey = FRENCH.language
+                    ) to context).signup().getOrNull()!!.first
+                        .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+                    //TODO: check imap activation mail received
 
-                assertThat(context.countUsers()).isEqualTo(first + 1)
-                assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-                assertThat(context.countUserActivation()).isEqualTo(third + 1)
+                    assertThat(context.countUsers()).isEqualTo(first + 1)
+                    assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+                    assertThat(context.countUserActivation()).isEqualTo(third + 1)
 
-                FIND_ALL_USERS
-                    .trimIndent()
-                    .run(context.getBean<DatabaseClient>()::sql)
-                    .fetch().awaitSingle().run {
-                        @Suppress("RemoveRedundantQualifierName")
-                        (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                                to this[PASSWORD_FIELD].toString())
-                    }.run {
-                        "user.id retrieved before update password: $first".apply(::i)
-                        assertEquals(uuid, first, "user.id should be the same")
-                        assertNotEquals(
-                            password,
-                            second,
-                            "password should be encoded and not the same"
-                        )
-                        val resetKey: String = context.apply {
-                            // Given a user well signed up
-                            assertThat(countUserResets()).isEqualTo(0)
-                        }.getBean<PasswordService>()
-                            .reset(email)
-                            .mapLeft { "reset().left: $it".run(::i) }
-                            .getOrNull()!!.apply {
-                                "reset key : $this".run(::i)
-                                assertThat(context.countUserResets()).isEqualTo(1)
-                            }
+                    FIND_ALL_USERS
+                        .trimIndent()
+                        .run(context.getBean<DatabaseClient>()::sql)
+                        .fetch().awaitSingle().run {
+                            @Suppress("RemoveRedundantQualifierName")
+                            (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                                    to this[PASSWORD_FIELD].toString())
+                        }.run {
+                            "user.id retrieved before update password: $first".apply(::i)
+                            assertEquals(uuid, first, "user.id should be the same")
+                            assertNotEquals(
+                                password,
+                                second,
+                                "password should be encoded and not the same"
+                            )
+                            val resetKey: String = context.apply {
+                                // Given a user well signed up
+                                assertThat(countUserResets()).isEqualTo(0)
+                            }.getBean<PasswordService>()
+                                .reset(email)
+                                .mapLeft { "reset().left: $it".run(::i) }
+                                .getOrNull()!!.apply {
+                                    "reset key : $this".run(::i)
+                                    assertThat(context.countUserResets()).isEqualTo(1)
+                                }
 
 //                    FIND_ALL_USER_RESETS
 //                        .trimIndent()
@@ -434,10 +434,10 @@ class FunctionalTests {
 //                                    ofInstant(now(), systemDefault()).hour.toString(),
 //                                )
 //                        }
-                    }
+                        }
+                }
             }
         }
-    }
 }
 
 @ActiveProfiles("test")

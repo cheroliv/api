@@ -51,8 +51,7 @@ class SignupService(private val context: ApplicationContext) {
                     i("Activation key: ${it.second}")
                     i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
                 }.withId(it.first).apply {
-                    (this to it.second)
-                        .run(context.getBean<UserMailService>()::sendActivationEmail)
+                    (this to it.second).run(context.getBean<UserMailService>()::sendActivationEmail)
                 }.right()
             }
         }
