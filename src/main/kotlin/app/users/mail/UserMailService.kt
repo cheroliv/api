@@ -21,4 +21,3 @@ interface UserMailService {
     fun sendActivationEmail(pairUserActivationKey: Pair<User, String>)
     fun sendCreationEmail(userResetKeyPair: Pair<User, String>)
 }
-
