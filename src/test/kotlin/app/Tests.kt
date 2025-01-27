@@ -3,7 +3,8 @@
     "RedundantUnitReturnType",
     "NonAsciiCharacters",
     "SqlResolve",
-    "unused", "MemberVisibilityCanBePrivate"
+    "unused",
+    "MemberVisibilityCanBePrivate"
 )
 
 package app
@@ -36,6 +37,7 @@ import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
+import app.users.core.Constants.BASE_URL_DEV
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
@@ -44,6 +46,8 @@ import app.users.core.Constants.PATTERN_LOCALE_2
 import app.users.core.Constants.PATTERN_LOCALE_3
 import app.users.core.Constants.PRODUCTION
 import app.users.core.Constants.ROLE_USER
+import app.users.core.Constants.SPRING_PROFILE_CONF_DEFAULT_KEY
+import app.users.core.Constants.SPRING_PROFILE_TEST
 import app.users.core.Constants.STARTUP_LOG_MSG_KEY
 import app.users.core.Constants.USER
 import app.users.core.Constants.VIRGULE
@@ -52,6 +56,7 @@ import app.users.core.Loggers.i
 import app.users.core.Properties
 import app.users.core.Utils.lsWorkingDir
 import app.users.core.Utils.lsWorkingDirProcess
+import app.users.core.Utils.privateProperties
 import app.users.core.Utils.toJson
 import app.users.core.dao.UserDao.availability
 import app.users.core.dao.UserDao.change
@@ -59,8 +64,6 @@ import app.users.core.dao.UserDao.findOne
 import app.users.core.dao.UserDao.save
 import app.users.core.dao.UserDao.signup
 import app.users.core.mail.MailConfiguration.GoogleAuthConfig
-import app.users.mail.UserMailService
-import app.users.mail.SMTPUserMailService
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
@@ -80,6 +83,8 @@ import app.users.core.security.SecurityUtils.generateResetKey
 import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
 import app.users.core.web.Web.Companion.configuration
+import app.users.mail.SMTPUserMailService
+import app.users.mail.UserMailService
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
@@ -194,8 +199,11 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.getBean
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.runApplication
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
+import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.MessageSource
 import org.springframework.core.env.get
 import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
@@ -214,6 +222,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.WebTestClient.bindToServer
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
@@ -258,6 +267,147 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+class FunctionalTests {
+
+    lateinit var context: ConfigurableApplicationContext
+
+    val client: WebTestClient by lazy {
+        bindToServer()
+            .baseUrl(BASE_URL_DEV)
+            .build()
+    }
+
+    fun testLoader(app: SpringApplication) = with(app) {
+        setDefaultProperties(
+            hashMapOf<String, Any>().apply {
+                set(
+                    SPRING_PROFILE_CONF_DEFAULT_KEY,
+                    SPRING_PROFILE_TEST
+                )
+            })
+        setAdditionalProfiles(SPRING_PROFILE_TEST)
+    }
+
+    @BeforeTest
+    fun `start the server in profile test`() = runApplication<API> {
+        testLoader(app = this)
+    }.run { context = this }
+
+    @AfterTest
+    fun `stop the server`(): Unit = runBlocking {
+        context.run {
+            deleteAllUsersOnly()
+            close()
+        }
+    }
+
+    @Test
+    fun `functional test finish reset password scenario`(): Unit = runBlocking {
+        val signup = Signup(
+            login = "cheroliv.tester",
+            email = "cheroliv.tester@gmail.com",
+            password = "secret",
+            repassword = "secret"
+        )
+        context.tripleCounts().run {
+            val uuid: UUID = (User(
+                login = signup.login,
+                email = signup.email,
+                langKey = FRENCH.language
+            ) to context).signup()
+                .getOrNull()!!.first
+                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+            //TODO: check imap activation mail received
+
+            assertThat(context.countUsers()).isEqualTo(first + 1)
+            assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+            assertThat(context.countUserActivation()).isEqualTo(third + 1)
+
+            FIND_ALL_USERS
+                .trimIndent()
+                .run(context.getBean<DatabaseClient>()::sql)
+                .fetch().awaitSingle().run {
+                    @Suppress("RemoveRedundantQualifierName")
+                    (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                            to this[PASSWORD_FIELD].toString())
+                }.run {
+                    "user.id retrieved before update password: $first".apply(::i)
+                    assertEquals(uuid, first, "user.id should be the same")
+                    assertNotEquals(
+                        signup.password,
+                        second,
+                        "password should be encoded and not the same"
+                    )
+
+                    val resetKey: String = context.apply {
+                        // Given a user well signed up
+                        assertThat(countUserResets()).isEqualTo(0)
+                    }.getBean<PasswordService>()
+                        .reset(signup.email)
+                        .mapLeft { "reset().left: $it".run(::i) }
+                        .getOrNull()!!.apply {
+                            "reset key : $this".run(::i)
+                            assertThat(context.countUserResets()).isEqualTo(1)
+                        }
+
+//                    FIND_ALL_USER_RESETS
+//                        .trimIndent()
+//                        .run(context.getBean<DatabaseClient>()::sql)
+//                        .fetch()
+//                        .awaitSingle().run {
+//                            get(IS_ACTIVE_FIELD).toString()
+//                                .apply(Boolean::parseBoolean)
+//                                .run(::assertThat).asBoolean().isTrue
+//                            get(RESET_KEY_FIELD).toString()
+//                                .run(::assertThat).asString()
+//                                .isEqualTo(resetKey)
+//                        }
+//                    //TODO: check imap reset password mail received
+//                    // finish reset password
+//                    val newPassword = "${signup.password}&"
+//
+//                    client.post()
+//                        .uri(API_RESET_PASSWORD_FINISH_PATH.apply {
+//                            "uri : $this".run(::i)
+//                        })
+//                        .contentType(APPLICATION_PROBLEM_JSON)
+//                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+//                            "resetKey on select: $this".run(::i)
+//                        }, newPassword = newPassword))
+//                        .exchange()
+//                        .expectStatus()
+//                        .isOk
+//                        .returnResult<ProblemDetail>()
+//                        .responseBodyContent!!
+//                        .apply { logBody() }
+//                        .apply(::assertThat)
+//                        .isEmpty()
+//
+//                    context.countUserResets().run(::assertThat).isEqualTo(1)
+//
+//                    FIND_ALL_USER_RESETS
+//                        .trimIndent()
+//                        .run(context.getBean<DatabaseClient>()::sql)
+//                        .fetch()
+//                        .awaitSingleOrNull()!!.run {
+//                            IS_ACTIVE_FIELD.run(::get).toString()
+//                                .apply(Boolean::parseBoolean)
+//                                .run(::assertThat).asBoolean().isFalse
+//
+//                            CHANGE_DATE_FIELD.run(::get).toString()
+//                                .run(::assertThat).asString()
+//                                .containsAnyOf(
+//                                    ofInstant(now(), systemDefault()).year.toString(),
+//                                    ofInstant(now(), systemDefault()).month.toString(),
+//                                    ofInstant(now(), systemDefault()).dayOfMonth.toString(),
+//                                    ofInstant(now(), systemDefault()).hour.toString(),
+//                                )
+//                        }
+                }
+        }
+    }
+}
+
 @ActiveProfiles("test")
 @TestInstance(PER_CLASS)
 @SpringBootTest(
@@ -288,7 +438,6 @@ class Tests {
     @Captor
     lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
 
-
     @BeforeTest
     fun setUp(context: ApplicationContext) {
         client = context.run(WebTestClient::bindToApplicationContext).build()
@@ -305,12 +454,16 @@ class Tests {
     }
 
     @AfterTest
-    fun cleanUp(context: ApplicationContext): Unit = runBlocking { context.deleteAllUsersOnly() }
+    fun cleanUp(context: ApplicationContext): Unit =
+        runBlocking { context.deleteAllUsersOnly() }
 
 
     @Nested
     @TestInstance(PER_CLASS)
     inner class CoreTests {
+
+        @Test
+        fun `test getPrivateProperties`(): Unit = assertDoesNotThrow { privateProperties }
 
         @Test
         fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {
@@ -918,46 +1071,47 @@ class Tests {
     @TestInstance(PER_CLASS)
     inner class UserSignupTests {
         @Test//TODO: rewrite test showing the scenario clearly
-        fun `test UserRoleDao signup with existing user without user_role`(): Unit = runBlocking {
-            val countUserBefore = context.countUsers()
-            assertThat(countUserBefore).isEqualTo(0)
-            val countUserAuthBefore = context.countUserAuthority()
-            assertThat(countUserAuthBefore).isEqualTo(0)
-            lateinit var result: Either<Throwable, UUID>
-            (user to context).save()
-            assertThat(context.countUsers()).isEqualTo(countUserBefore + 1)
-            val userId = context.getBean<DatabaseClient>().sql(FIND_USER_BY_LOGIN)
-                .bind(LOGIN_ATTR, user.login.lowercase())
-                .fetch()
-                .one()
-                .awaitSingle()[User.Attributes.ID_ATTR]
-                .toString()
-                .run(UUID::fromString)
+        fun `test UserRoleDao signup with existing user without user_role`(): Unit =
+            runBlocking {
+                val countUserBefore = context.countUsers()
+                assertThat(countUserBefore).isEqualTo(0)
+                val countUserAuthBefore = context.countUserAuthority()
+                assertThat(countUserAuthBefore).isEqualTo(0)
+                lateinit var result: Either<Throwable, UUID>
+                (user to context).save()
+                assertThat(context.countUsers()).isEqualTo(countUserBefore + 1)
+                val userId = context.getBean<DatabaseClient>().sql(FIND_USER_BY_LOGIN)
+                    .bind(LOGIN_ATTR, user.login.lowercase())
+                    .fetch()
+                    .one()
+                    .awaitSingle()[User.Attributes.ID_ATTR]
+                    .toString()
+                    .run(UUID::fromString)
 
-            context.getBean<DatabaseClient>()
-                .sql(UserRole.Relations.INSERT)
-                .bind(UserRole.Attributes.USER_ID_ATTR, userId)
-                .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
-                .fetch()
-                .one()
-                .awaitSingleOrNull()
+                context.getBean<DatabaseClient>()
+                    .sql(UserRole.Relations.INSERT)
+                    .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+                    .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
+                    .fetch()
+                    .one()
+                    .awaitSingleOrNull()
 
-            """
+                """
         SELECT ua.${UserRole.Relations.Fields.ID_FIELD} 
         FROM ${UserRole.Relations.Fields.TABLE_NAME} AS ua 
         where ua.user_id= :userId and ua."role" = :role"""
-                .trimIndent()
-                .run(context.getBean<DatabaseClient>()::sql)
-                .bind(UserRole.Attributes.USER_ID_ATTR, userId)
-                .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
-                .fetch()
-                .one()
-                .awaitSingle()[UserRole.Relations.Fields.ID_FIELD]
-                .toString()
-                .let { "user_role_id : $it" }
-                .run(::i)
-            assertThat(context.countUserAuthority()).isEqualTo(countUserAuthBefore + 1)
-        }
+                    .trimIndent()
+                    .run(context.getBean<DatabaseClient>()::sql)
+                    .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+                    .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
+                    .fetch()
+                    .one()
+                    .awaitSingle()[UserRole.Relations.Fields.ID_FIELD]
+                    .toString()
+                    .let { "user_role_id : $it" }
+                    .run(::i)
+                assertThat(context.countUserAuthority()).isEqualTo(countUserAuthBefore + 1)
+            }
 
         @Test
         fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit =
@@ -1673,7 +1827,11 @@ class Tests {
                                         .fetch()
                                         .awaitSingle()[PASSWORD_FIELD]
                                         .toString()
-                                        .also { "password retrieved after user update: $it".run(::i) }
+                                        .also {
+                                            "password retrieved after user update: $it".run(
+                                                ::i
+                                            )
+                                        }
                                 ).apply { "passwords matches : ${toString()}".run(::i) },
                                 message = "password should be updated"
                             )
@@ -1765,9 +1923,14 @@ class Tests {
                         }.run {
                             "user.id retrieved before update password: $first".apply(::i)
                             assertEquals(uuid, first, "user.id should be the same")
-                            assertNotEquals(user.password, second, "password should be different")
+                            assertNotEquals(
+                                user.password,
+                                second,
+                                "password should be different"
+                            )
                             assertTrue(
-                                context.getBean<PasswordEncoder>().matches(user.password, second),
+                                context.getBean<PasswordEncoder>()
+                                    .matches(user.password, second),
                                 message = "password should be encoded"
                             )
 
@@ -2569,126 +2732,136 @@ class Tests {
 
 
         @Test
-        fun `test service finish password reset, reset password scenario`(): Unit = runBlocking {
-            assertThat(user.id).isNull()
-            context.tripleCounts().run {
-                val uuid: UUID = (user.copy(login = USER, password = PASSWORD) to context).signup()
-                    .getOrNull()!!.first
-                    .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+        fun `test service finish password reset, reset password scenario`(): Unit =
+            runBlocking {
+                assertThat(user.id).isNull()
+                context.tripleCounts().run {
+                    val uuid: UUID =
+                        (user.copy(login = USER, password = PASSWORD) to context).signup()
+                            .getOrNull()!!.first
+                            .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-                assertThat(context.countUsers()).isEqualTo(first + 1)
-                assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-                assertThat(context.countUserActivation()).isEqualTo(third + 1)
+                    assertThat(context.countUsers()).isEqualTo(first + 1)
+                    assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+                    assertThat(context.countUserActivation()).isEqualTo(third + 1)
 
-                FIND_ALL_USERS
-                    .trimIndent()
-                    .run(context.getBean<DatabaseClient>()::sql)
-                    .fetch().awaitSingle().let { allUsers ->
-                        @Suppress("RemoveRedundantQualifierName")
-                        (allUsers[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                                to allUsers[PASSWORD_FIELD].toString())
-                    }.let { uuidEncodedPasswordPair ->
+                    FIND_ALL_USERS
+                        .trimIndent()
+                        .run(context.getBean<DatabaseClient>()::sql)
+                        .fetch().awaitSingle().let { allUsers ->
+                            @Suppress("RemoveRedundantQualifierName")
+                            (allUsers[User.Relations.Fields.ID_FIELD].toString()
+                                .run(::fromString)
+                                    to allUsers[PASSWORD_FIELD].toString())
+                        }.let { uuidEncodedPasswordPair ->
 
-                        uuidEncodedPasswordPair
-                            .first
-                            .run { "user.id retrieved before update password: $this" }
-                            .run(::i)
+                            uuidEncodedPasswordPair
+                                .first
+                                .run { "user.id retrieved before update password: $this" }
+                                .run(::i)
 
-                        assertEquals(
-                            uuid,
-                            uuidEncodedPasswordPair.first,
-                            "user.id should be the same"
-                        )
+                            assertEquals(
+                                uuid,
+                                uuidEncodedPasswordPair.first,
+                                "user.id should be the same"
+                            )
 
-                        assertNotEquals(
-                            PASSWORD,
-                            uuidEncodedPasswordPair.second,
-                            "password should be encoded and not the same"
-                        )
+                            assertNotEquals(
+                                PASSWORD,
+                                uuidEncodedPasswordPair.second,
+                                "password should be encoded and not the same"
+                            )
 
-                        assertTrue(
-                            context.getBean<PasswordEncoder>()
-                                .matches(PASSWORD, uuidEncodedPasswordPair.second),
-                            message = "password should not be different"
-                        )
+                            assertTrue(
+                                context.getBean<PasswordEncoder>()
+                                    .matches(PASSWORD, uuidEncodedPasswordPair.second),
+                                message = "password should not be different"
+                            )
 
-                        assertTrue(
-                            context.getBean<PasswordEncoder>().matches(
-                                PASSWORD, FIND_ALL_USERS
-                                    .trimIndent()
-                                    .run(context.getBean<DatabaseClient>()::sql)
-                                    .fetch()
-                                    .awaitSingle()[PASSWORD_FIELD]
-                                    .toString()
-                                    .also { i("password retrieved after user signup: $it") }
-                            ).apply { "passwords matches : ${toString()}".run(::i) },
-                            message = "password should be encoded"
-                        )
+                            assertTrue(
+                                context.getBean<PasswordEncoder>().matches(
+                                    PASSWORD, FIND_ALL_USERS
+                                        .trimIndent()
+                                        .run(context.getBean<DatabaseClient>()::sql)
+                                        .fetch()
+                                        .awaitSingle()[PASSWORD_FIELD]
+                                        .toString()
+                                        .also { i("password retrieved after user signup: $it") }
+                                ).apply { "passwords matches : ${toString()}".run(::i) },
+                                message = "password should be encoded"
+                            )
 
-                        // Given a user well signed up user
-                        assertThat(context.countUserResets()).isEqualTo(0)
-                        val resetKey: String = context
-                            .getBean<PasswordService>()
-                            .reset(user.email).getOrNull()!!
-                        resetKey.apply { "After request reset password - resetKey: $this".run(::i) }
-                        assertThat(context.countUserResets()).isEqualTo(1)
-                        // Let's retrieve the user_reset
-                        FIND_ALL_USER_RESETS.trimIndent()
-                            .run(context.getBean<DatabaseClient>()::sql)
-                            .fetch().awaitSingle().run {
-                                toString().apply(::i)
-                                IS_ACTIVE_FIELD.run(::get).toString()
-                                    .apply(Boolean::parseBoolean)
-                                    .run(::assertThat).asBoolean().isTrue
-                                RESET_KEY_FIELD.run(::get).toString()
-                                    .apply { i("Retrieved key: $this") }
-                                    .run(::assertThat).asString()
-                                    .isEqualTo(resetKey)
-                                USER_ID_FIELD.run(::get)
-                                    .apply { i("Retrieved user_id: $this") }
-                                    .run(::assertThat).asString().isNotBlank()
+                            // Given a user well signed up user
+                            assertThat(context.countUserResets()).isEqualTo(0)
+                            val resetKey: String = context
+                                .getBean<PasswordService>()
+                                .reset(user.email).getOrNull()!!
+                            resetKey.apply {
+                                "After request reset password - resetKey: $this".run(
+                                    ::i
+                                )
                             }
+                            assertThat(context.countUserResets()).isEqualTo(1)
+                            // Let's retrieve the user_reset
+                            FIND_ALL_USER_RESETS.trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch().awaitSingle().run {
+                                    toString().apply(::i)
+                                    IS_ACTIVE_FIELD.run(::get).toString()
+                                        .apply(Boolean::parseBoolean)
+                                        .run(::assertThat).asBoolean().isTrue
+                                    RESET_KEY_FIELD.run(::get).toString()
+                                        .apply { i("Retrieved key: $this") }
+                                        .run(::assertThat).asString()
+                                        .isEqualTo(resetKey)
+                                    USER_ID_FIELD.run(::get)
+                                        .apply { i("Retrieved user_id: $this") }
+                                        .run(::assertThat).asString().isNotBlank()
+                                }
 
-                        val newPassword = "$PASSWORD&"
+                            val newPassword = "$PASSWORD&"
 
-                        context.getBean<PasswordService>()
-                            .finish(newPassword, resetKey).apply {
-                                "Rows updated result : $this".run(::i)
-                                run(::assertThat).isEqualTo(TWO_ROWS_UPDATED)
-                            }
+                            context.getBean<PasswordService>()
+                                .finish(newPassword, resetKey).apply {
+                                    "Rows updated result : $this".run(::i)
+                                    run(::assertThat).isEqualTo(TWO_ROWS_UPDATED)
+                                }
 
-                        context.countUserResets().run(::assertThat).isEqualTo(1)
+                            context.countUserResets().run(::assertThat).isEqualTo(1)
 
-                        FIND_ALL_USER_RESETS
-                            .trimIndent()
-                            .run(context.getBean<DatabaseClient>()::sql)
-                            .fetch()
-                            .awaitSingleOrNull()!!.run {
-                                IS_ACTIVE_FIELD.run(::get).toString()
-                                    .apply(Boolean::parseBoolean)
-                                    .run(::assertThat).asBoolean().isFalse
+                            FIND_ALL_USER_RESETS
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!!.run {
+                                    IS_ACTIVE_FIELD.run(::get).toString()
+                                        .apply(Boolean::parseBoolean)
+                                        .run(::assertThat).asBoolean().isFalse
 
-                                CHANGE_DATE_FIELD.run(::get).toString()
-                                    .run(::assertThat).asString()
-                                    .containsAnyOf(
-                                        ofInstant(now(), systemDefault()).year.toString(),
-                                        ofInstant(now(), systemDefault()).month.toString(),
-                                        ofInstant(now(), systemDefault()).dayOfMonth.toString(),
-                                        ofInstant(now(), systemDefault()).hour.toString(),
-                                    )
-                            }
+                                    CHANGE_DATE_FIELD.run(::get).toString()
+                                        .run(::assertThat).asString()
+                                        .containsAnyOf(
+                                            ofInstant(now(), systemDefault()).year.toString(),
+                                            ofInstant(now(), systemDefault()).month.toString(),
+                                            ofInstant(
+                                                now(),
+                                                systemDefault()
+                                            ).dayOfMonth.toString(),
+                                            ofInstant(now(), systemDefault()).hour.toString(),
+                                        )
+                                }
 
-                        FIND_ALL_USERS
-                            .trimIndent()
-                            .run(context.getBean<DatabaseClient>()::sql)
-                            .fetch()
-                            .awaitSingleOrNull()!![PASSWORD_FIELD].toString().run {
-                            context.getBean<PasswordEncoder>()
-                                .matches(newPassword, this)
-                        }.run(::assertThat).isTrue
-                    }
+                            FIND_ALL_USERS
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!![PASSWORD_FIELD].toString().run {
+                                context.getBean<PasswordEncoder>()
+                                    .matches(newPassword, this)
+                            }.run(::assertThat).isTrue
+                        }
+                }
             }
-        }
 
         @Test
         fun `test finish password reset, reset password scenario`(): Unit = runBlocking {
@@ -3020,7 +3193,8 @@ class Tests {
 
                         //new password
                         val newPassword: String = "$PASSWORD&"
-                        val reset = ResetPassword(key = generateResetKey, newPassword = newPassword)
+                        val reset =
+                            ResetPassword(key = generateResetKey, newPassword = newPassword)
                         // finish reset password
                         client.post()
                             .uri(API_RESET_PASSWORD_FINISH_PATH)
@@ -3231,7 +3405,8 @@ class Tests {
                     val prop = Properties()
                     prop.load(
                         InputStreamReader(
-                            FileInputStream(File(URI(resource.file).path)), Charset.forName("UTF-8")
+                            FileInputStream(File(URI(resource.file).path)),
+                            Charset.forName("UTF-8")
                         )
                     )
                     val emailTitle = prop["email.test.title"] as String
