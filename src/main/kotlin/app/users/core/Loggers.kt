@@ -1,8 +1,5 @@
 package app.users.core
 
-import org.springframework.beans.factory.getBean
-import org.springframework.context.ApplicationContext
-import org.springframework.context.MessageSource
 import app.users.core.Constants.CLOUD
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.DEV_HOST
@@ -21,6 +18,9 @@ import app.users.core.Constants.STARTUP_LOG_MSG_KEY
 import app.workspace.Workspace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.getBean
+import org.springframework.context.ApplicationContext
+import org.springframework.context.MessageSource
 import java.net.InetAddress.getLocalHost
 import java.net.UnknownHostException
 import java.util.Locale.getDefault
@@ -37,7 +37,7 @@ object Loggers {
     fun e(message: String, e: Exception?): Unit = log.error(message, e)
     fun w(message: String, e: Exception?): Unit = log.warn(message, e)
 
-    
+
     fun ApplicationContext.startupLog() = logProfiles.run {
         StartupLogMsg(
             appName = SPRING_APPLICATION_NAME.run(environment::getProperty),
@@ -47,7 +47,8 @@ object Loggers {
                 else -> HTTP
             },
             serverPort = SERVER_PORT.run(environment::getProperty),
-            contextPath = SERVER_SERVLET_CONTEXT_PATH.run(environment::getProperty) ?: EMPTY_CONTEXT_PATH,
+            contextPath = SERVER_SERVLET_CONTEXT_PATH.run(environment::getProperty)
+                ?: EMPTY_CONTEXT_PATH,
             hostAddress = try {
                 getLocalHost().hostAddress
             } catch (e: UnknownHostException) {
