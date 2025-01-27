@@ -294,19 +294,21 @@ class FunctionalTests {
         setAdditionalProfiles(SPRING_PROFILE_TEST)
     }
 
-    @Throws(MessagingException::class)
-    fun establishConnection(): Store = "imaps".run(
-        getDefaultInstance(
-            getProperties().apply { setProperty("mail.store.protocol", "imaps") },
-            null
-        )::getStore
-    ).apply {
-        connect(
-            "imap.googlemail.com",
-            privateProperties["test.mail"].toString(),
-            privateProperties["test.mail.password"].toString()
-        )
-    }
+
+    val establishConnection: Store
+        @Throws(MessagingException::class)
+        get() = "imaps".run(
+            getDefaultInstance(
+                getProperties().apply { setProperty("mail.store.protocol", "imaps") },
+                null
+            )::getStore
+        ).apply {
+            connect(
+                "imap.googlemail.com",
+                privateProperties["test.mail"].toString(),
+                privateProperties["test.mail.password"].toString()
+            )
+        }
 
     @BeforeTest
     fun `start the server in profile test`() = runApplication<API> {
@@ -376,64 +378,68 @@ class FunctionalTests {
                             }.getBean<PasswordService>()
                                 .reset(email)
                                 .mapLeft { "reset().left: $it".run(::i) }
-                                .getOrNull()!!.apply {
-                                    "reset key : $this".run(::i)
+                                .getOrNull()!!
+                                .apply {
                                     assertThat(context.countUserResets()).isEqualTo(1)
+                                    "reset key : $this".run(::i)
                                 }
 
-//                    FIND_ALL_USER_RESETS
-//                        .trimIndent()
-//                        .run(context.getBean<DatabaseClient>()::sql)
-//                        .fetch()
-//                        .awaitSingle().run {
-//                            get(IS_ACTIVE_FIELD).toString()
-//                                .apply(Boolean::parseBoolean)
-//                                .run(::assertThat).asBoolean().isTrue
-//                            get(RESET_KEY_FIELD).toString()
-//                                .run(::assertThat).asString()
-//                                .isEqualTo(resetKey)
-//                        }
-//                    //TODO: check imap reset password mail received
-//                    // finish reset password
-//                    val newPassword = "${signup.password}&"
-//
-//                    client.post()
-//                        .uri(API_RESET_PASSWORD_FINISH_PATH.apply {
-//                            "uri : $this".run(::i)
-//                        })
-//                        .contentType(APPLICATION_PROBLEM_JSON)
-//                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
-//                            "resetKey on select: $this".run(::i)
-//                        }, newPassword = newPassword))
-//                        .exchange()
-//                        .expectStatus()
-//                        .isOk
-//                        .returnResult<ProblemDetail>()
-//                        .responseBodyContent!!
-//                        .apply { logBody() }
-//                        .apply(::assertThat)
-//                        .isEmpty()
-//
-//                    context.countUserResets().run(::assertThat).isEqualTo(1)
-//
-//                    FIND_ALL_USER_RESETS
-//                        .trimIndent()
-//                        .run(context.getBean<DatabaseClient>()::sql)
-//                        .fetch()
-//                        .awaitSingleOrNull()!!.run {
-//                            IS_ACTIVE_FIELD.run(::get).toString()
-//                                .apply(Boolean::parseBoolean)
-//                                .run(::assertThat).asBoolean().isFalse
-//
-//                            CHANGE_DATE_FIELD.run(::get).toString()
-//                                .run(::assertThat).asString()
-//                                .containsAnyOf(
-//                                    ofInstant(now(), systemDefault()).year.toString(),
-//                                    ofInstant(now(), systemDefault()).month.toString(),
-//                                    ofInstant(now(), systemDefault()).dayOfMonth.toString(),
-//                                    ofInstant(now(), systemDefault()).hour.toString(),
-//                                )
-//                        }
+
+                            FIND_ALL_USER_RESETS
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingle().run {
+                                    get(IS_ACTIVE_FIELD).toString()
+                                        .apply(Boolean::parseBoolean)
+                                        .run(::assertThat).asBoolean().isTrue
+                                    get(RESET_KEY_FIELD).toString()
+                                        .run(::assertThat).asString()
+                                        .isEqualTo(resetKey)
+                                }
+                            //TODO: check imap reset password mail received
+                            // finish reset password
+                            "${password}&".run {
+                                client.post().uri(
+                                    API_RESET_PASSWORD_FINISH_PATH.apply {
+                                        "uri : $this".run(::i)
+                                    }).contentType(APPLICATION_PROBLEM_JSON)
+                                    .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+                                        "resetKey on select: $this".run(::i)
+                                    }, newPassword = this))
+                                    .exchange()
+                                    .expectStatus()
+                                    .isOk
+                                    .returnResult<ProblemDetail>()
+                                    .responseBodyContent!!
+                                    .apply { logBody() }
+                                    .apply(::assertThat)
+                                    .isEmpty()
+
+                                context.countUserResets().run(::assertThat).isEqualTo(1)
+
+                                FIND_ALL_USER_RESETS
+                                    .trimIndent()
+                                    .run(context.getBean<DatabaseClient>()::sql)
+                                    .fetch()
+                                    .awaitSingleOrNull()!!.run {
+                                        IS_ACTIVE_FIELD.run(::get).toString()
+                                            .apply(Boolean::parseBoolean)
+                                            .run(::assertThat).asBoolean().isFalse
+
+                                        CHANGE_DATE_FIELD.run(::get).toString()
+                                            .run(::assertThat).asString()
+                                            .containsAnyOf(
+                                                ofInstant(now(), systemDefault()).year.toString(),
+                                                ofInstant(now(), systemDefault()).month.toString(),
+                                                ofInstant(
+                                                    now(),
+                                                    systemDefault()
+                                                ).dayOfMonth.toString(),
+                                                ofInstant(now(), systemDefault()).hour.toString(),
+                                            )
+                                    }
+                            }
                         }
                 }
             }
