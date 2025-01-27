@@ -1,6 +1,5 @@
 package app.ai
 
-
 import app.ai.AIAssistantWorker.AiConfiguration.HuggingfaceAssistant
 import app.ai.AIAssistantWorker.AiConfiguration.OllamaAssistant
 import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.FRENCH
