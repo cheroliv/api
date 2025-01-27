@@ -9,6 +9,9 @@ import java.util.regex.Pattern
 import java.util.regex.Pattern.compile
 
 object Constants {
+    const val GMAIL_IMAP_HOST = "imap.googlemail.com"
+    const val MAIL_STORE_PROTOCOL_PROP = "mail.store.protocol"
+    const val IMAPS_MAIL_STORE_PROTOCOL = "imaps"
     const val PRIVATE_PROPERTIES_FILE_PATH = "private.properties"
     const val ROOT_PACKAGE = "app"
     const val BLANK = ""
@@ -21,6 +24,7 @@ object Constants {
     const val EMPTY_STRING = ""
     const val LINE = "\n"
     const val VIRGULE = ","
+    const val AT_SYMBOLE = '@'
     const val BASE_URL_DEV = "http://localhost:8880"
     const val PROBLEM_OBJECT_NAME = "objectName"
     const val PROBLEM_FIELD = "field"

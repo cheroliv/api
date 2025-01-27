@@ -37,10 +37,14 @@ import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
+import app.users.core.Constants.AT_SYMBOLE
 import app.users.core.Constants.BASE_URL_DEV
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
+import app.users.core.Constants.GMAIL_IMAP_HOST
+import app.users.core.Constants.IMAPS_MAIL_STORE_PROTOCOL
+import app.users.core.Constants.MAIL_STORE_PROTOCOL_PROP
 import app.users.core.Constants.PASSWORD
 import app.users.core.Constants.PATTERN_LOCALE_2
 import app.users.core.Constants.PATTERN_LOCALE_3
@@ -297,14 +301,19 @@ class FunctionalTests {
 
     val establishConnection: Store
         @Throws(MessagingException::class)
-        get() = "imaps".run(
+        get() = IMAPS_MAIL_STORE_PROTOCOL.run(
             getDefaultInstance(
-                getProperties().apply { setProperty("mail.store.protocol", "imaps") },
+                getProperties().apply {
+                    setProperty(
+                        MAIL_STORE_PROTOCOL_PROP,
+                        IMAPS_MAIL_STORE_PROTOCOL
+                    )
+                },
                 null
             )::getStore
         ).apply {
             connect(
-                "imap.googlemail.com",
+                GMAIL_IMAP_HOST,
                 privateProperties["test.mail"].toString(),
                 privateProperties["test.mail.password"].toString()
             )
@@ -328,10 +337,12 @@ class FunctionalTests {
     }
 
     val String.usernameFromEmail: String
-        get() = '@'.run(::indexOf).let { atIdx ->
-            when {
-                atIdx != -1 -> return substring(0, atIdx)
-                else -> throw IllegalArgumentException("Invalid email format: $this")
+        get() {
+            AT_SYMBOLE.run(::indexOf).let { index ->
+                when {
+                    index != -1 -> return substring(0, index)
+                    else -> throw IllegalArgumentException("Invalid email format: $this")
+                }
             }
         }
 
