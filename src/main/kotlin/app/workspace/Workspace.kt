@@ -126,7 +126,6 @@ data class Workspace(val entries: WorkspaceEntry) {
     )
 
     companion object {
-        
         fun install(path: String) = i("Installing workspace on path : $path")
     }
 }
