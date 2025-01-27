@@ -9,6 +9,7 @@ import app.users.core.models.User.Relations.UPDATE_PASSWORD_RESET
 import app.users.core.security.SecurityUtils.generateResetKey
 import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
+import app.users.mail.UserMailService
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.UserReset.Attributes.RESET_KEY_ATTR
 import app.users.password.UserReset.Relations.FIND_BY_KEY
@@ -72,10 +73,10 @@ class PasswordService(val context: ApplicationContext) {
             ((mail to resetKey) to context).reset().map { updatedRows ->
                 when (updatedRows) {
                     ONE_ROW_UPDATED -> return resetKey
-//                        .apply {
-//                            context.findOne<User>(mail)
-//                                .map { user -> (user to resetKey).run(context.getBean<app.users.mail.SMTPUserMailService>()::sendPasswordResetMail) }
-//                        }
+                        .apply {
+                            context.findOne<User>(mail)
+                                .map { user -> (user to resetKey).run(context.getBean<UserMailService>()::sendPasswordResetMail) }
+                        }
                         .right()
 
                     ZERO_ROW_UPDATED -> throw IllegalStateException("user_reset not saved")
