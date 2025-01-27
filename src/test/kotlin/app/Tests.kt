@@ -162,7 +162,10 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import jakarta.mail.MessagingException
 import jakarta.mail.Multipart
+import jakarta.mail.Session.getDefaultInstance
+import jakarta.mail.Store
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
 import jakarta.mail.internet.MimeMultipart
@@ -266,6 +269,8 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import java.util.Properties as JProperties
+
 
 class FunctionalTests {
 
@@ -288,6 +293,22 @@ class FunctionalTests {
         setAdditionalProfiles(SPRING_PROFILE_TEST)
     }
 
+    @Throws(MessagingException::class)
+    fun establishConnection(): Store = "imaps".run(
+        getDefaultInstance(
+            System.getProperties().apply {
+                setProperty("mail.store.protocol", "imaps")
+            },
+            null
+        )::getStore
+    ).apply {
+        connect(
+            "imap.googlemail.com",
+            privateProperties["google.test.mail"].toString(),
+            privateProperties["google.test.app.app-password"].toString()
+        )
+    }
+
     @BeforeTest
     fun `start the server in profile test`() = runApplication<API> {
         testLoader(app = this)
@@ -297,58 +318,69 @@ class FunctionalTests {
     fun `stop the server`(): Unit = runBlocking {
         context.run {
             deleteAllUsersOnly()
+            assertThat(tripleCounts())
+                .matches { it.first == 0 }
+                .matches { it.second == 0 }
+                .matches { it.third == 0 }
             close()
         }
     }
 
+    fun loginFromEmail(email: String): String = '@'.run(email::indexOf).let { atIdx ->
+        when {
+            atIdx != -1 -> return email.substring(0, atIdx)
+            else -> throw IllegalArgumentException("Invalid email format: $email")
+        }
+    }
+
     @Test
-    fun `functional test finish reset password scenario`(): Unit = runBlocking {
-        val signup = Signup(
-            login = "cheroliv.tester",
-            email = "cheroliv.tester@gmail.com",
-            password = "secret",
-            repassword = "secret"
-        )
-        context.tripleCounts().run {
-            val uuid: UUID = (User(
-                login = signup.login,
-                email = signup.email,
-                langKey = FRENCH.language
-            ) to context).signup()
-                .getOrNull()!!.first
-                .apply { "user.id from signupDao: ${toString()}".apply(::i) }
-            //TODO: check imap activation mail received
+    fun `functional test finish reset password scenario with gmail`(): Unit = runBlocking {
+        Signup(
+            login = privateProperties["google.test.mail"].toString()
+                .run(::loginFromEmail),
+            email = privateProperties["google.test.mail"].toString(),
+            password = privateProperties["google.test.app.app-password"].toString(),
+            repassword = privateProperties["google.test.app.app-password"].toString()
+        ).run {
+            context.tripleCounts().run {
+                val uuid: UUID = (User(
+                    login = login,
+                    email = email,
+                    langKey = FRENCH.language
+                ) to context).signup()
+                    .getOrNull()!!.first
+                    .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+                //TODO: check imap activation mail received
 
-            assertThat(context.countUsers()).isEqualTo(first + 1)
-            assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-            assertThat(context.countUserActivation()).isEqualTo(third + 1)
+                assertThat(context.countUsers()).isEqualTo(first + 1)
+                assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+                assertThat(context.countUserActivation()).isEqualTo(third + 1)
 
-            FIND_ALL_USERS
-                .trimIndent()
-                .run(context.getBean<DatabaseClient>()::sql)
-                .fetch().awaitSingle().run {
-                    @Suppress("RemoveRedundantQualifierName")
-                    (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                            to this[PASSWORD_FIELD].toString())
-                }.run {
-                    "user.id retrieved before update password: $first".apply(::i)
-                    assertEquals(uuid, first, "user.id should be the same")
-                    assertNotEquals(
-                        signup.password,
-                        second,
-                        "password should be encoded and not the same"
-                    )
-
-                    val resetKey: String = context.apply {
-                        // Given a user well signed up
-                        assertThat(countUserResets()).isEqualTo(0)
-                    }.getBean<PasswordService>()
-                        .reset(signup.email)
-                        .mapLeft { "reset().left: $it".run(::i) }
-                        .getOrNull()!!.apply {
-                            "reset key : $this".run(::i)
-                            assertThat(context.countUserResets()).isEqualTo(1)
-                        }
+                FIND_ALL_USERS
+                    .trimIndent()
+                    .run(context.getBean<DatabaseClient>()::sql)
+                    .fetch().awaitSingle().run {
+                        @Suppress("RemoveRedundantQualifierName")
+                        (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                                to this[PASSWORD_FIELD].toString())
+                    }.run {
+                        "user.id retrieved before update password: $first".apply(::i)
+                        assertEquals(uuid, first, "user.id should be the same")
+                        assertNotEquals(
+                            password,
+                            second,
+                            "password should be encoded and not the same"
+                        )
+                        val resetKey: String = context.apply {
+                            // Given a user well signed up
+                            assertThat(countUserResets()).isEqualTo(0)
+                        }.getBean<PasswordService>()
+                            .reset(email)
+                            .mapLeft { "reset().left: $it".run(::i) }
+                            .getOrNull()!!.apply {
+                                "reset key : $this".run(::i)
+                                assertThat(context.countUserResets()).isEqualTo(1)
+                            }
 
 //                    FIND_ALL_USER_RESETS
 //                        .trimIndent()
@@ -403,7 +435,8 @@ class FunctionalTests {
 //                                    ofInstant(now(), systemDefault()).hour.toString(),
 //                                )
 //                        }
-                }
+                    }
+            }
         }
     }
 }
@@ -3402,7 +3435,7 @@ class Tests {
                         }.properties"
                     )
                     assertNotNull(resource)
-                    val prop = Properties()
+                    val prop = JProperties()
                     prop.load(
                         InputStreamReader(
                             FileInputStream(File(URI(resource.file).path)),
