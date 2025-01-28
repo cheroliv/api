@@ -244,6 +244,7 @@ import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.lang.Boolean
 import java.lang.System.getProperties
+import java.lang.System.getProperty
 import java.net.URI
 import java.nio.charset.Charset
 import java.nio.file.Path
@@ -621,20 +622,18 @@ class Tests {
 
 
             @Test
-            fun `DataTestsChecks - display some json`(): Unit = run {
-
-                assertDoesNotThrow {
-                    context.getBean<ObjectMapper>().run {
-                        writeValueAsString(users).run(::i)
-                        writeValueAsString(user).run(::i)
-                    }
-                    DEFAULT_USER_JSON.run(::i)
+            fun `DataTestsChecks - display some json`(): Unit = assertDoesNotThrow {
+                context.getBean<ObjectMapper>().run {
+                    writeValueAsString(users).run(::i)
+                    writeValueAsString(user).run(::i)
                 }
+                DEFAULT_USER_JSON.run(::i)
             }
+
 
             @Test
             fun `ConfigurationsTests - MessageSource test email_activation_greeting message fr`(): Unit =
-                "artisan-logiciel".run {
+                getProperty("user.name").run {
                     assertThat("Cher $this").isEqualTo(
                         context.getBean<MessageSource>().getMessage(
                             "email.activation.greeting",
@@ -651,7 +650,7 @@ class Tests {
                     append("You have misconfigured your application!\n")
                     append("It should not run with both the $DEVELOPMENT\n")
                     append("and $PRODUCTION profiles at the same time.")
-                }).isEqualTo(
+                }).asString().isEqualTo(
                     context.getBean<MessageSource>().getMessage(
                         STARTUP_LOG_MSG_KEY,
                         arrayOf(DEVELOPMENT, PRODUCTION),
@@ -661,7 +660,8 @@ class Tests {
 
             @Test
             fun `ConfigurationsTests - test go visit message`(): Unit {
-                assertThat(OFFICIAL_SITE).isEqualTo(context.getBean<Properties>().goVisitMessage)
+                assertThat(OFFICIAL_SITE)
+                    .isEqualTo(context.getBean<Properties>()::goVisitMessage)
             }
 
             @Test
@@ -877,7 +877,6 @@ class Tests {
                         assertEquals(expectedUserResult.roles.first().id, ROLE_USER)
                         assertEquals(userResult.roles.first().id, ROLE_USER)
                         assertEquals(userResult.roles.size, 1)
-
                     }
             }
 
@@ -3668,7 +3667,7 @@ class Tests {
             private val workspace = Workspace(
                 entries = WorkspaceEntry(
                     name = "fonderie",
-                    path = System.getProperty(USER_HOME_KEY)
+                    path = getProperty(USER_HOME_KEY)
                         .run { "$this/workspace/school" },
                     office = Office(
                         books = Books(name = "books-collection"),
@@ -3679,7 +3678,7 @@ class Tests {
                         pilotage = Pilotage(name = "pilotage"),
                         schemas = Schemas(name = "schemas"),
                         slides = Slides(
-                            path = System.getProperty(USER_HOME_KEY)
+                            path = getProperty(USER_HOME_KEY)
                                 .run { "$this/workspace/office/slides" }),
                         sites = Sites(name = "sites"),
                         path = "office"
@@ -3726,7 +3725,7 @@ class Tests {
             @Test
             fun `install workspace`(): Unit {
                 install(
-                    System.getProperty(USER_HOME_KEY)
+                    getProperty(USER_HOME_KEY)
                         .run { "$this/workspace/school" })
                 // default type : AllInOneWorkspace
                 // ExplodedWorkspace

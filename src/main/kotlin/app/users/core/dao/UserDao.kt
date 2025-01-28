@@ -52,12 +52,6 @@ import java.lang.Boolean.parseBoolean
 import java.util.UUID
 
 object UserDao {
-    //@Configuration
-//class UserDaoConfig(val context:ApplicationContext) : AbstractR2dbcConfiguration() {
-//    override fun connectionFactory(): ConnectionFactory {
-//        return context.getBean<ConnectionFactory>()
-//    }
-//}
 
     @Throws(EmptyResultDataAccessException::class)
     suspend fun Pair<User, ApplicationContext>.save(): Either<Throwable, UUID> = try {
