@@ -280,7 +280,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import java.util.Properties as JProperties
 
-
 class Tests {
 
     @Nested
@@ -293,6 +292,19 @@ class Tests {
                 .baseUrl(BASE_URL_DEV)
                 .build()
         }
+
+        val gmailConfig by lazy {
+            GoogleAuthConfig(
+                clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
+                projectId = "gmail-tester-444502",
+                authUri = "https://accounts.google.com/o/oauth2/auth",
+                tokenUri = "https://oauth2.googleapis.com/token",
+                authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
+                clientSecret = "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t",
+                redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
+            )
+        }
+
 
         fun testLoader(app: SpringApplication) = with(app) {
             setDefaultProperties(
@@ -378,8 +390,7 @@ class Tests {
         }
 
         @Throws(MessagingException::class)
-        fun Store.searchEmails(from: String)
-                : Array<Message> = getFolder("inbox")
+        fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
             .apply { open(READ_ONLY) }.run {
                 copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
                     forEach {
@@ -404,8 +415,7 @@ class Tests {
         }
 
         @Test
-        fun `functional test signup and reset password scenario`()
-                : Unit = runBlocking {
+        fun `functional test signup and reset password scenario`(): Unit = runBlocking {
             Signup(
                 login = privateProperties["test.mail"].toString().usernameFromEmail,
                 email = privateProperties["test.mail"].toString(),
@@ -552,18 +562,6 @@ class Tests {
         lateinit var context: ApplicationContext
         lateinit var client: WebTestClient
         lateinit var mailService: UserMailService
-
-        val gmailConfig by lazy {
-            GoogleAuthConfig(
-                clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
-                projectId = "gmail-tester-444502",
-                authUri = "https://accounts.google.com/o/oauth2/auth",
-                tokenUri = "https://oauth2.googleapis.com/token",
-                authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
-                clientSecret = "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t",
-                redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
-            )
-        }
 
         @Spy
         lateinit var javaMailSender: JavaMailSenderImpl
