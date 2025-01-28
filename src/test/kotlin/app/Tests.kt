@@ -552,13 +552,14 @@ class Tests {
         }
     }
 
+    @Nested
     @ActiveProfiles("test")
     @TestInstance(PER_CLASS)
     @SpringBootTest(
         classes = [API::class],
         properties = ["spring.main.web-application-type=reactive"]
     )
-    class IntegrationTests {
+    inner class IntegrationTests {
         @Autowired
         lateinit var context: ApplicationContext
         lateinit var client: WebTestClient
@@ -3596,7 +3597,8 @@ class Tests {
                     run(mailService::sendCreationEmail)
                     verify(javaMailSender).send(messageCaptor.capture())
                     messageCaptor.value
-                        .apply { i("Mime message content: $content") }
+                        .apply { i("Activation key: $second") }
+                        .apply { i("Mime message content(activation mail): $content") }
                         .run {
                             assertThat("${allRecipients[0]}").isEqualTo(first.email)
                             assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
