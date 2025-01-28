@@ -403,7 +403,7 @@ class Tests {
             }
 
         @Test
-        fun `functional test imaps helpers`() {
+        fun `functional test imaps helpers`(): Unit {
             mailConnexion.emailCount.run { i("message count : $this") }
             mailConnexion
                 .searchEmails(privateProperties["test.mail"].toString())
@@ -660,8 +660,9 @@ class Tests {
 
             @Test
             fun `ConfigurationsTests - test go visit message`(): Unit {
-                assertThat(OFFICIAL_SITE)
-                    .isEqualTo(context.getBean<Properties>()::goVisitMessage)
+                assertThat(context.getBean<Properties>().goVisitMessage)
+                    .asString()
+                    .isEqualTo(OFFICIAL_SITE)
             }
 
             @Test
@@ -695,7 +696,7 @@ class Tests {
             }
 
             @Test
-            fun `Verify that the request contains consistent data`() {
+            fun `Verify that the request contains consistent data`(): Unit {
                 client
                     .post()
                     .uri("")
@@ -756,7 +757,7 @@ class Tests {
             }
 
             @Test
-            fun `Verify the internationalization of validations by validator factory with a bad login in Italian`() {
+            fun `Verify the internationalization of validations by validator factory with a bad login in Italian`(): Unit {
                 byProvider(HibernateValidator::class.java)
                     .configure()
                     .defaultLocale(ENGLISH)
@@ -806,7 +807,7 @@ class Tests {
             }
 
             @Test
-            fun `test r2dbc to find user and roles using one query`(): Unit = runBlocking {
+            fun `test r2dbc-sql to find user and roles using one query`(): Unit = runBlocking {
                 context.tripleCounts().run {
                     run(::assertThat).isEqualTo(Triple(0, 0, 0))
                     (user to context).signup()
@@ -1360,7 +1361,7 @@ class Tests {
                 }
 
             @Test
-            fun `test signup validator with an invalid password`() {
+            fun `test signup validator with an invalid password`(): Unit {
                 val wrongPassword = "123"
                 context.getBean<Validator>()
                     .validateProperty(signup.copy(password = wrongPassword), PASSWORD_ATTR)
@@ -3383,7 +3384,7 @@ class Tests {
         @TestInstance(PER_CLASS)
         inner class EmailSendingTests {
             @Test
-            fun `test sendEmail`() {
+            fun `test sendEmail`(): Unit {
                 mailService.sendEmail(
                     to = "john.doe@acme.com",
                     subject = "testSubject",
@@ -3404,7 +3405,7 @@ class Tests {
             }
 
             @Test
-            fun `test sendMail SendHtmlEmail`() {
+            fun `test sendMail SendHtmlEmail`(): Unit {
                 mailService.sendEmail(
                     to = "john.doe@acme.com",
                     subject = "testSubject",
@@ -3424,7 +3425,7 @@ class Tests {
             }
 
             @Test
-            fun `test sendMail SendMultipartEmail`() {
+            fun `test sendMail SendMultipartEmail`(): Unit {
                 mailService.sendEmail(
                     to = "john.doe@acme.com",
                     subject = "testSubject",
@@ -3448,7 +3449,7 @@ class Tests {
             }
 
             @Test
-            fun `test sendMail SendMultipartHtmlEmail`() {
+            fun `test sendMail SendMultipartHtmlEmail`(): Unit {
                 mailService.sendEmail(
                     to = "john.doe@acme.com",
                     subject = "testSubject",
@@ -3472,7 +3473,7 @@ class Tests {
             }
 
             @Test
-            fun `test SendEmailFromTemplate`() {
+            fun `test SendEmailFromTemplate`(): Unit {
                 user.copy(
                     login = "john",
                     email = "john.doe@acme.com",
@@ -3497,7 +3498,7 @@ class Tests {
             }
 
             @Test
-            fun testSendEmailWithException() {
+            fun testSendEmailWithException(): Unit {
                 doThrow(MailSendException::class.java)
                     .`when`(javaMailSender)
                     .send(any(MimeMessage::class.java))
@@ -3515,7 +3516,7 @@ class Tests {
             }
 
             @Test
-            fun testSendLocalizedEmailForAllSupportedLanguages() {
+            fun testSendLocalizedEmailForAllSupportedLanguages(): Unit {
                 user.copy(login = "john", email = "john.doe@acme.com").run {
                     for (langKey in languages) {
                         mailService.sendEmailFromTemplate(
@@ -3567,7 +3568,7 @@ class Tests {
             }
 
             @Test
-            fun testSendActivationEmail() {
+            fun testSendActivationEmail(): Unit {
                 (user.copy(
                     langKey = DEFAULT_LANGUAGE,
                     login = "john",
@@ -3580,12 +3581,13 @@ class Tests {
                         assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
                         assertThat(content.toString()).isNotEmpty
                         assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+                        content.toString().run { i("Activation mail Mime message content: $this") }
                     }
                 }
             }
 
             @Test
-            fun testCreationEmail() {
+            fun testCreationEmail(): Unit {
                 (user.copy(
                     langKey = DEFAULT_LANGUAGE,
                     login = "john",
@@ -3606,7 +3608,7 @@ class Tests {
             }
 
             @Test
-            fun testSendPasswordResetMail() {
+            fun testSendPasswordResetMail(): Unit {
                 (user.copy(
                     langKey = DEFAULT_LANGUAGE,
                     login = "john",

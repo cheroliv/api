@@ -4,11 +4,11 @@ import app.users.core.Loggers.i
 import app.users.core.dao.UserDao.availability
 import app.users.core.dao.UserDao.signup
 import app.users.core.dao.UserDao.user
-import app.users.mail.UserMailService
 import app.users.core.models.EntityModel.Members.withId
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USERS
 import app.users.core.web.HttpUtils.badResponse
+import app.users.mail.UserMailService
 import app.users.signup.Signup.EndPoint.API_ACTIVATE
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
 import app.users.signup.SignupDao.activate
@@ -43,15 +43,15 @@ import java.util.UUID.randomUUID
 class SignupService(private val context: ApplicationContext) {
 
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
-        context.user(signup).run {
-            (this to context).signup().mapLeft {
+        context.user(signup).let { user ->
+            (user to context).signup().mapLeft {
                 return Exception("Unable to sign up user with this value : $signup", it).left()
             }.map {
-                return apply {
+                return user.copy(id = it.first).apply {
+                    (this to it.second).run(context.getBean<UserMailService>()::sendActivationEmail)
+                }.apply {
                     i("Activation key: ${it.second}")
                     i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
-                }.withId(it.first).apply {
-                    (this to it.second).run(context.getBean<UserMailService>()::sendActivationEmail)
                 }.right()
             }
         }
