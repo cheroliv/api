@@ -4,7 +4,6 @@ import app.users.core.Loggers.i
 import app.users.core.dao.UserDao.availability
 import app.users.core.dao.UserDao.signup
 import app.users.core.dao.UserDao.user
-import app.users.core.models.EntityModel.Members.withId
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USERS
 import app.users.core.web.HttpUtils.badResponse

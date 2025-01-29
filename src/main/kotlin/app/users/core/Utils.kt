@@ -1,5 +1,6 @@
 package app.users.core
 
+import app.users.core.Constants.AT_SYMBOLE
 import app.users.core.Constants.PRIVATE_PROPERTIES_FILE_PATH
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils.stripAccents
@@ -21,6 +22,7 @@ import kotlin.reflect.KClass
 import kotlin.streams.asSequence
 
 object Utils {
+
     val privateProperties: java.util.Properties
         get() = java.util.Properties().apply {
             PRIVATE_PROPERTIES_FILE_PATH

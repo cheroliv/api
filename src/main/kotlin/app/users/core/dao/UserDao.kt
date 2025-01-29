@@ -176,9 +176,9 @@ object UserDao {
             .awaitSingle()
             .run {
                 Triple(
-                    parseBoolean(this[LOGIN_AND_EMAIL_AVAILABLE_COLUMN].toString()),
-                    parseBoolean(this[EMAIL_AVAILABLE_COLUMN].toString()),
-                    parseBoolean(this[LOGIN_AVAILABLE_COLUMN].toString())
+                    LOGIN_AND_EMAIL_AVAILABLE_COLUMN.run(::get).toString().run(::parseBoolean),
+                    EMAIL_AVAILABLE_COLUMN.run(::get).toString().run(::parseBoolean),
+                    LOGIN_AVAILABLE_COLUMN.run(::get).toString().run(::parseBoolean)
                 ).right()
             }
     } catch (e: Throwable) {

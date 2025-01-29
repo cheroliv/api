@@ -9,6 +9,7 @@ import app.TestUtils.Data.displayInsertUserScript
 import app.TestUtils.WithUnauthenticatedMockUser.Factory
 import app.users.core.Constants
 import app.users.core.Constants.ADMIN
+import app.users.core.Constants.AT_SYMBOLE
 import app.users.core.Constants.DOMAIN_DEV_URL
 import app.users.core.Constants.EMPTY_STRING
 import app.users.core.Constants.ROLE_ADMIN
@@ -118,6 +119,14 @@ object TestUtils {
     @JvmStatic
     fun main(args: Array<String>): Unit = displayInsertUserScript()
 
+    val String.usernameFromEmail: String
+        get() = AT_SYMBOLE.run(::indexOf).let { index ->
+            when {
+                index != -1 -> return substring(0, index)
+                else -> throw "Invalid email format: $this"
+                    .run(::IllegalArgumentException)
+            }
+        }
 
     @Retention(RUNTIME)
     @WithSecurityContext(factory = Factory::class)

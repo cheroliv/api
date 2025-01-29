@@ -1,6 +1,7 @@
 package app.users.mail
 
-import app.users.core.Loggers
+import app.users.core.Loggers.d
+import app.users.core.Loggers.w
 import app.users.core.Properties
 import jakarta.mail.MessagingException
 import org.springframework.context.MessageSource
@@ -10,6 +11,7 @@ import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.thymeleaf.spring6.SpringTemplateEngine
+import kotlin.text.Charsets.UTF_8
 
 @Async
 @Service
@@ -18,11 +20,7 @@ class SMTPUserMailService(
     private val mailSender: JavaMailSender,
     messageSource: MessageSource,
     templateEngine: SpringTemplateEngine
-) : AbstractThymeleafUserMailTemplatingService(
-    properties,
-    messageSource,
-    templateEngine
-) {
+) : AbstractThymeleafUserMailTemplatingService(properties, messageSource, templateEngine) {
     override fun sendEmail(
         to: String,
         subject: String,
@@ -31,22 +29,18 @@ class SMTPUserMailService(
         isHtml: Boolean
     ) = mailSender.createMimeMessage().run {
         try {
-            MimeMessageHelper(
-                this,
-                isMultipart,
-                Charsets.UTF_8.name()
-            ).apply {
+            MimeMessageHelper(this, isMultipart, UTF_8.name()).apply {
                 setTo(to)
                 setFrom(properties.mail.from)
                 setSubject(subject)
                 setText(content, isHtml)
             }
             mailSender.send(this)
-            Loggers.d("Sent email to User '$to'")
+            d("Sent email to User '$to'")
         } catch (e: MailException) {
-            Loggers.w("Email could not be sent to user '$to'", e)
+            w("Email could not be sent to user '$to'", e)
         } catch (e: MessagingException) {
-            Loggers.w("Email could not be sent to user '$to'", e)
+            w("Email could not be sent to user '$to'", e)
         }
     }
 }

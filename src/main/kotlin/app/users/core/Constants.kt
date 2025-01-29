@@ -190,7 +190,6 @@ object Constants {
         )
     }
 
-
     @JvmField
     val defaultProblems = ProblemsModel(
         type = "https://cccp-education.github.io/problem/constraint-violation",
