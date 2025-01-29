@@ -272,7 +272,6 @@ import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -285,7 +284,6 @@ import java.util.Properties as JProperties
 
 class Tests {
 
-    @Ignore
     @Nested
     inner class FunctionalTests {
 
@@ -573,7 +571,6 @@ class Tests {
             context.deleteAllUsersOnly()
         }
 
-        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class CoreTests {
@@ -774,7 +771,6 @@ class Tests {
             }
         }
 
-        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class UserDaoTests {
@@ -2026,7 +2022,6 @@ class Tests {
             }
         }
 
-        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class UserResetPasswordTests {
@@ -2110,18 +2105,20 @@ class Tests {
                         repassword = get("test.mail").toString().usernameFromEmail
                     )
                 }
-                val userTest = context.user(signupTest)
-
+                val userTest = User(
+                    login = signupTest.login,
+                    email = signupTest.email,
+                    password = signupTest.password,
+                    langKey = FRENCH.language
+                )
                 assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
                     val uuid: UUID = (userTest to context).signup()
                         .getOrNull()!!.first
                         .apply { "user.id from signupDao: ${toString()}".apply(::i) }
-
                     assertThat(context.countUsers()).isEqualTo(first + 1)
                     assertThat(context.countUserActivation()).isEqualTo(third + 1)
                     assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-
                     FIND_ALL_USERS
                         .trimIndent()
                         .run(context.getBean<DatabaseClient>()::sql)
@@ -2146,9 +2143,8 @@ class Tests {
                                 assertThat(getCurrentUserLogin()).isEqualTo(userTest.login)
                                 assertEquals(
                                     ONE_ROW_UPDATED,
-                                    context
-                                        .getBean<PasswordService>()
-                                        .change(PasswordChange(userTest.password, this))
+                                    context.getBean<PasswordService>()
+                                        .change(PasswordChange(signupTest.password, this))
                                 )
                                 assertTrue(
                                     context.getBean<PasswordEncoder>().matches(
@@ -2179,10 +2175,13 @@ class Tests {
                             repassword = get("test.mail").toString().usernameFromEmail
                         )
                     }
-                    val userTest = context.user(signupTest)
-
+                    val userTest = User(
+                        login = signupTest.login,
+                        email = signupTest.email,
+                        password = signupTest.password,
+                        langKey = FRENCH.language
+                    )
                     assertThat(userTest.id).isNull()
-
                     context.tripleCounts().run {
                         val uuid: UUID = (userTest to context).signup()
                             .getOrNull()!!.first
@@ -2838,8 +2837,6 @@ class Tests {
                     )
                 }
                 val userTest = context.user(signupTest)
-
-
                 assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
                     val uuid: UUID = (userTest.copy(
@@ -2922,12 +2919,21 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             fun `test request password reset with uppercased email`(): Unit = runBlocking {
-                assertThat(user.id).isNull()
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+
+                assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                    val uuid: UUID = (userTest.copy(
                         login = USER,
                         password = PASSWORD
                     ) to context).signup()
@@ -2974,7 +2980,7 @@ class Tests {
                             client.post()
                                 .uri(API_RESET_PASSWORD_INIT_PATH)
                                 .contentType(APPLICATION_PROBLEM_JSON)
-                                .bodyValue(user.email.uppercase())
+                                .bodyValue(userTest.email.uppercase())
                                 .exchange()
                                 .expectStatus()
                                 .isOk
@@ -3000,15 +3006,25 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             fun `test request password reset against inexisting email`(): Unit = runBlocking {
-                assertThat(user.id).isNull()
-                context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                val signupTest = privateProperties.run {
+                    Signup(
                         login = USER,
-                        password = PASSWORD
-                    ) to context).signup()
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = User(
+                    login = signupTest.login,
+                    password = signupTest.password,
+                    email = signupTest.email,
+                    langKey = FRENCH.language
+                )
+                assertThat(userTest.id).isNull()
+                context.tripleCounts().run {
+                    val uuid: UUID = (userTest to context).signup()
                         .getOrNull()!!.first
                         .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -3027,17 +3043,20 @@ class Tests {
                             "user.id retrieved before update password: $first".apply(::i)
                             assertEquals(uuid, first, "user.id should be the same")
                             assertNotEquals(
-                                PASSWORD,
+                                signupTest.password,
                                 second,
                                 "password should be encoded and not the same"
                             )
                             assertTrue(
-                                context.getBean<PasswordEncoder>().matches(PASSWORD, second),
+                                context.getBean<PasswordEncoder>().matches(
+                                    signupTest.password,
+                                    second
+                                ),
                                 message = "password should not be different"
                             )
                             assertTrue(
                                 context.getBean<PasswordEncoder>().matches(
-                                    PASSWORD, FIND_ALL_USERS
+                                    signupTest.password, FIND_ALL_USERS
                                         .trimIndent()
                                         .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
@@ -3069,14 +3088,28 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             fun `test service finish password reset, reset password scenario`(): Unit =
                 runBlocking {
-                    assertThat(user.id).isNull()
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = USER,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
+                        )
+                    }
+                    val userTest = User(
+                        login = signupTest.login,
+                        password = signupTest.password,
+                        email = signupTest.email,
+                        langKey = FRENCH.language
+                    )
+
+                    assertThat(userTest.id).isNull()
                     context.tripleCounts().run {
                         val uuid: UUID =
-                            (user.copy(login = USER, password = PASSWORD) to context).signup()
+                            (userTest to context).signup()
                                 .getOrNull()!!.first
                                 .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -3106,20 +3139,23 @@ class Tests {
                                 )
 
                                 assertNotEquals(
-                                    PASSWORD,
+                                    signupTest.password,
                                     uuidEncodedPasswordPair.second,
                                     "password should be encoded and not the same"
                                 )
 
                                 assertTrue(
                                     context.getBean<PasswordEncoder>()
-                                        .matches(PASSWORD, uuidEncodedPasswordPair.second),
+                                        .matches(
+                                            signupTest.password,
+                                            uuidEncodedPasswordPair.second
+                                        ),
                                     message = "password should not be different"
                                 )
 
                                 assertTrue(
                                     context.getBean<PasswordEncoder>().matches(
-                                        PASSWORD, FIND_ALL_USERS
+                                        signupTest.password, FIND_ALL_USERS
                                             .trimIndent()
                                             .run(context.getBean<DatabaseClient>()::sql)
                                             .fetch()
@@ -3134,12 +3170,8 @@ class Tests {
                                 assertThat(context.countUserResets()).isEqualTo(0)
                                 val resetKey: String = context
                                     .getBean<PasswordService>()
-                                    .reset(user.email).getOrNull()!!
-                                resetKey.apply {
-                                    "After request reset password - resetKey: $this".run(
-                                        ::i
-                                    )
-                                }
+                                    .reset(userTest.email).getOrNull()!!
+                                resetKey.apply { i("After request reset password - resetKey: $this") }
                                 assertThat(context.countUserResets()).isEqualTo(1)
                                 // Let's retrieve the user_reset
                                 FIND_ALL_USER_RESETS.trimIndent()
@@ -3202,15 +3234,26 @@ class Tests {
                     }
                 }
 
-            @Ignore
             @Test
             fun `test finish password reset, reset password scenario`(): Unit = runBlocking {
-                assertThat(user.id).isNull()
-                context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                val signupTest = privateProperties.run {
+                    Signup(
                         login = USER,
-                        password = PASSWORD
-                    ) to context).signup()
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = User(
+                    login = signupTest.login,
+                    password = signupTest.password,
+                    email = signupTest.email,
+                    langKey = FRENCH.language
+                )
+
+                assertThat(userTest.id).isNull()
+                context.tripleCounts().run {
+                    val uuid: UUID = (userTest to context).signup()
                         .getOrNull()!!.first
                         .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -3229,17 +3272,20 @@ class Tests {
                             "user.id retrieved before update password: $first".apply(::i)
                             assertEquals(uuid, first, "user.id should be the same")
                             assertNotEquals(
-                                PASSWORD,
+                                signupTest.password,
                                 second,
                                 "password should be encoded and not the same"
                             )
                             assertTrue(
-                                context.getBean<PasswordEncoder>().matches(PASSWORD, second),
+                                context.getBean<PasswordEncoder>().matches(
+                                    signupTest.password,
+                                    second
+                                ),
                                 message = "password should not be different"
                             )
                             assertTrue(
                                 context.getBean<PasswordEncoder>().matches(
-                                    PASSWORD, FIND_ALL_USERS
+                                    signupTest.password, FIND_ALL_USERS
                                         .trimIndent()
                                         .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
@@ -3254,7 +3300,7 @@ class Tests {
                                 // Given a user well signed up
                                 assertThat(countUserResets()).isEqualTo(0)
                             }.getBean<PasswordService>()
-                                .reset(user.email)
+                                .reset(userTest.email)
                                 .getOrNull()!!.apply {
                                     "reset key : $this".run(::i)
                                     assertThat(context.countUserResets()).isEqualTo(1)
@@ -3327,15 +3373,25 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             fun `test finish password reset too small`(): Unit = runBlocking {
-                assertThat(user.id).isNull()
-                context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                val signupTest = privateProperties.run {
+                    Signup(
                         login = USER,
-                        password = PASSWORD
-                    ) to context).signup()
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = User(
+                    login = signupTest.login,
+                    password = signupTest.password,
+                    email = signupTest.email,
+                    langKey = FRENCH.language
+                )
+                assertThat(userTest.id).isNull()
+                context.tripleCounts().run {
+                    val uuid: UUID = (userTest to context).signup()
                         .getOrNull()!!.first
                         .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -3354,17 +3410,20 @@ class Tests {
                             "user.id retrieved before update password: $first".apply(::i)
                             assertEquals(uuid, first, "user.id should be the same")
                             assertNotEquals(
-                                PASSWORD,
+                                signupTest.password,
                                 second,
                                 "password should be encoded and not the same"
                             )
                             assertTrue(
-                                context.getBean<PasswordEncoder>().matches(PASSWORD, second),
+                                context.getBean<PasswordEncoder>().matches(
+                                    signupTest.password,
+                                    second
+                                ),
                                 message = "password should not be different"
                             )
                             assertTrue(
                                 context.getBean<PasswordEncoder>().matches(
-                                    PASSWORD, FIND_ALL_USERS
+                                    signupTest.password, FIND_ALL_USERS
                                         .trimIndent()
                                         .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
@@ -3379,7 +3438,7 @@ class Tests {
                                 // Given a user well signed up
                                 assertThat(countUserResets()).isEqualTo(0)
                             }.getBean<PasswordService>()
-                                .reset(user.email)
+                                .reset(userTest.email)
                                 .getOrNull()!!.apply {
                                     "reset key : $this".run(::i)
                                     assertThat(context.countUserResets()).isEqualTo(1)
@@ -3407,11 +3466,10 @@ class Tests {
                             // finish reset password
 
                             client.post()
-                                .uri(API_RESET_PASSWORD_FINISH_PATH.apply {
-                                    "uri : $this".run(::i)
-                                })
+                                .uri(API_RESET_PASSWORD_FINISH_PATH
+                                    .apply { i("uri : $this") })
                                 .contentType(APPLICATION_PROBLEM_JSON)
-                                .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+                                .bodyValue(ResetPassword(key = resetKey.apply {
                                     "resetKey on select: $this".run(::i)
                                 }, newPassword = newPassword))
                                 .exchange()
@@ -3462,15 +3520,25 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
-            fun `test Finish Password Reset Wrong Key`(): Unit = runBlocking {
-                assertThat(user.id).isNull()
+            fun `test finish password reset with a wrong key`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = User(
+                    login = signupTest.login,
+                    password = signupTest.password,
+                    email = signupTest.email,
+                    langKey = FRENCH.language
+                )
+                assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
-                        login = USER,
-                        password = PASSWORD
-                    ) to context).signup()
+                    val uuid: UUID = (userTest to context).signup()
                         .getOrNull()!!.first
                         .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -3489,17 +3557,20 @@ class Tests {
                             "user.id retrieved before update password: $first".apply(::i)
                             assertEquals(uuid, first, "user.id should be the same")
                             assertNotEquals(
-                                PASSWORD,
+                                signupTest.password,
                                 second,
                                 "password should be encoded and not the same"
                             )
                             assertTrue(
-                                context.getBean<PasswordEncoder>().matches(PASSWORD, second),
+                                context.getBean<PasswordEncoder>().matches(
+                                    signupTest.password,
+                                    second
+                                ),
                                 message = "password should not be different"
                             )
                             assertTrue(
                                 context.getBean<PasswordEncoder>().matches(
-                                    PASSWORD, FIND_ALL_USERS
+                                    signupTest.password, FIND_ALL_USERS
                                         .trimIndent()
                                         .run(context.getBean<DatabaseClient>()::sql)
                                         .fetch()
@@ -3514,7 +3585,7 @@ class Tests {
                                 // Given a user well signed up
                                 assertThat(countUserResets()).isEqualTo(0)
                             }.getBean<PasswordService>()
-                                .reset(user.email)
+                                .reset(userTest.email)
                                 .getOrNull()!!.apply {
                                     "reset key : $this".run(::i)
                                     assertThat(context.countUserResets()).isEqualTo(1)
@@ -3534,9 +3605,11 @@ class Tests {
                                 }
 
                             //new password
-                            val newPassword: String = "$PASSWORD&"
-                            val reset =
-                                ResetPassword(key = generateResetKey, newPassword = newPassword)
+                            val newPassword = "$PASSWORD&"
+                            val reset = ResetPassword(
+                                key = generateResetKey,
+                                newPassword = newPassword
+                            )
                             // finish reset password
                             client.post()
                                 .uri(API_RESET_PASSWORD_FINISH_PATH)
@@ -3814,7 +3887,8 @@ class Tests {
                         assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
                         assertThat(content.toString()).isNotEmpty
                         assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-                        content.toString().run { i("Activation mail Mime message content: $this") }
+                        content.toString()
+                            .run { i("Activation mail Mime message content: $this") }
                     }
                 }
             }
@@ -4073,7 +4147,6 @@ class Tests {
             }
         }
 
-        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class AiTests {
