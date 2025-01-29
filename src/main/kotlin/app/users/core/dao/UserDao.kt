@@ -132,8 +132,10 @@ object UserDao {
     suspend fun Pair<User, ApplicationContext>.signup(): Either<Throwable, Pair<UUID, String>> =
         try {
             (first.copy(
-                password = second.getBean<PasswordEncoder>().encode(first.password)
-            ) to second).save()
+                password = first.password.run(second.getBean<PasswordEncoder>()::encode)
+            ) to second).save().map {
+
+            }
             second.findOne<User>(first.email).mapLeft {
                 return Exception("Unable to find user by email").left()
             }.map {
