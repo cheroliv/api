@@ -15,7 +15,7 @@ data class PasswordChange(
     val newPassword: String
 ) {
     object Attributes {
-        const val NEW_PASSWORD_ATTR = "newPassword"
         const val CURRENT_PASSWORD_ATTR = "currentPassword"
+        const val NEW_PASSWORD_ATTR = "newPassword"
     }
 }
