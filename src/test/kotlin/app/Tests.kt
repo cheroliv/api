@@ -556,6 +556,23 @@ class Tests {
         properties = ["spring.main.web-application-type=reactive"]
     )
     inner class IntegrationTests {
+
+        @Inject
+        lateinit var context: ApplicationContext
+        lateinit var client: WebTestClient
+
+        @BeforeTest
+        fun setUp(context: ApplicationContext): Unit {
+            client = context
+                .run(WebTestClient::bindToApplicationContext)
+                .build()
+        }
+
+        @AfterTest
+        fun cleanUp(context: ApplicationContext): Unit = runBlocking {
+            context.deleteAllUsersOnly()
+        }
+
         @Ignore
         @Nested
         @TestInstance(PER_CLASS)
@@ -2082,13 +2099,22 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             @WithMockUser(username = USER, roles = [ROLE_USER])
             fun `test service update user password`(): Unit = runBlocking {
-                assertThat(user.id).isNull()
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+
+                assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
-                    val uuid: UUID = (user to context).signup()
+                    val uuid: UUID = (userTest to context).signup()
                         .getOrNull()!!.first
                         .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -2105,22 +2131,24 @@ class Tests {
                         }.run {
                             "user.id retrieved before update password: $first".apply(::i)
                             assertEquals(uuid, first, "user.id should be the same")
-                            assertNotEquals(user.password, second, "password should be different")
+                            assertNotEquals(
+                                userTest.password,
+                                second,
+                                "password should be different"
+                            )
                             assertTrue(
-                                context.getBean<PasswordEncoder>().matches(user.password, second),
+                                context.getBean<PasswordEncoder>()
+                                    .matches(userTest.password, second),
                                 message = "password should be encoded"
                             )
 
                             "*updatedPassword123".run {
-                                assertEquals(user.login, getCurrentUserLogin())
+                                assertThat(getCurrentUserLogin()).isEqualTo(userTest.login)
                                 assertEquals(
                                     ONE_ROW_UPDATED,
-                                    context.getBean<PasswordService>().change(
-                                        PasswordChange(
-                                            user.password,
-                                            this
-                                        )
-                                    )
+                                    context
+                                        .getBean<PasswordService>()
+                                        .change(PasswordChange(userTest.password, this))
                                 )
                                 assertTrue(
                                     context.getBean<PasswordEncoder>().matches(
@@ -2139,16 +2167,24 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             @WithMockUser("change-password-wrong-existing-password")
             fun `test change password with wrong existing password, only service layer`(): Unit =
                 runBlocking {
-                    assertThat(user.id).isNull()
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = USER,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
+                        )
+                    }
+                    val userTest = context.user(signupTest)
 
+                    assertThat(userTest.id).isNull()
 
                     context.tripleCounts().run {
-                        val uuid: UUID = (user to context).signup()
+                        val uuid: UUID = (userTest to context).signup()
                             .getOrNull()!!.first
                             .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
@@ -2166,36 +2202,44 @@ class Tests {
                                 "user.id retrieved before update password: $first".apply(::i)
                                 assertEquals(uuid, first, "user.id should be the same")
                                 assertNotEquals(
-                                    user.password,
+                                    userTest.password,
                                     second,
                                     "password should be different"
                                 )
                                 assertTrue(
                                     context.getBean<PasswordEncoder>()
-                                        .matches(user.password, second),
+                                        .matches(userTest.password, second),
                                     message = "password should be encoded"
                                 )
 
                                 "*updatedPassword123".run {
-                                    assertNotEquals(user.login, getCurrentUserLogin())
+                                    assertNotEquals(userTest.login, getCurrentUserLogin())
                                     assertThrows<InvalidPasswordException> {
                                         context.getBean<PasswordService>()
-                                            .change(PasswordChange(user.password, this))
+                                            .change(PasswordChange(userTest.password, this))
                                     }
                                 }
                             }
                     }
                 }
 
-            @Ignore
             @Test
             @WithMockUser("change-password-wrong-existing-password")
             fun `test change password with wrong existing password`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
                 val testLogin = "change-password-wrong-existing-password"
                 val testPassword = "changePasswordWrong*"
-                assertThat(user.id).isNull()
+                assertThat(userTest.id).isNull()
                 context.tripleCounts().run triple@{
-                    val uuid: UUID = (user.copy(
+                    val uuid: UUID = (userTest.copy(
                         login = testLogin,
                         password = testPassword
                     ) to context).signup()
@@ -2290,29 +2334,37 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             @WithMockUser("change-password", roles = [ROLE_USER])
             fun `test change password with valid password`(): Unit = runBlocking {
-                assertThat(user.id).isNull()
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+                assertThat(userTest.id).isNull()
 
                 val testLogin = "change-password"
                 val testPassword = "change-password"
 
                 context.getBean<Validator>().validateProperty(
-                    user.copy(login = testLogin),
+                    userTest.copy(login = testLogin),
                     LOGIN_ATTR
                 ).run(::assertThat).isEmpty()
 
                 context.getBean<Validator>().validateProperty(
                     PasswordChange(
                         currentPassword = testPassword,
-                        newPassword = user.password
+                        newPassword = userTest.password
                     ), CURRENT_PASSWORD_ATTR
                 ).run(::assertThat).isEmpty()
 
                 context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                    val uuid: UUID = (userTest.copy(
                         login = testLogin,
                         password = testPassword
                     ) to context).signup()
@@ -2397,23 +2449,32 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             @WithMockUser("change-password-too-small")
             fun `test change password with too small password`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+
                 val testLogin = "change-password-too-small"
                 val testPassword = "password-too-small"
                 val tooSmallPassword = "1*2"
-                assertThat(user.id).isNull()
+                assertThat(userTest.id).isNull()
 
                 context.getBean<Validator>()
-                    .validateProperty(user.copy(login = testLogin), LOGIN_ATTR)
+                    .validateProperty(userTest.copy(login = testLogin), LOGIN_ATTR)
                     .run(::assertThat)
                     .isEmpty()
                 context.getBean<Validator>().validateProperty(
                     PasswordChange(
                         currentPassword = testPassword,
-                        newPassword = user.password
+                        newPassword = userTest.password
                     ),
                     CURRENT_PASSWORD_ATTR
                 ).run(::assertThat).isEmpty()
@@ -2427,7 +2488,7 @@ class Tests {
                 ).run(::assertThat).isNotEmpty()
 
                 context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                    val uuid: UUID = (userTest.copy(
                         login = testLogin,
                         password = testPassword
                     ) to context).signup().getOrNull()!!.first
@@ -2512,23 +2573,32 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             @WithMockUser("change-password-too-long")
             fun `test change password with too long password`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+
                 val testLogin = "change-password-too-long"
                 val testPassword = "password-too-long"
                 val tooLongPassword = "1Change-password-too-long*"
-                assertThat(user.id).isNull()
+                assertThat(userTest.id).isNull()
 
                 context.getBean<Validator>()
-                    .validateProperty(user.copy(login = testLogin), LOGIN_ATTR)
+                    .validateProperty(userTest.copy(login = testLogin), LOGIN_ATTR)
                     .run(::assertThat)
                     .isEmpty()
                 context.getBean<Validator>().validateProperty(
                     PasswordChange(
                         currentPassword = testPassword,
-                        newPassword = user.password
+                        newPassword = userTest.password
                     ),
                     CURRENT_PASSWORD_ATTR
                 ).run(::assertThat).isEmpty()
@@ -2542,7 +2612,7 @@ class Tests {
                 ).run(::assertThat).isNotEmpty()
 
                 context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                    val uuid: UUID = (userTest.copy(
                         login = testLogin,
                         password = testPassword
                     ) to context).signup().getOrNull()!!.first
@@ -2627,26 +2697,36 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             @WithMockUser("change-password-empty")
             fun `test change password with empty password`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+
+
                 val testLogin = "change-password-empty"
                 val testPassword = "changePasswordEmpty!"
                 val emptyPassword = EMPTY_STRING
 
-                assertThat(user.id).isNull()
+                assertThat(userTest.id).isNull()
 
 
                 context.getBean<Validator>()
-                    .validateProperty(user.copy(login = testLogin), LOGIN_ATTR)
+                    .validateProperty(userTest.copy(login = testLogin), LOGIN_ATTR)
                     .run(::assertThat)
                     .isEmpty()
 
                 context.getBean<Validator>().validateProperty(
                     PasswordChange(
                         currentPassword = testPassword,
-                        newPassword = user.password
+                        newPassword = userTest.password
                     ),
                     CURRENT_PASSWORD_ATTR
                 ).run(::assertThat).isEmpty()
@@ -2660,7 +2740,7 @@ class Tests {
                 ).run(::assertThat).isNotEmpty()
 
                 context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                    val uuid: UUID = (userTest.copy(
                         login = testLogin,
                         password = testPassword
                     ) to context).signup().getOrNull()!!.first
@@ -2746,13 +2826,23 @@ class Tests {
                 }
             }
 
-            @Ignore
             @Test
             fun `test initiate reset password with valid email on well signed up user`()
                     : Unit = runBlocking {
-                assertThat(user.id).isNull()
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = USER,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+
+
+                assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
-                    val uuid: UUID = (user.copy(
+                    val uuid: UUID = (userTest.copy(
                         login = USER,
                         password = PASSWORD
                     ) to context).signup()
@@ -2799,7 +2889,7 @@ class Tests {
                             client.post()
                                 .uri(API_RESET_PASSWORD_INIT_PATH)
                                 .contentType(APPLICATION_PROBLEM_JSON)
-                                .bodyValue(user.email)
+                                .bodyValue(userTest.email)
                                 .exchange()
                                 .expectStatus()
                                 .isOk
@@ -3771,7 +3861,6 @@ class Tests {
             }
         }
 
-        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class WorkspaceTest {
@@ -4047,22 +4136,6 @@ class Tests {
                     .asString()
                     .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
             }
-        }
-
-        @Inject
-        lateinit var context: ApplicationContext
-        lateinit var client: WebTestClient
-
-        @BeforeTest
-        fun setUp(context: ApplicationContext): Unit {
-            client = context
-                .run(WebTestClient::bindToApplicationContext)
-                .build()
-        }
-
-        @AfterTest
-        fun cleanUp(context: ApplicationContext): Unit = runBlocking {
-            context.deleteAllUsersOnly()
         }
     }
 }
