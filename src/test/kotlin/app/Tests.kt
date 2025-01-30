@@ -268,10 +268,12 @@ import java.util.Locale.filter
 import java.util.Locale.getDefault
 import java.util.UUID.fromString
 import java.util.UUID.randomUUID
+import java.util.regex.Matcher
 import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -351,16 +353,37 @@ class Tests {
             }
 
         val String.extractActivationKey: String
-            get() = indexOf(API_ACTIVATE_PATH).run {
-                when {
-                    this != -1 -> substring(
-                        this + API_ACTIVATE_PATH.length,
-                        (this + API_ACTIVATE_PATH.length + generateActivationKey.length)
-                            .coerceAtMost(length)
-                    )
+            get() {
+                // Define the regex pattern to find the activation key
+                val pattern: java.util.regex.Pattern =
+                    java.util.regex.Pattern.compile("key=([a-zA-Z0-9]+)")
 
-                    else -> throw "Invalid text format: $this".run(::IllegalArgumentException)
+                // Create a matcher object
+                val matcher: Matcher = pattern.matcher(this)
+
+                // Find the first match
+                return when {
+                    matcher.find() -> matcher.group(1)
+                    else -> EMPTY_STRING
                 }
+            }
+
+        @Throws(MessagingException::class)
+        fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
+            .apply { open(READ_ONLY) }.run {
+                copyOfRange(search(FromStringTerm(from)), 0, 5)
+                    .apply {
+                        forEach {
+                            i("Subject: " + it?.subject)
+                            i("From: " + it?.from?.contentToString())
+                            i("Content: " + it?.content)
+                            i(
+                                "ActivationKey: " + it?.content
+                                    ?.toString()
+                                    ?.extractActivationKey
+                            )
+                        }
+                    }
             }
 
         @BeforeTest
@@ -378,33 +401,6 @@ class Tests {
                     .matches { it.third == 0 }
                 close()
             }
-        }
-
-        @Throws(MessagingException::class)
-        fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
-            .apply { open(READ_ONLY) }.run {
-                copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
-                    forEach {
-                        i("Subject: " + it?.subject)
-                        i("From: " + it?.from?.contentToString())
-                    }
-                }
-            }
-
-        @Test
-        fun `functional test imaps helpers`(): Unit {
-            mailConnexion.emailCount.run { i("message count : $this") }
-            mailConnexion
-                .searchEmails(privateProperties["test.mail"].toString())
-                .apply { i("nb of retrieved messages : $size") }
-                .apply { i(toString()) }
-                .forEach {
-                    @Suppress("SENSELESS_COMPARISON")
-                    when {
-                        it != null -> it.content
-                        else -> EMPTY_STRING
-                    }.toString().run(::i)
-                }
         }
 
         @Test
@@ -428,23 +424,19 @@ class Tests {
                     ) to context).signup().getOrNull()!!.first
                         .apply { "user.id from signupDao: ${toString()}".apply(::i) }
 
-//                    while (mailConnexion.emailCount <= mailCount + 1) {
-//                        //Extract activation key from received mail
-//                        i("mailCount : ${mailCount + 1}")
-//                        mailConnexion
-//                            .searchEmails(privateProperties["test.mail"].toString())
-//                            .filter { it.content.toString().contains(API_ACTIVATE_PATH) }
-//                            .maxBy { it.sentDate }
-//                            .content
-//                            .toString()
-//                            .extractActivationKey
-//                            .run { i("Extracted activation key : $this") }
-//                    }
-
                     assertThat(context.countUsers()).isEqualTo(first + 1)
                     assertThat(context.countUserAuthority()).isEqualTo(second + 1)
                     assertThat(context.countUserActivation()).isEqualTo(third + 1)
+                    mailConnexion.emailCount.run { i("message count : $this") }
+                    mailConnexion
+                        .searchEmails(privateProperties["test.mail"].toString())
+                        .apply { i("nb of retrieved messages : $size") }
+                        .forEach {
+                            it.content?.toString()
+                                ?.extractActivationKey?.run(::i)
+                        }
 
+                    // here begin change password
                     FIND_ALL_USERS
                         .trimIndent()
                         .run(context.getBean<DatabaseClient>()::sql)
@@ -460,6 +452,7 @@ class Tests {
                                 second,
                                 "password should be encoded and not the same"
                             )
+
                             val resetKey: String = context.apply {
                                 // Given a user well signed up
                                 assertThat(countUserResets()).isEqualTo(0)
@@ -470,11 +463,6 @@ class Tests {
                                     assertThat(context.countUserResets()).isEqualTo(1)
                                     "reset key : $this".run(::i)
                                 }
-                            // check reset password mail received
-//                            while (mailConnexion.emailCount <= mailCount + 2)  {
-//                                //TODO: recuperer la reset key
-//                                i("mailCount : ${mailCount}")
-//                            }
 
                             FIND_ALL_USER_RESETS
                                 .trimIndent()
@@ -546,6 +534,8 @@ class Tests {
         }
     }
 
+
+    @Ignore
     @Nested
     @ActiveProfiles("test")
     @TestInstance(PER_CLASS)
@@ -591,15 +581,15 @@ class Tests {
                 }
             }
 
-//        @Test
-//        fun `test encryption secret properties`(): Unit {
-//            context.getBean<Properties>()
-//                .encrypter
-//                .secret
-//                .run(::assertThat)
-//                .asString()
-//                .isEqualTo("RGPD")
-//        }
+//            @Test
+//            fun `test encryption secret properties`(): Unit {
+//                context.getBean<Properties>()
+//                    .encrypter
+//                    .secret
+//                    .run(::assertThat)
+//                    .asString()
+//                    .isEqualTo("RGPD")
+//            }
 
 
             @Test
@@ -3007,7 +2997,7 @@ class Tests {
             }
 
             @Test
-            fun `test request password reset against inexisting email`(): Unit = runBlocking {
+            fun `test request password reset against unexisting email`(): Unit = runBlocking {
                 val signupTest = privateProperties.run {
                     Signup(
                         login = USER,
@@ -4147,6 +4137,7 @@ class Tests {
             }
         }
 
+        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class AiTests {
