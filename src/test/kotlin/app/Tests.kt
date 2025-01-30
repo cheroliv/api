@@ -535,7 +535,6 @@ class Tests {
     }
 
 
-    @Ignore
     @Nested
     @ActiveProfiles("test")
     @TestInstance(PER_CLASS)
@@ -4137,7 +4136,6 @@ class Tests {
             }
         }
 
-        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class AiTests {
