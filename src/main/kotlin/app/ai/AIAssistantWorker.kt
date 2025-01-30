@@ -186,7 +186,8 @@ class AIAssistantWorker {
             "dolphin3:8b-llama3.1-q8_0",
             "dolphin3:8b",
             "aya:8b",
-            "llama3.2:3b"
+            "llama3.2:3b",
+            "deepseek-r1:1.5b"
         )
 
         val localModels
@@ -195,6 +196,7 @@ class AIAssistantWorker {
                 "dolphin-llama3:8b" to "DolphinSmall",
                 "aya:8b" to "AyaSmall",
                 "smollm:135m" to "Smoll",
+                "deepseek-r1:1.5b" to "DSR1Tiny"
             )
 
         // Creating tasks for each model
@@ -272,7 +274,7 @@ class AIAssistantWorker {
             return OllamaStreamingChatModel.builder().apply {
                 baseUrl("http://localhost:11434")
                 modelName(modelName)
-                temperature(0.8)
+                temperature(0.7)
                 logRequests(true)
                 logResponses(true)
             }.build()
@@ -317,7 +319,8 @@ class AIAssistantWorker {
                 "llama3.2:3b",
                 "dolphin-llama3:8b",
                 "aya:8b",
-                "smollm:135m"
+                "smollm:135m",
+                "deepseek-r1:1.5b"
             )
         )
     }
