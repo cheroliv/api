@@ -273,7 +273,6 @@ import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -352,7 +351,7 @@ class Tests {
                 inbox.messageCount
             }
 
-        val String.extractActivationKey: String
+        val String.extractKey: String
             get() {
                 // Define the regex pattern to find the activation key
                 val pattern: java.util.regex.Pattern =
@@ -366,24 +365,58 @@ class Tests {
                     matcher.find() -> matcher.group(1)
                     else -> EMPTY_STRING
                 }
+
             }
+
+        val Store.findMostRecentActivationEmail: Message?
+            get() {
+                val inbox = getFolder("inbox").apply { open(READ_ONLY) }
+                val messages = inbox.messages
+                return messages
+                    .filter { it.subject.contains(API_ACTIVATE_PATH, ignoreCase = true) }
+                    .maxByOrNull { it.receivedDate }
+            }
+
+        val Store.lastActivationKey: String
+            get() = findMostRecentActivationEmail
+                ?.content
+                .toString()
+                .extractKey
+
+        val Store.findMostRecentResetPasswordEmail: Message?
+            get() = "inbox"
+                .run(::getFolder)
+                .apply { open(READ_ONLY) }
+                .messages.filter {
+                    it.subject.contains(
+                        API_RESET_PASSWORD_FINISH_PATH,
+                        ignoreCase = true
+                    )
+                }.maxByOrNull { it.receivedDate }
+
+        val Store.lastResetKey: String
+            get() = findMostRecentResetPasswordEmail
+                ?.content
+                .toString()
+                .extractKey
+
 
         @Throws(MessagingException::class)
         fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
             .apply { open(READ_ONLY) }.run {
-                copyOfRange(search(FromStringTerm(from)), 0, 5)
-                    .apply {
-                        forEach {
-                            i("Subject: " + it?.subject)
-                            i("From: " + it?.from?.contentToString())
-                            i("Content: " + it?.content)
-                            i(
-                                "ActivationKey: " + it?.content
-                                    ?.toString()
-                                    ?.extractActivationKey
-                            )
-                        }
+                @Suppress("SimplifyNestedEachInScopeFunction")
+                copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
+                    forEach {
+                        i("Subject: " + it?.subject)
+                        i("From: " + it?.from?.contentToString())
+                        i("Content: " + it?.content)
+                        i(
+                            "ActivationKey: " + it?.content
+                                ?.toString()
+                                ?.extractKey
+                        )
                     }
+                }
             }
 
         @BeforeTest
@@ -433,8 +466,9 @@ class Tests {
                         .apply { i("nb of retrieved messages : $size") }
                         .forEach {
                             it.content?.toString()
-                                ?.extractActivationKey?.run(::i)
+                                ?.extractKey?.run(::i)
                         }
+
 
                     // here begin change password
                     FIND_ALL_USERS
@@ -534,7 +568,6 @@ class Tests {
         }
     }
 
-
     @Nested
     @ActiveProfiles("test")
     @TestInstance(PER_CLASS)
@@ -565,7 +598,9 @@ class Tests {
         inner class CoreTests {
 
             @Test
-            fun `test getPrivateProperties`(): Unit = assertDoesNotThrow { privateProperties }
+            fun `test getPrivateProperties`(): Unit = assertDoesNotThrow {
+                privateProperties
+            }
 
             @Test
             fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {

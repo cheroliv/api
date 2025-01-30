@@ -3,7 +3,6 @@
 package app.users.core.web
 
 import app.users.core.Constants.PRODUCTION
-import app.users.core.Loggers.i
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import jakarta.validation.MessageInterpolator
@@ -43,7 +42,7 @@ class Web(private val context: ApplicationContext) : WebFluxConfigurer {
                 "private.properties"
                     .run(classLoader!!::getResourceAsStream)
                     .use(::load)
-            }.apply { i("configuration: $this") }
+            }
     }
 
     @Component
