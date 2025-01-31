@@ -78,6 +78,79 @@ repositories {
 //dependencyManagement { imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") } }
 
 dependencies {
+//    <dependency>
+//    <groupId>org.jspecify</groupId>
+//    <artifactId>jspecify</artifactId>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.jetbrains.kotlin</groupId>
+//    <artifactId>kotlin-stdlib</artifactId>
+//    <optional>true</optional>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.jetbrains.kotlinx</groupId>
+//    <artifactId>kotlinx-coroutines-core-jvm</artifactId>
+//    <optional>true</optional>
+//    </dependency>
+//
+//    <!-- Test dependencies -->
+//    <dependency>
+//    <groupId>org.junit.jupiter</groupId>
+//    <artifactId>junit-jupiter-api</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.junit.jupiter</groupId>
+//    <artifactId>junit-jupiter-params</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.assertj</groupId>
+//    <artifactId>assertj-core</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.mockito.kotlin</groupId>
+//    <artifactId>mockito-kotlin</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>com.willowtreeapps.assertk</groupId>
+//    <artifactId>assertk-coroutines-jvm</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.awaitility</groupId>
+//    <artifactId>awaitility</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.jetbrains.kotlinx</groupId>
+//    <artifactId>kotlinx-coroutines-test</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//
+//    <dependency>
+//    <groupId>org.tinylog</groupId>
+//    <artifactId>tinylog-impl</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+//    <dependency>
+//    <groupId>org.tinylog</groupId>
+//    <artifactId>slf4j-tinylog</artifactId>
+//    <scope>test</scope>
+//    </dependency>
+
+
+
     testImplementation("org.assertj:assertj-swing:3.17.1")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
