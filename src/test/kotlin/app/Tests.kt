@@ -286,289 +286,6 @@ import java.util.Properties as JProperties
 class Tests {
 
     @Nested
-    inner class FunctionalTests {
-
-        lateinit var context: ConfigurableApplicationContext
-
-        val client: WebTestClient by lazy {
-            bindToServer()
-                .baseUrl(BASE_URL_DEV)
-                .build()
-        }
-
-        val gmailConfig by lazy {
-            GoogleAuthConfig(
-                clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
-                projectId = "gmail-tester-444502",
-                authUri = "https://accounts.google.com/o/oauth2/auth",
-                tokenUri = "https://oauth2.googleapis.com/token",
-                authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
-                clientSecret = "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t",
-                redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
-            )
-        }
-
-
-        fun testLoader(app: SpringApplication) = with(app) {
-            setDefaultProperties(
-                hashMapOf<String, Any>().apply {
-                    set(
-                        SPRING_PROFILE_CONF_DEFAULT_KEY,
-                        SPRING_PROFILE_TEST
-                    )
-                })
-            setAdditionalProfiles(SPRING_PROFILE_TEST)
-        }
-
-
-        val Triple<String, String, String>.establishConnection: Store
-            @Throws(MessagingException::class)
-            get() = IMAPS_MAIL_STORE_PROTOCOL.run(
-                getDefaultInstance(
-                    getProperties().apply {
-                        setProperty(MAIL_STORE_PROTOCOL_PROP, IMAPS_MAIL_STORE_PROTOCOL)
-                    },
-                    null
-                )::getStore
-            ).apply { connect(first, second, third) }
-
-        val mailConnexion: Store = Triple(
-            GMAIL_IMAP_HOST,
-            privateProperties["test.mail"].toString(),
-            privateProperties["test.mail.password"].toString()
-        ).establishConnection
-
-        val Store.emailCount: Int
-            @Throws(MessagingException::class)
-            get() = run {
-                val inbox = getFolder("inbox")
-                val spam = getFolder("[Gmail]/Spam")
-                inbox.open(READ_ONLY)
-                i("nb of Messages : " + inbox.messageCount)
-                i("nb of Unread Messages : " + inbox.unreadMessageCount)
-                i("nb of Messages in spam : " + spam.messageCount)
-                i("nb of Unread Messages in spam : " + spam.unreadMessageCount)
-                inbox.messageCount
-            }
-
-        val String.extractKey: String
-            get() {
-                // Define the regex pattern to find the activation key
-                val pattern: java.util.regex.Pattern =
-                    java.util.regex.Pattern.compile("key=([a-zA-Z0-9]+)")
-
-                // Create a matcher object
-                val matcher: Matcher = pattern.matcher(this)
-
-                // Find the first match
-                return when {
-                    matcher.find() -> matcher.group(1)
-                    else -> EMPTY_STRING
-                }
-
-            }
-
-        val Store.findMostRecentActivationEmail: Message?
-            get() {
-                val inbox = getFolder("inbox").apply { open(READ_ONLY) }
-                val messages = inbox.messages
-                return messages
-                    .filter { it.subject.contains(API_ACTIVATE_PATH, ignoreCase = true) }
-                    .maxByOrNull { it.receivedDate }
-            }
-
-        val Store.lastActivationKey: String
-            get() = findMostRecentActivationEmail
-                ?.content
-                .toString()
-                .extractKey
-
-        val Store.findMostRecentResetPasswordEmail: Message?
-            get() = "inbox"
-                .run(::getFolder)
-                .apply { open(READ_ONLY) }
-                .messages.filter {
-                    it.subject.contains(
-                        API_RESET_PASSWORD_FINISH_PATH,
-                        ignoreCase = true
-                    )
-                }.maxByOrNull { it.receivedDate }
-
-        val Store.lastResetKey: String
-            get() = findMostRecentResetPasswordEmail
-                ?.content
-                .toString()
-                .extractKey
-
-
-        @Throws(MessagingException::class)
-        fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
-            .apply { open(READ_ONLY) }.run {
-                @Suppress("SimplifyNestedEachInScopeFunction")
-                copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
-                    forEach {
-                        i("Subject: " + it?.subject)
-                        i("From: " + it?.from?.contentToString())
-                        i("Content: " + it?.content)
-                        i(
-                            "ActivationKey: " + it?.content
-                                ?.toString()
-                                ?.extractKey
-                        )
-                    }
-                }
-            }
-
-        @BeforeTest
-        fun `start the server in profile test`() = runApplication<API> {
-            testLoader(app = this)
-        }.run { context = this }
-
-        @AfterTest
-        fun `stop the server`(): Unit = runBlocking {
-            context.run {
-                deleteAllUsersOnly()
-                assertThat(tripleCounts())
-                    .matches { it.first == 0 }
-                    .matches { it.second == 0 }
-                    .matches { it.third == 0 }
-                close()
-            }
-        }
-
-        @Test
-        fun `functional test signup and reset password scenario`(): Unit = runBlocking {
-            privateProperties.run {
-                Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
-                )
-            }.run {
-                @Suppress("UNUSED_VARIABLE")
-                val mailCount = mailConnexion.emailCount
-                    .apply { run(::assertThat).isNotNegative() }
-                context.tripleCounts().run {
-                    val uuid: UUID = (User(
-                        login = login,
-                        email = email,
-                        langKey = FRENCH.language
-                    ) to context).signup().getOrNull()!!.first
-                        .apply { "user.id from signupDao: ${toString()}".apply(::i) }
-
-                    assertThat(context.countUsers()).isEqualTo(first + 1)
-                    assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-                    assertThat(context.countUserActivation()).isEqualTo(third + 1)
-                    mailConnexion.emailCount.run { i("message count : $this") }
-                    mailConnexion
-                        .searchEmails(privateProperties["test.mail"].toString())
-                        .apply { i("nb of retrieved messages : $size") }
-                        .forEach {
-                            it.content?.toString()
-                                ?.extractKey?.run(::i)
-                        }
-
-
-                    // here begin change password
-                    FIND_ALL_USERS
-                        .trimIndent()
-                        .run(context.getBean<DatabaseClient>()::sql)
-                        .fetch().awaitSingle().run {
-                            @Suppress("RemoveRedundantQualifierName")
-                            (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                                    to this[PASSWORD_FIELD].toString())
-                        }.run {
-                            "user.id retrieved before update password: $first".apply(::i)
-                            assertEquals(uuid, first, "user.id should be the same")
-                            assertNotEquals(
-                                password,
-                                second,
-                                "password should be encoded and not the same"
-                            )
-
-                            val resetKey: String = context.apply {
-                                // Given a user well signed up
-                                assertThat(countUserResets()).isEqualTo(0)
-                            }.getBean<PasswordService>()
-                                .reset(email)
-                                .mapLeft { "reset().left: $it".run(::i) }
-                                .getOrNull()!!.apply {
-                                    assertThat(context.countUserResets()).isEqualTo(1)
-                                    "reset key : $this".run(::i)
-                                }
-
-                            FIND_ALL_USER_RESETS
-                                .trimIndent()
-                                .run(context.getBean<DatabaseClient>()::sql)
-                                .fetch()
-                                .awaitSingle().run {
-                                    get(IS_ACTIVE_FIELD).toString()
-                                        .apply(Boolean::parseBoolean)
-                                        .run(::assertThat).asBoolean().isTrue
-                                    get(RESET_KEY_FIELD).toString()
-                                        .run(::assertThat).asString()
-                                        .isEqualTo(resetKey)
-                                }
-
-                            // finish reset password
-                            "$password&".run {
-                                client.post().uri(
-                                    API_RESET_PASSWORD_FINISH_PATH.apply {
-                                        "uri : $this".run(::i)
-                                    }).contentType(APPLICATION_PROBLEM_JSON)
-                                    .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
-                                        "resetKey on select: $this".run(::i)
-                                    }, newPassword = this))
-                                    .exchange()
-                                    .expectStatus()
-                                    .isOk
-                                    .returnResult<ProblemDetail>()
-                                    .responseBodyContent!!
-                                    .apply { logBody() }
-                                    .apply(::assertThat)
-                                    .isEmpty()
-
-                                context.countUserResets().run(::assertThat).isEqualTo(1)
-
-                                FIND_ALL_USER_RESETS
-                                    .trimIndent()
-                                    .run(context.getBean<DatabaseClient>()::sql)
-                                    .fetch()
-                                    .awaitSingleOrNull()!!.run {
-                                        IS_ACTIVE_FIELD.run(::get).toString()
-                                            .apply(Boolean::parseBoolean)
-                                            .run(::assertThat).asBoolean().isFalse
-
-                                        CHANGE_DATE_FIELD.run(::get).toString()
-                                            .run(::assertThat).asString()
-                                            .containsAnyOf(
-                                                ofInstant(
-                                                    now(),
-                                                    systemDefault()
-                                                ).year.toString(),
-                                                ofInstant(
-                                                    now(),
-                                                    systemDefault()
-                                                ).month.toString(),
-                                                ofInstant(
-                                                    now(),
-                                                    systemDefault()
-                                                ).dayOfMonth.toString(),
-                                                ofInstant(
-                                                    now(),
-                                                    systemDefault()
-                                                ).hour.toString(),
-                                            )
-                                    }
-                            }
-                        }
-                }
-            }
-        }
-    }
-
-    @Nested
     @ActiveProfiles("test")
     @TestInstance(PER_CLASS)
     @SpringBootTest(
@@ -591,6 +308,284 @@ class Tests {
         @AfterTest
         fun cleanUp(context: ApplicationContext): Unit = runBlocking {
             context.deleteAllUsersOnly()
+        }
+
+        @Nested
+        inner class FunctionalTests {
+//            lateinit var context: ConfigurableApplicationContext
+//
+//            val client: WebTestClient by lazy {
+//                bindToServer()
+//                    .baseUrl(BASE_URL_DEV)
+//                    .build()
+//            }
+//            @BeforeTest
+//            fun `start the server in profile test`() = runApplication<API> {
+//                testLoader(app = this)
+//            }.run { context = this }
+//            fun testLoader(app: SpringApplication) = with(app) {
+//                setDefaultProperties(
+//                    hashMapOf<String, Any>().apply {
+//                        set(
+//                            SPRING_PROFILE_CONF_DEFAULT_KEY,
+//                            SPRING_PROFILE_TEST
+//                        )
+//                    })
+//                setAdditionalProfiles(SPRING_PROFILE_TEST)
+//            }
+//            @AfterTest
+//            fun `stop the server`(): Unit = runBlocking {
+//                context.run {
+//                    deleteAllUsersOnly()
+//                    assertThat(tripleCounts())
+//                        .matches { it.first == 0 }
+//                        .matches { it.second == 0 }
+//                        .matches { it.third == 0 }
+//                    close()
+//                }
+//            }
+
+            val gmailConfig by lazy {
+                GoogleAuthConfig(
+                    clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
+                    projectId = "gmail-tester-444502",
+                    authUri = "https://accounts.google.com/o/oauth2/auth",
+                    tokenUri = "https://oauth2.googleapis.com/token",
+                    authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
+                    clientSecret = "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t",
+                    redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
+                )
+            }
+
+            val Triple<String, String, String>.establishConnection: Store
+                @Throws(MessagingException::class)
+                get() = IMAPS_MAIL_STORE_PROTOCOL.run(
+                    getDefaultInstance(
+                        getProperties().apply {
+                            setProperty(MAIL_STORE_PROTOCOL_PROP, IMAPS_MAIL_STORE_PROTOCOL)
+                        },
+                        null
+                    )::getStore
+                ).apply { connect(first, second, third) }
+
+            val mailConnexion: Store = Triple(
+                GMAIL_IMAP_HOST,
+                privateProperties["test.mail"].toString(),
+                privateProperties["test.mail.password"].toString()
+            ).establishConnection
+
+            val Store.emailCount: Int
+                @Throws(MessagingException::class)
+                get() = run {
+                    val inbox = getFolder("inbox")
+                    val spam = getFolder("[Gmail]/Spam")
+                    inbox.open(READ_ONLY)
+                    i("nb of Messages : " + inbox.messageCount)
+                    i("nb of Unread Messages : " + inbox.unreadMessageCount)
+                    i("nb of Messages in spam : " + spam.messageCount)
+                    i("nb of Unread Messages in spam : " + spam.unreadMessageCount)
+                    inbox.messageCount
+                }
+
+            val String.extractKey: String
+                get() {
+                    // Define the regex pattern to find the activation key
+                    val pattern: java.util.regex.Pattern =
+                        java.util.regex.Pattern.compile("key=([a-zA-Z0-9]+)")
+
+                    // Create a matcher object
+                    val matcher: Matcher = pattern.matcher(this)
+
+                    // Find the first match
+                    return when {
+                        matcher.find() -> matcher.group(1)
+                        else -> EMPTY_STRING
+                    }
+                }
+
+            val Store.findMostRecentActivationEmail: Message?
+                get() {
+                    val inbox = getFolder("inbox").apply { open(READ_ONLY) }
+                    val messages = inbox.messages
+                    return messages
+                        .filter {
+                            it?.content?.toString()!!.contains(API_ACTIVATE_PATH, ignoreCase = true)
+                        }
+                        .maxBy { it.receivedDate }
+                }
+
+            val Store.lastActivationKey: String
+                get() = findMostRecentActivationEmail
+                    ?.content
+                    .toString()
+                    .extractKey
+
+            val Store.findMostRecentResetPasswordEmail: Message?
+                get() = "inbox"
+                    .run(::getFolder)
+                    .apply { open(READ_ONLY) }
+                    .messages.filter {
+                        it?.content?.toString()!!.contains(
+                            API_RESET_PASSWORD_FINISH_PATH,
+                            ignoreCase = true
+                        )
+                    }.maxByOrNull { it.receivedDate }
+
+            val Store.lastResetKey: String
+                get() = findMostRecentResetPasswordEmail
+                    ?.content
+                    .toString()
+                    .extractKey
+
+
+            @Throws(MessagingException::class)
+            fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
+                .apply { open(READ_ONLY) }.run {
+                    @Suppress("SimplifyNestedEachInScopeFunction")
+                    copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
+                        forEach {
+                            i("Subject: " + it?.subject)
+                            i("From: " + it?.from?.contentToString())
+                            i("Content: " + it?.content)
+                            i(
+                                "ActivationKey: " + it?.content
+                                    ?.toString()
+                                    ?.extractKey
+                            )
+                        }
+                    }
+                }
+
+            @Test
+            fun `functional test signup and reset password scenario`(): Unit = runBlocking {
+                privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }.run {
+                    @Suppress("UNUSED_VARIABLE")
+                    val mailCount = mailConnexion.emailCount
+                        .apply { run(::assertThat).isNotNegative() }
+                    context.tripleCounts().run {
+                        val uuid: UUID = (User(
+                            login = login,
+                            email = email,
+                            langKey = FRENCH.language
+                        ) to context).signup().getOrNull()!!.first
+                            .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+
+                        assertThat(context.countUsers()).isEqualTo(first + 1)
+                        assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+                        assertThat(context.countUserActivation()).isEqualTo(third + 1)
+                        mailConnexion.emailCount.run { i("message count : $this") }
+                        mailConnexion
+                            .searchEmails(privateProperties["test.mail"].toString())
+                            .apply { i("nb of retrieved messages : $size") }
+                            .forEach {
+                                it.content?.toString()
+                                    ?.extractKey?.run(::i)
+                            }
+
+
+                        // here begin change password
+                        FIND_ALL_USERS
+                            .trimIndent()
+                            .run(context.getBean<DatabaseClient>()::sql)
+                            .fetch().awaitSingle().run {
+                                @Suppress("RemoveRedundantQualifierName")
+                                (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                                        to this[PASSWORD_FIELD].toString())
+                            }.run {
+                                "user.id retrieved before update password: $first".apply(::i)
+                                assertEquals(uuid, first, "user.id should be the same")
+                                assertNotEquals(
+                                    password,
+                                    second,
+                                    "password should be encoded and not the same"
+                                )
+
+                                val resetKey: String = context.apply {
+                                    // Given a user well signed up
+                                    assertThat(countUserResets()).isEqualTo(0)
+                                }.getBean<PasswordService>()
+                                    .reset(email)
+                                    .mapLeft { "reset().left: $it".run(::i) }
+                                    .getOrNull()!!.apply {
+                                        assertThat(context.countUserResets()).isEqualTo(1)
+                                        "reset key : $this".run(::i)
+                                    }
+
+                                FIND_ALL_USER_RESETS
+                                    .trimIndent()
+                                    .run(context.getBean<DatabaseClient>()::sql)
+                                    .fetch()
+                                    .awaitSingle().run {
+                                        get(IS_ACTIVE_FIELD).toString()
+                                            .apply(Boolean::parseBoolean)
+                                            .run(::assertThat).asBoolean().isTrue
+                                        get(RESET_KEY_FIELD).toString()
+                                            .run(::assertThat).asString()
+                                            .isEqualTo(resetKey)
+                                    }
+
+                                // finish reset password
+                                "$password&".run {
+                                    client.post().uri(
+                                        API_RESET_PASSWORD_FINISH_PATH.apply {
+                                            "uri : $this".run(::i)
+                                        }).contentType(APPLICATION_PROBLEM_JSON)
+                                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+                                            "resetKey on select: $this".run(::i)
+                                        }, newPassword = this))
+                                        .exchange()
+                                        .expectStatus()
+                                        .isOk
+                                        .returnResult<ProblemDetail>()
+                                        .responseBodyContent!!
+                                        .apply { logBody() }
+                                        .apply(::assertThat)
+                                        .isEmpty()
+
+                                    context.countUserResets().run(::assertThat).isEqualTo(1)
+
+                                    FIND_ALL_USER_RESETS
+                                        .trimIndent()
+                                        .run(context.getBean<DatabaseClient>()::sql)
+                                        .fetch()
+                                        .awaitSingleOrNull()!!.run {
+                                            IS_ACTIVE_FIELD.run(::get).toString()
+                                                .apply(Boolean::parseBoolean)
+                                                .run(::assertThat).asBoolean().isFalse
+
+                                            CHANGE_DATE_FIELD.run(::get).toString()
+                                                .run(::assertThat).asString()
+                                                .containsAnyOf(
+                                                    ofInstant(
+                                                        now(),
+                                                        systemDefault()
+                                                    ).year.toString(),
+                                                    ofInstant(
+                                                        now(),
+                                                        systemDefault()
+                                                    ).month.toString(),
+                                                    ofInstant(
+                                                        now(),
+                                                        systemDefault()
+                                                    ).dayOfMonth.toString(),
+                                                    ofInstant(
+                                                        now(),
+                                                        systemDefault()
+                                                    ).hour.toString(),
+                                                )
+                                        }
+                                }
+                            }
+                    }
+                }
+            }
         }
 
         @Nested
