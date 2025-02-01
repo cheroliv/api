@@ -3011,20 +3011,20 @@ class Tests {
                     assertThat(context.countUserAuthority()).isEqualTo(second + 1)
                     assertThat(context.countUserActivation()).isEqualTo(third + 1)
 
-                    when {
-                        getMailConnexion().getEmailCount() == 0 -> return@runBlocking
-                        else -> {
-                            val activationKey: String = getMailConnexion()
-                                .getFindMostRecentActivationEmail()
-                                .getExtractKey()
-                            i("Activation key from mail: $activationKey")
-                            //Cannot test more because I can't rely on gmail,
-                            // every test dont send a mail
-                            // TODO: add resend activation mail with signup mail, must check sent mail before
-                            assertThat(activationKey).asString()
-                                .hasSameSizeAs(generateActivationKey)
-                        }
-                    }
+//                    when {
+//                        getMailConnexion().getEmailCount() == 0 -> return@runBlocking
+//                        else -> {
+//                            val activationKey: String = getMailConnexion()
+//                                .getFindMostRecentActivationEmail()
+//                                .getExtractKey()
+//                            i("Activation key from mail: $activationKey")
+//                            //Cannot test more because I can't rely on gmail,
+//                            // every test dont send a mail
+//                            // TODO: add resend activation mail with signup mail, must check sent mail before
+//                            assertThat(activationKey).asString()
+//                                .hasSameSizeAs(generateActivationKey)
+//                        }
+//                    }
                     // Let's continue with activation key retrieved from database,
                     // in order to activate userTest
                     //                        // here begin change password

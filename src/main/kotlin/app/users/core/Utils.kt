@@ -1,6 +1,5 @@
 package app.users.core
 
-import app.users.core.Constants.AT_SYMBOLE
 import app.users.core.Constants.PRIVATE_PROPERTIES_FILE_PATH
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils.stripAccents
@@ -34,6 +33,7 @@ object Utils {
 
     val Pair<Any, ApplicationContext>.toJson: String
         get() = first.run(second.getBean<ObjectMapper>()::writeValueAsString)
+
 
     val KClass<Any>.objectName
         get() = java.simpleName.run {
