@@ -5,6 +5,7 @@ import app.ai.AIAssistantWorker.AiConfiguration.OllamaAssistant
 import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.FRENCH
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Error
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
+import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.localModels
 import app.ai.translator.AiTranslatorController.AssistantManager.createChatTask
 import app.ai.translator.AiTranslatorController.AssistantManager.createStreamingChatTask
 import app.users.core.web.Web.Companion.configuration
@@ -150,7 +151,10 @@ class AIAssistantWorker {
                 defaultValue = FRENCH.USER_MSG
             ) message: String?
         ): ResponseEntity<AssistantResponse> = try {
-            message.run(context.getBean<OllamaAssistant>()::chat).run(::Success).toResponse
+            message
+                .run(context.getBean<OllamaAssistant>()::chat)
+                .run(::Success)
+                .toResponse
         } catch (e: Exception) {
             Error(e).toResponse
         }
@@ -162,7 +166,10 @@ class AIAssistantWorker {
                 defaultValue = FRENCH.USER_MSG
             ) message: String?
         ): ResponseEntity<AssistantResponse> = try {
-            message.run(context.getBean<HuggingfaceAssistant>()::chat).run(::Success).toResponse
+            message
+                .run(context.getBean<HuggingfaceAssistant>()::chat)
+                .run(::Success)
+                .toResponse
         } catch (e: Exception) {
             Error(e).toResponse
         }
@@ -180,25 +187,27 @@ class AIAssistantWorker {
             forStatusAndDetail(INTERNAL_SERVER_ERROR, e.message).run(internalServerError()::body)
         }
 
-        val ollamaList = listOf(
-            "CognitiveComputations/dolphin-2.9.3-qwen2-0.5b:f16",
-            "llama3.2:3b-instruct-q8_0",
-            "dolphin3:8b-llama3.1-q8_0",
-            "dolphin3:8b",
-            "aya:8b",
-            "llama3.2:3b",
-            "deepseek-r1:1.5b"
-        )
-
-        val localModels
-            get() = setOf(
-                "llama3.2:3b" to "LlamaTiny",
-                "dolphin-llama3:8b" to "DolphinSmall",
-                "aya:8b" to "AyaSmall",
-                "smollm:135m" to "Smoll",
-                "deepseek-r1:1.5b" to "DSR1Tiny"
+        object LocalLLMModel {
+            val ollamaList = listOf(
+                "CognitiveComputations/dolphin-2.9.3-qwen2-0.5b:f16",
+                "llama3.2:3b-instruct-q8_0",
+                "dolphin3:8b-llama3.1-q8_0",
+                "dolphin3:8b",
+                "aya:8b",
+                "llama3.2:3b",
+                "deepseek-r1:1.5b",
+                "smollm:135m"
             )
 
+            val localModels
+                get() = setOf(
+                    "llama3.2:3b" to "LlamaTiny",
+                    "dolphin-llama3:8b" to "DolphinSmall",
+                    "aya:8b" to "AyaSmall",
+                    "smollm:135m" to "Smoll",
+                    "deepseek-r1:1.5b" to "DSR1Tiny"
+                )
+        }
         // Creating tasks for each model
 
         fun ApplicationContext.createChatTasks() = localModels.forEach {
@@ -263,7 +272,6 @@ class AIAssistantWorker {
                 }
             }
         }
-
     }
 
     @RestController
