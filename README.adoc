@@ -1,24 +1,4 @@
-= kotlin-springboot
-
-// == *springboot codebase*
-//
-// .stack:
-// * webflux
-// * r2dbc spring-data h2
-// * rest api
-// * spring security jwt
-// * coroutines
-// * Http problem details RFC7807
-// * junit5
-// * gradle
-// * gradle-kotlin-dsl
-// * google-jib
-// * google-appengine
-// * mailSlurp-api
-// * gmail-api
-// * task scheduling
-// * cli: command line interface
-// * github-action(todo)
+= REST-API
 
 .features:
 * Signup account
@@ -28,496 +8,72 @@
 
 == Running
 
-==== **to test the app**
+=== **Test the app**
 
-Open terminal and run : ```./gradlew check``` +
+Open terminal and run :
+[source,bash]
+----
+./gradlew check
+----
 
+=== **Run the app**
 
-==== **to run the app**
+Open terminal and run :
+[source,bash]
+----
+./gradlew bootRun
+----
 
-Open terminal and run : ```./gradlew bootRun``` +
+and launch link:http://localhost:8880/[http://localhost:8880/]
 
+=== **to run the cli**
 
-and launch http://localhost:8080/
+Open terminal and run :
+[source,bash]
+----
+./gradlew cli
+----
 
-==== **to run the cli**
+=== **to run firefox and show test reports(required firefox installed)
 
-Open terminal and run : ```./gradlew cli```
+Open terminal and run :
+[source,bash]
+----
+./gradlew :apiCheckFirefox
+----
 
+=== Set smtp configuration
 
-// == REST-API
-//
-// === *user-resource: /api/admin/users*
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|GET /api/admin/users
-// 2+^.e|Parameters
-// |Name |Description
-// |page +
-// _integer_ +
-// (query)
-// m|Zero-based page index (0..N)
-// |size +
-// _integer_ +
-// (query)
-// m|The size of the page to be returned
-// |sort +
-// _array[string]_ +
-// (query)
-// m|Sorting criteria in the format: property,(asc\|desc).
-// Default sort order is ascending. Multiple sort criteria are supported.
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: AdminUserDTO
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|PUT /api/admin/users
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body *required must contain user object
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: AdminUserDTO
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/admin/users
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body required containing user object
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: User
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|GET /api/admin/users/{login}
-// 2+^.e|Parameters
-// |Name |Description
-// |login *required +
-// _string_ +
-// (path) +
-// m|login
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: AdminUserDTO
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|DELETE /api/admin/users/{login}
-// 2+^.e|Parameters
-// |Name |Description
-// |login *required +
-// _string_ +
-// (path) +
-// m|login
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK
-// |===
-// ======
-//
-// === *account-resource*
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/register
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body *required must contain ManagedUserVM object
-// 2+^.e|Responses
-// |Code |Description
-// |201
-// |CREATED
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|GET /api/authenticate
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: string +
-// current role
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|GET /api/account
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: AdminUserDTO
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/account
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body *required must contain ManagedUserVM object
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK
-// |===
-// ======
-//
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/account/reset-password/init
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body *required must contain email string
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/account/reset-password/finish
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body *required must contain PasswordChangeDTO object
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/account/reset-password/finish
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body *required must contain KeyAndPasswordVM object
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK
-// |===
-// ======
-//
-//
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/account/change-password
-// 2+^.e|Parameters
-// 2+m|no parameters
-// 2+m|Request body *required must contain PasswordChangeDTO object
-// 2+^.e|Responses
-// |Code|Description
-// |200
-// |OK
-// |===
-// ======
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|GET /api/activate
-// 2+^.e|Parameters
-// |Name |Description
-// |key *required +
-// _string_ +
-// (query) +
-// m|activation key
-// |===
-// ======
-//
-// === *user-jwt-controller: /api/authenticate*
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|POST /api/authenticate
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+m| Request body *required must contain LoginVM object
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: JWTToken
-// |===
-// ======
-//
-//
-// === *public-user-resource*
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|GET /api/users
-// 2+^.e|Parameters
-// |Name |Description
-// |page +
-// _integer_ +
-// (query)
-// m|Zero-based page index (0..N)
-// |size +
-// _integer_ +
-// (query)
-// m|The size of the page to be returned
-// |sort +
-// _array[string]_ +
-// (query)
-// m|Sorting criteria in the format: property,(asc\|desc).
-// Default sort order is ascending. Multiple sort criteria are supported.
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: UserDTO
-// |===
-// ======
-//
-//
-// ======
-// [grid=rows,frame=topbot,width=100%]
-// |===
-// 2+^.h|GET /api/authorities
-// 2+^.e|Parameters
-// 2+m| no parameters
-// 2+^.e|Responses
-// |Code |Description
-// |200
-// |OK +
-// Media type: \*/* +
-// Controls Accept header. +
-// Schema: string array of authorities
-// |===
-// ======
-//
-// === *schemas*
-//
-//
-// ======
-// .AdminUserDTO
-// [source]
-// ----
-// AdminUserDTO {
-// id	integer($int64)
-// login*	string
-// maxLength: 50
-// minLength: 1
-// pattern: ^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$
-// firstName	string
-// maxLength: 50
-// minLength: 0
-// lastName	string
-// maxLength: 50
-// minLength: 0
-// email	string
-// maxLength: 254
-// minLength: 5
-// imageUrl	string
-// maxLength: 256
-// minLength: 0
-// activated	boolean
-// langKey	string
-// maxLength: 10
-// minLength: 2
-// createdBy	string
-// createdDate	string($date-time)
-// lastModifiedBy	string
-// lastModifiedDate	string($date-time)
-// authorities	[
-// uniqueItems: true
-// string]
-// }
-// ----
-// ======
-//
-// ======
-// .ManagedUserVM
-// [source]
-// ----
-// ManagedUserVM {
-// id	integer($int64)
-// login*	string
-// maxLength: 50
-// minLength: 1
-// pattern: ^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$
-// firstName	string
-// maxLength: 50
-// minLength: 0
-// lastName	string
-// maxLength: 50
-// minLength: 0
-// email	string
-// maxLength: 254
-// minLength: 5
-// imageUrl	string
-// maxLength: 256
-// minLength: 0
-// activated	boolean
-// langKey	string
-// maxLength: 10
-// minLength: 2
-// createdBy	string
-// createdDate	string($date-time)
-// lastModifiedBy	string
-// lastModifiedDate	string($date-time)
-// authorities	[...]
-// password	string
-// maxLength: 100
-// minLength: 4
-// }
-// ----
-// ======
-//
-// ======
-// .LoginVM
-// [source]
-// ----
-// LoginVM {
-// username*	string
-// maxLength: 50
-// minLength: 1
-// password*	string
-// maxLength: 100
-// minLength: 4
-// rememberMe	boolean
-// }
-// ----
-// ======
-//
-// ======
-// .JWTToken
-// [source]
-// ----
-// JWTToken {
-// id_token	string
-// }
-// ----
-// ======
-//
-// ======
-// .User
-// [source]
-// ----
-// User {
-// id	integer($int64)
-// login*	string
-// maxLength: 50
-// minLength: 1
-// pattern: ^(?>[a-zA-Z0-9!$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)$
-// firstName	string
-// maxLength: 50
-// minLength: 0
-// lastName	string
-// maxLength: 50
-// minLength: 0
-// email	string
-// maxLength: 254
-// minLength: 5
-// activated*	boolean
-// langKey	string
-// maxLength: 10
-// minLength: 2
-// imageUrl	string
-// maxLength: 256
-// minLength: 0
-// resetDate	string($date-time)
-// }
-// ----
-// ======
-//
-// ======
-// .KeyAndPasswordVM
-// [source]
-// ----
-// KeyAndPasswordVM {
-// key	string
-// newPassword	string
-// }
-// ----
-// ======
-//
-// ======
-// .PasswordChangeDTO
-// [source]
-// ----
-// PasswordChangeDTO {
-// currentPassword	string
-// newPassword	string
-// }
-// ----
-// ======
-//
-// ======
-// .UserDTO
-// [source]
-// ----
-// UserDTO {
-// id	integer($int64)
-// login	string
-// }
-// ----
-// ======
-//
-// == link:cadrage_webapp_canevas.adoc[Project phases in french]
+Create a gmail account, add a password application. link:https://knowledge.workspace.google.com/kb/how-to-create-app-passwords-000009237[product documentation]
+
+Add credential to properties file like this:
+
+Open terminal and run :
+[source,bash]
+----
+file_path="src/main/resources/private.properties"
+text_to_add="# google
+test.mail.host=smtp.gmail.com
+test.mail.port=587
+
+# google account test
+test.mail=tester@gmail.com
+test.mail.password=sxckqebcmaimwfvl"
+
+if [ ! -f "$file_path" ]; then
+  echo "File '$file_path' does not exist. Creating it..."
+  touch "$file_path"
+  if [ $? -eq 0 ]; then
+    echo "$text_to_add" > "$file_path"
+    if [ $? -eq 0 ]; then
+      echo "File '$file_path' created and content added successfully."
+    else
+      echo "Error adding content to file '$file_path'."
+    fi
+  else
+    echo "Error creating file '$file_path'."
+  fi
+else
+  echo "File '$file_path' already exists."
+fi
+----

@@ -3010,7 +3010,6 @@ class Tests {
                     assertThat(context.countUsers()).isEqualTo(first + 1)
                     assertThat(context.countUserAuthority()).isEqualTo(second + 1)
                     assertThat(context.countUserActivation()).isEqualTo(third + 1)
-
 //                    when {
 //                        getMailConnexion().getEmailCount() == 0 -> return@runBlocking
 //                        else -> {
