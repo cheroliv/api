@@ -15,12 +15,12 @@ import kotlin.text.Charsets.UTF_8
 
 @Async
 @Service
-class SMTPUserMailService(
+class SMTPMailService(
     private val properties: Properties,
     private val mailSender: JavaMailSender,
     messageSource: MessageSource,
     templateEngine: SpringTemplateEngine
-) : AbstractThymeleafUserMailTemplatingService(properties, messageSource, templateEngine) {
+) : AbstractThymeleafMailTemplatingService(properties, messageSource, templateEngine) {
     override fun sendEmail(
         to: String,
         subject: String,
