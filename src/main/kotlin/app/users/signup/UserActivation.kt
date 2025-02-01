@@ -74,7 +74,7 @@ data class UserActivation(
             "$CREATED_DATE_FIELD" TIMESTAMP NOT NULL,
             "$ACTIVATION_DATE_FIELD" TIMESTAMP DEFAULT NULL,
             UNIQUE ("$ACTIVATION_KEY_FIELD"),
-            FOREIGN KEY ("$ID_FIELD") 
+            FOREIGN KEY ("$ID_FIELD")
             REFERENCES "${User.Relations.Fields.TABLE_NAME}" ("$ID_FIELD")
             ON DELETE CASCADE ON UPDATE CASCADE
         );
