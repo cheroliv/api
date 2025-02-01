@@ -7,7 +7,7 @@ import app.users.core.dao.UserDao.user
 import app.users.core.models.User
 import app.users.core.models.User.EndPoint.API_USERS
 import app.users.core.web.HttpUtils.badResponse
-import app.users.mail.UserMailService
+import app.users.mail.MailService
 import app.users.signup.Signup.EndPoint.API_ACTIVATE
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
 import app.users.signup.SignupDao.activate
@@ -41,13 +41,39 @@ import java.util.UUID.randomUUID
 @Service
 class SignupService(private val context: ApplicationContext) {
 
+    suspend fun signup(
+        signup: Signup,
+        exchange: ServerWebExchange
+    ): ResponseEntity<ProblemDetail> = signup.validate(exchange).run {
+        when {
+            isNotEmpty() -> return signupProblems.badResponse(this)
+            else -> {
+                availability(signup).map {
+                    return when (it) {
+                        SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseLoginAndEmailIsNotAvailable
+                        SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
+                        SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
+                        else -> signup(signup).run { CREATED.run(::ResponseEntity) }
+                    }
+                }
+                SERVICE_UNAVAILABLE.run(::ResponseEntity)
+            }
+        }
+    }
+
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
         context.user(signup).let { user ->
             (user to context).signup().mapLeft {
-                return Exception("Unable to sign up user with this value : $signup", it).left()
+                return Exception(
+                    "Unable to sign up user with this value : $signup",
+                    it
+                ).left()
             }.map {
                 return user.copy(id = it.first).apply {
-                    (this to it.second).run(context.getBean<UserMailService>()::sendActivationEmail)
+                    context
+                        .getBean<MailService>()
+                        .sendActivationEmail(this to it.second
+                            .apply { i("Activation key on email: ${it.second}") })
                 }.apply {
                     i("Activation key: ${it.second}")
                     i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
@@ -68,28 +94,13 @@ class SignupService(private val context: ApplicationContext) {
         ex.left()
     }
 
-    suspend fun signup(signup: Signup, exchange: ServerWebExchange)
-            : ResponseEntity<ProblemDetail> = signup
-        .validate(exchange)
-        .run {
-            "signup attempt: ${this@run} ${signup.login} ${signup.email}".run(::i)
-            if (isNotEmpty()) return signupProblems.badResponse(this)
-        }.run {
-            availability(signup).map {
-                return when (it) {
-                    SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseLoginAndEmailIsNotAvailable
-                    SIGNUP_LOGIN_NOT_AVAILABLE -> signupProblems.badResponseLoginIsNotAvailable
-                    SIGNUP_EMAIL_NOT_AVAILABLE -> signupProblems.badResponseEmailIsNotAvailable
-                    else -> {
-                        signup(signup).run { CREATED.run(::ResponseEntity) }
-                    }
-                }
-            }
-            SERVICE_UNAVAILABLE.run(::ResponseEntity)
-        }
-
     suspend fun activate(key: String): Long = context.activate(key)
-        .getOrElse { throw IllegalStateException("Error activating user with key: $key", it) }
+        .getOrElse {
+            throw IllegalStateException(
+                "Error activating user with key: $key",
+                it
+            )
+        }
         .takeIf { it == ONE_ROW_UPDATED }
         ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")
 
