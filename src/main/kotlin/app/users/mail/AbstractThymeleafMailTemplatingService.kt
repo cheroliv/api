@@ -17,11 +17,11 @@ import org.thymeleaf.context.Context
 import org.thymeleaf.spring6.SpringTemplateEngine
 import java.util.Locale.forLanguageTag
 
-abstract class AbstractThymeleafUserMailTemplatingService(
+abstract class AbstractThymeleafMailTemplatingService(
     private val properties: Properties,
     private val messageSource: MessageSource,
     private val templateEngine: SpringTemplateEngine
-) : UserMailService {
+) : MailService {
 
     abstract override fun sendEmail(
         to: String,
@@ -60,27 +60,31 @@ abstract class AbstractThymeleafUserMailTemplatingService(
         }
     }
 
-    override fun sendActivationEmail(pairUserActivationKey: Pair<User, String>) =
-        sendEmailFromTemplate(
-            mapOf(User.objectName to pairUserActivationKey.first.apply {
-                d("Sending activation email to $email")
-            }), TEMPLATE_NAME_SIGNUP, TITLE_KEY_SIGNUP
-        )
+
 
     override fun sendCreationEmail(userResetKeyPair: Pair<User, String>) = sendEmailFromTemplate(
         mapOf(User.objectName to userResetKeyPair.apply {
-            d("Sending creation email to '${first.email}'")
+//            d("Sending creation email to '${first.email}'")
         }.first, RESET_KEY_ATTR to userResetKeyPair.second),
         TEMPLATE_NAME_CREATION,
         TITLE_KEY_PASSWORD
     )
 
+    override fun sendActivationEmail(pairUserActivationKey: Pair<User, String>) =
+        sendEmailFromTemplate(
+            map = mapOf(User.objectName to pairUserActivationKey.apply {
+//                d("Sending activation email to ${first.email}")
+            }.first, ACTIVATION_KEY_ATTR to pairUserActivationKey.second),
+            templateName = TEMPLATE_NAME_SIGNUP,
+            titleKey = TITLE_KEY_SIGNUP
+        )
+
     override fun sendPasswordResetMail(userResetKeyPair: Pair<User, String>) =
         sendEmailFromTemplate(
-            mapOf(User.objectName to userResetKeyPair.apply {
-                d("Sending password reset email to '${first.email}'")
+            map = mapOf(User.objectName to userResetKeyPair.apply {
+//                d("Sending password reset email to '${first.email}'")
             }.first, RESET_KEY_ATTR to userResetKeyPair.second),
-            TEMPLATE_NAME_PASSWORD,
-            TITLE_KEY_PASSWORD
+            templateName = TEMPLATE_NAME_PASSWORD,
+            titleKey = TITLE_KEY_PASSWORD
         )
 }
