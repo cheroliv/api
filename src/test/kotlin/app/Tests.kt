@@ -38,7 +38,7 @@ import app.TestUtils.tripleCounts
 import app.TestUtils.usernameFromEmail
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
-import app.users.core.Constants.BASE_URL_DEV
+import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.ollamaList
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
@@ -50,8 +50,6 @@ import app.users.core.Constants.PATTERN_LOCALE_2
 import app.users.core.Constants.PATTERN_LOCALE_3
 import app.users.core.Constants.PRODUCTION
 import app.users.core.Constants.ROLE_USER
-import app.users.core.Constants.SPRING_PROFILE_CONF_DEFAULT_KEY
-import app.users.core.Constants.SPRING_PROFILE_TEST
 import app.users.core.Constants.STARTUP_LOG_MSG_KEY
 import app.users.core.Constants.USER
 import app.users.core.Constants.VIRGULE
@@ -88,8 +86,8 @@ import app.users.core.security.SecurityUtils.generateResetKey
 import app.users.core.security.SecurityUtils.getCurrentUserLogin
 import app.users.core.web.HttpUtils.validator
 import app.users.core.web.Web.Companion.configuration
-import app.users.mail.SMTPUserMailService
-import app.users.mail.UserMailService
+import app.users.mail.MailService
+import app.users.mail.SMTPMailService
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
@@ -209,11 +207,8 @@ import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.getBean
-import org.springframework.boot.SpringApplication
-import org.springframework.boot.runApplication
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
-import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.MessageSource
 import org.springframework.core.env.get
 import org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE
@@ -232,7 +227,6 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.test.web.reactive.server.WebTestClient.bindToServer
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
@@ -256,7 +250,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime.ofInstant
-import java.util.*
 import java.util.Arrays.copyOfRange
 import java.util.Locale.ENGLISH
 import java.util.Locale.FRANCE
@@ -266,13 +259,14 @@ import java.util.Locale.LanguageRange
 import java.util.Locale.US
 import java.util.Locale.filter
 import java.util.Locale.getDefault
+import java.util.UUID
 import java.util.UUID.fromString
 import java.util.UUID.randomUUID
-import java.util.regex.Matcher
 import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -306,285 +300,71 @@ class Tests {
         }
 
         @AfterTest
-        fun cleanUp(context: ApplicationContext): Unit = runBlocking {
-            context.deleteAllUsersOnly()
-        }
+        fun cleanUp(context: ApplicationContext): Unit =
+            runBlocking { context.deleteAllUsersOnly() }
 
+        @Ignore
         @Nested
-        inner class FunctionalTests {
-//            lateinit var context: ConfigurableApplicationContext
-//
-//            val client: WebTestClient by lazy {
-//                bindToServer()
-//                    .baseUrl(BASE_URL_DEV)
-//                    .build()
-//            }
-//            @BeforeTest
-//            fun `start the server in profile test`() = runApplication<API> {
-//                testLoader(app = this)
-//            }.run { context = this }
-//            fun testLoader(app: SpringApplication) = with(app) {
-//                setDefaultProperties(
-//                    hashMapOf<String, Any>().apply {
-//                        set(
-//                            SPRING_PROFILE_CONF_DEFAULT_KEY,
-//                            SPRING_PROFILE_TEST
-//                        )
-//                    })
-//                setAdditionalProfiles(SPRING_PROFILE_TEST)
-//            }
-//            @AfterTest
-//            fun `stop the server`(): Unit = runBlocking {
-//                context.run {
-//                    deleteAllUsersOnly()
-//                    assertThat(tripleCounts())
-//                        .matches { it.first == 0 }
-//                        .matches { it.second == 0 }
-//                        .matches { it.third == 0 }
-//                    close()
-//                }
-//            }
-
-            val gmailConfig by lazy {
-                GoogleAuthConfig(
-                    clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
-                    projectId = "gmail-tester-444502",
-                    authUri = "https://accounts.google.com/o/oauth2/auth",
-                    tokenUri = "https://oauth2.googleapis.com/token",
-                    authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
-                    clientSecret = "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t",
-                    redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
-                )
-            }
-
-            val Triple<String, String, String>.establishConnection: Store
-                @Throws(MessagingException::class)
-                get() = IMAPS_MAIL_STORE_PROTOCOL.run(
-                    getDefaultInstance(
-                        getProperties().apply {
-                            setProperty(MAIL_STORE_PROTOCOL_PROP, IMAPS_MAIL_STORE_PROTOCOL)
-                        },
-                        null
-                    )::getStore
-                ).apply { connect(first, second, third) }
-
-            val mailConnexion: Store = Triple(
-                GMAIL_IMAP_HOST,
-                privateProperties["test.mail"].toString(),
-                privateProperties["test.mail.password"].toString()
-            ).establishConnection
-
-            val Store.emailCount: Int
-                @Throws(MessagingException::class)
-                get() = run {
-                    val inbox = getFolder("inbox")
-                    val spam = getFolder("[Gmail]/Spam")
-                    inbox.open(READ_ONLY)
-                    i("nb of Messages : " + inbox.messageCount)
-                    i("nb of Unread Messages : " + inbox.unreadMessageCount)
-                    i("nb of Messages in spam : " + spam.messageCount)
-                    i("nb of Unread Messages in spam : " + spam.unreadMessageCount)
-                    inbox.messageCount
-                }
-
-            val String.extractKey: String
-                get() {
-                    // Define the regex pattern to find the activation key
-                    val pattern: java.util.regex.Pattern =
-                        java.util.regex.Pattern.compile("key=([a-zA-Z0-9]+)")
-
-                    // Create a matcher object
-                    val matcher: Matcher = pattern.matcher(this)
-
-                    // Find the first match
-                    return when {
-                        matcher.find() -> matcher.group(1)
-                        else -> EMPTY_STRING
-                    }
-                }
-
-            val Store.findMostRecentActivationEmail: Message?
-                get() {
-                    val inbox = getFolder("inbox").apply { open(READ_ONLY) }
-                    val messages = inbox.messages
-                    return messages
-                        .filter {
-                            it?.content?.toString()!!.contains(API_ACTIVATE_PATH, ignoreCase = true)
-                        }
-                        .maxBy { it.receivedDate }
-                }
-
-            val Store.lastActivationKey: String
-                get() = findMostRecentActivationEmail
-                    ?.content
-                    .toString()
-                    .extractKey
-
-            val Store.findMostRecentResetPasswordEmail: Message?
-                get() = "inbox"
-                    .run(::getFolder)
-                    .apply { open(READ_ONLY) }
-                    .messages.filter {
-                        it?.content?.toString()!!.contains(
-                            API_RESET_PASSWORD_FINISH_PATH,
-                            ignoreCase = true
-                        )
-                    }.maxByOrNull { it.receivedDate }
-
-            val Store.lastResetKey: String
-                get() = findMostRecentResetPasswordEmail
-                    ?.content
-                    .toString()
-                    .extractKey
-
-
-            @Throws(MessagingException::class)
-            fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
-                .apply { open(READ_ONLY) }.run {
-                    @Suppress("SimplifyNestedEachInScopeFunction")
-                    copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
-                        forEach {
-                            i("Subject: " + it?.subject)
-                            i("From: " + it?.from?.contentToString())
-                            i("Content: " + it?.content)
-                            i(
-                                "ActivationKey: " + it?.content
-                                    ?.toString()
-                                    ?.extractKey
-                            )
-                        }
-                    }
-                }
+        @TestInstance(PER_CLASS)
+        inner class AiTests {
+            @Suppress("MemberVisibilityCanBePrivate", "PropertyName")
+            val EXPECTED_KEYWORDS = setOf(
+                "```", "code", "function",
+                "python", "html", "div", "json",
+                "yaml", "xml", "javascript",
+                "css", "kotlin", "if", "else",
+                "for", "while", "return", "print",
+                "true", "false", "program",
+            )
 
             @Test
-            fun `functional test signup and reset password scenario`(): Unit = runBlocking {
-                privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }.run {
-                    @Suppress("UNUSED_VARIABLE")
-                    val mailCount = mailConnexion.emailCount
-                        .apply { run(::assertThat).isNotNegative() }
-                    context.tripleCounts().run {
-                        val uuid: UUID = (User(
-                            login = login,
-                            email = email,
-                            langKey = FRENCH.language
-                        ) to context).signup().getOrNull()!!.first
-                            .apply { "user.id from signupDao: ${toString()}".apply(::i) }
+            fun `test ollama configuration`(): Unit {
+                context.environment["langchain4j.ollama.chat-model.base-url"]
+                    .run(::assertThat)
+                    .isEqualTo("http://localhost:11434")
+                context.environment["langchain4j.ollama.chat-model.model-name"]
+                    .run(::assertThat)
+                    .isEqualTo("smollm:135m")
+                ollamaList.run(::assertThat).contains("smollm:135m")
+                context.configuration.run(::assertThat).isNotEmpty
+            }
 
-                        assertThat(context.countUsers()).isEqualTo(first + 1)
-                        assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-                        assertThat(context.countUserActivation()).isEqualTo(third + 1)
-                        mailConnexion.emailCount.run { i("message count : $this") }
-                        mailConnexion
-                            .searchEmails(privateProperties["test.mail"].toString())
-                            .apply { i("nb of retrieved messages : $size") }
-                            .forEach {
-                                it.content?.toString()
-                                    ?.extractKey?.run(::i)
-                            }
+            @Test
+            fun `test trivial ai api`(): Unit = runBlocking {
+                client.mutate()
+                    .responseTimeout(ofSeconds(60))
+                    .build()
+                    .get().uri("/api/ai/trivial")
+                    .exchange().expectStatus().isOk
+                    .returnResult<ProblemDetail>()
+//                    .apply { responseBody.collect { i(it?.detail.toString()) } }
+                    .responseBodyContent!!
+                    .responseToString().run {
+                        context.getBean<ObjectMapper>().readValue<ProblemDetail>(this)
+                    }.detail!!.apply(::i)
+                    .run(::assertThat)
+                    .isNotEmpty
+                    .asString()
+                    .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
+            }
 
-
-                        // here begin change password
-                        FIND_ALL_USERS
-                            .trimIndent()
-                            .run(context.getBean<DatabaseClient>()::sql)
-                            .fetch().awaitSingle().run {
-                                @Suppress("RemoveRedundantQualifierName")
-                                (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                                        to this[PASSWORD_FIELD].toString())
-                            }.run {
-                                "user.id retrieved before update password: $first".apply(::i)
-                                assertEquals(uuid, first, "user.id should be the same")
-                                assertNotEquals(
-                                    password,
-                                    second,
-                                    "password should be encoded and not the same"
-                                )
-
-                                val resetKey: String = context.apply {
-                                    // Given a user well signed up
-                                    assertThat(countUserResets()).isEqualTo(0)
-                                }.getBean<PasswordService>()
-                                    .reset(email)
-                                    .mapLeft { "reset().left: $it".run(::i) }
-                                    .getOrNull()!!.apply {
-                                        assertThat(context.countUserResets()).isEqualTo(1)
-                                        "reset key : $this".run(::i)
-                                    }
-
-                                FIND_ALL_USER_RESETS
-                                    .trimIndent()
-                                    .run(context.getBean<DatabaseClient>()::sql)
-                                    .fetch()
-                                    .awaitSingle().run {
-                                        get(IS_ACTIVE_FIELD).toString()
-                                            .apply(Boolean::parseBoolean)
-                                            .run(::assertThat).asBoolean().isTrue
-                                        get(RESET_KEY_FIELD).toString()
-                                            .run(::assertThat).asString()
-                                            .isEqualTo(resetKey)
-                                    }
-
-                                // finish reset password
-                                "$password&".run {
-                                    client.post().uri(
-                                        API_RESET_PASSWORD_FINISH_PATH.apply {
-                                            "uri : $this".run(::i)
-                                        }).contentType(APPLICATION_PROBLEM_JSON)
-                                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
-                                            "resetKey on select: $this".run(::i)
-                                        }, newPassword = this))
-                                        .exchange()
-                                        .expectStatus()
-                                        .isOk
-                                        .returnResult<ProblemDetail>()
-                                        .responseBodyContent!!
-                                        .apply { logBody() }
-                                        .apply(::assertThat)
-                                        .isEmpty()
-
-                                    context.countUserResets().run(::assertThat).isEqualTo(1)
-
-                                    FIND_ALL_USER_RESETS
-                                        .trimIndent()
-                                        .run(context.getBean<DatabaseClient>()::sql)
-                                        .fetch()
-                                        .awaitSingleOrNull()!!.run {
-                                            IS_ACTIVE_FIELD.run(::get).toString()
-                                                .apply(Boolean::parseBoolean)
-                                                .run(::assertThat).asBoolean().isFalse
-
-                                            CHANGE_DATE_FIELD.run(::get).toString()
-                                                .run(::assertThat).asString()
-                                                .containsAnyOf(
-                                                    ofInstant(
-                                                        now(),
-                                                        systemDefault()
-                                                    ).year.toString(),
-                                                    ofInstant(
-                                                        now(),
-                                                        systemDefault()
-                                                    ).month.toString(),
-                                                    ofInstant(
-                                                        now(),
-                                                        systemDefault()
-                                                    ).dayOfMonth.toString(),
-                                                    ofInstant(
-                                                        now(),
-                                                        systemDefault()
-                                                    ).hour.toString(),
-                                                )
-                                        }
-                                }
-                            }
-                    }
-                }
+            @Test
+            fun `test simple ai api, json format response`(): Unit = runBlocking {
+                client.mutate()
+                    .responseTimeout(ofSeconds(60))
+                    .build()
+                    .get().uri("/api/ai/simple")
+                    .exchange().expectStatus().isOk
+                    .returnResult<ResponseEntity<AssistantResponse>>()
+                    .responseBodyContent!!.responseToString().apply {
+                        context.getBean<ObjectMapper>()
+                            .readValue<Success>(this)
+                            .answer!!
+                            .run(::i)
+                    }.run(::assertThat)
+                    .isNotBlank()
+                    .asString()
+                    .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
             }
         }
 
@@ -1200,842 +980,270 @@ class Tests {
 
         @Nested
         @TestInstance(PER_CLASS)
-        inner class UserSignupTests {
+        inner class EmailSendingTests {
+            lateinit var mailService: MailService
 
-            @Test//TODO: rewrite test showing the scenario clearly
-            fun `test UserRoleDao signup with existing user without user_role`(): Unit =
-                runBlocking {
-                    val signupTest = privateProperties.run {
-                        Signup(
-                            login = get("test.mail").toString().usernameFromEmail,
-                            email = get("test.mail").toString(),
-                            password = get("test.mail").toString().usernameFromEmail,
-                            repassword = get("test.mail").toString().usernameFromEmail
-                        )
-                    }
-                    val userTest = context.user(signupTest)
+            @Spy
+            lateinit var javaMailSender: JavaMailSenderImpl
 
-                    val countUserBefore = context.countUsers()
-                    assertThat(countUserBefore).isEqualTo(0)
-                    val countUserAuthBefore = context.countUserAuthority()
-                    assertThat(countUserAuthBefore).isEqualTo(0)
-                    lateinit var result: Either<Throwable, UUID>
-                    (userTest to context).save()
-                    assertThat(context.countUsers()).isEqualTo(countUserBefore + 1)
-                    val userId = context.getBean<DatabaseClient>().sql(FIND_USER_BY_LOGIN)
-                        .bind(LOGIN_ATTR, userTest.login.lowercase())
-                        .fetch()
-                        .one()
-                        .awaitSingle()[User.Attributes.ID_ATTR]
-                        .toString()
-                        .run(UUID::fromString)
+            @Captor
+            lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
 
-                    context.getBean<DatabaseClient>()
-                        .sql(UserRole.Relations.INSERT)
-                        .bind(UserRole.Attributes.USER_ID_ATTR, userId)
-                        .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
-                        .fetch()
-                        .one()
-                        .awaitSingleOrNull()
-
-                    """
-        SELECT ua.${UserRole.Relations.Fields.ID_FIELD} 
-        FROM ${UserRole.Relations.Fields.TABLE_NAME} AS ua 
-        where ua.user_id= :userId and ua."role" = :role"""
-                        .trimIndent()
-                        .run(context.getBean<DatabaseClient>()::sql)
-                        .bind(UserRole.Attributes.USER_ID_ATTR, userId)
-                        .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
-                        .fetch()
-                        .one()
-                        .awaitSingle()[UserRole.Relations.Fields.ID_FIELD]
-                        .toString()
-                        .let { "user_role_id : $it" }
-                        .run(::i)
-                    assertThat(context.countUserAuthority()).isEqualTo(countUserAuthBefore + 1)
-                }
+            @BeforeTest
+            fun setUpEmailSending(context: ApplicationContext) {
+                openMocks(this)
+                doNothing()
+                    .`when`(javaMailSender)
+                    .send(any(MimeMessage::class.java))
+                mailService = SMTPMailService(
+                    context.getBean<Properties>(),
+                    javaMailSender,
+                    context.getBean<MessageSource>(),
+                    context.getBean<SpringWebFluxTemplateEngine>()
+                )
+            }
 
             @Test
-            fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit =
-                runBlocking {
-                    val signupTest = privateProperties.run {
-                        Signup(
-                            login = get("test.mail").toString().usernameFromEmail,
-                            email = get("test.mail").toString(),
-                            password = get("test.mail").toString().usernameFromEmail,
-                            repassword = get("test.mail").toString().usernameFromEmail
-                        )
-                    }
-                    val userTest = context.user(signupTest)
-
-                    assertThat(context.countUsers()).isEqualTo(0)
-                    (userTest to context).signup().onRight {
-                        //Because 36 == UUID.toString().length
-                        it.toString()
-                            .apply { assertThat(it.first.toString().length).isEqualTo(36) }
-                            .apply(::i)
-                    }
-                    assertThat(context.countUsers()).isEqualTo(1)
-                    assertDoesNotThrow {
-                        FIND_ALL_USERS
-                            .trimIndent()
-                            .run(context.getBean<DatabaseClient>()::sql)
-                            .fetch()
-                            .all()
-                            .collect {
-                                it[ID_FIELD]
-                                    .toString()
-                                    .run(UUID::fromString)
-                            }
-                    }
+            fun `test sendEmail`(): Unit {
+                mailService.sendEmail(
+                    to = "john.doe@acme.com",
+                    subject = "testSubject",
+                    content = "testContent",
+                    isMultipart = false,
+                    isHtml = false
+                )
+                verify(javaMailSender).send(messageCaptor.capture())
+                messageCaptor.value.run {
+                    i("Mime message content: $content")
+                    assertThat(subject).isEqualTo("testSubject")
+                    assertThat(allRecipients[0]).hasToString("john.doe@acme.com")
+                    assertThat(from[0]).hasToString(context.getBean<Properties>().mail.from)
+                    assertThat(content).isInstanceOf(String::class.java)
+                    assertThat(content).hasToString("testContent")
+                    assertThat(dataHandler.contentType).isEqualTo("text/plain; charset=UTF-8")
                 }
-
+            }
 
             @Test
-            fun `signupAvailability should return SIGNUP_AVAILABLE for all when login and email are available`(): Unit =
-                runBlocking {
-                    (Signup(
-                        "testuser",
-                        "password",
-                        "password",
-                        "testuser@example.com"
-                    ) to context).availability().run {
-                        isRight().run(::assertTrue)
-                        assertEquals(SIGNUP_AVAILABLE, getOrNull()!!)
-                    }
+            fun `test sendMail SendHtmlEmail`(): Unit {
+                mailService.sendEmail(
+                    to = "john.doe@acme.com",
+                    subject = "testSubject",
+                    content = "testContent",
+                    isMultipart = false,
+                    isHtml = true
+                )
+                verify(javaMailSender).send(messageCaptor.capture())
+                messageCaptor.value.run {
+                    assertThat(subject).isEqualTo("testSubject")
+                    assertThat("${allRecipients[0]}").isEqualTo("john.doe@acme.com")
+                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                    assertThat(content).isInstanceOf(String::class.java)
+                    assertThat(content.toString()).isEqualTo("testContent")
+                    assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
                 }
+            }
 
             @Test
-            fun `signupAvailability should return SIGNUP_NOT_AVAILABLE_AGAINST_LOGIN_AND_EMAIL for all when login and email are not available`(): Unit =
-                runBlocking {
-                    val signupTest = privateProperties.run {
-                        Signup(
-                            login = get("test.mail").toString().usernameFromEmail,
-                            email = get("test.mail").toString(),
-                            password = get("test.mail").toString().usernameFromEmail,
-                            repassword = get("test.mail").toString().usernameFromEmail
-                        )
-                    }
-                    val userTest = context.user(signupTest)
-                    assertEquals(0, context.countUsers())
-                    (userTest to context).save()
-                    assertEquals(1, context.countUsers())
-                    (signupTest to context).availability().run {
-                        assertEquals(
-                            SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE,
-                            getOrNull()!!
-                        )
-                    }
-                }
+            fun `test sendMail SendMultipartEmail`(): Unit {
+                mailService.sendEmail(
+                    to = "john.doe@acme.com",
+                    subject = "testSubject",
+                    content = "testContent",
+                    isMultipart = true,
+                    isHtml = false
+                )
+                verify(javaMailSender).send(messageCaptor.capture())
+                val message = messageCaptor.value
+                val part = ((message.content as MimeMultipart)
+                    .getBodyPart(0).content as MimeMultipart)
+                    .getBodyPart(0) as MimeBodyPart
+                val baos = ByteArrayOutputStream()
+                part.writeTo(baos)
+                assertThat(message.subject).isEqualTo("testSubject")
+                assertThat("${message.allRecipients[0]}").isEqualTo("john.doe@acme.com")
+                assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                assertThat(message.content).isInstanceOf(Multipart::class.java)
+                assertThat("$baos").isEqualTo("\r\ntestContent")
+                assertThat(part.dataHandler.contentType).isEqualTo("text/plain; charset=UTF-8")
+            }
 
             @Test
-            fun `signupAvailability should return SIGNUP_EMAIL_NOT_AVAILABLE when only email is not available`(): Unit =
-                runBlocking {
-                    val signupTest = privateProperties.run {
-                        Signup(
-                            login = get("test.mail").toString().usernameFromEmail,
-                            email = get("test.mail").toString(),
-                            password = get("test.mail").toString().usernameFromEmail,
-                            repassword = get("test.mail").toString().usernameFromEmail
-                        )
-                    }
-                    val userTest = context.user(signupTest)
-
-                    assertEquals(0, context.countUsers())
-                    (userTest to context).save()
-                    assertEquals(1, context.countUsers())
-                    (Signup(
-                        "testuser",
-                        "password",
-                        "password",
-                        userTest.email
-                    ) to context).availability().run {
-                        assertEquals(SIGNUP_EMAIL_NOT_AVAILABLE, getOrNull()!!)
-                    }
-                }
+            fun `test sendMail SendMultipartHtmlEmail`(): Unit {
+                mailService.sendEmail(
+                    to = "john.doe@acme.com",
+                    subject = "testSubject",
+                    content = "testContent",
+                    isMultipart = true,
+                    isHtml = true
+                )
+                verify(javaMailSender).send(messageCaptor.capture())
+                val message = messageCaptor.value
+                val part = ((message.content as MimeMultipart)
+                    .getBodyPart(0).content as MimeMultipart)
+                    .getBodyPart(0) as MimeBodyPart
+                val aos = ByteArrayOutputStream()
+                part.writeTo(aos)
+                assertThat(message.subject).isEqualTo("testSubject")
+                assertThat("${message.allRecipients[0]}").isEqualTo("john.doe@acme.com")
+                assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                assertThat(message.content).isInstanceOf(Multipart::class.java)
+                assertThat("$aos").isEqualTo("\r\ntestContent")
+                assertThat(part.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+            }
 
             @Test
-            fun `signupAvailability should return SIGNUP_LOGIN_NOT_AVAILABLE when only login is not available`(): Unit =
-                runBlocking {
-                    val signupTest = privateProperties.run {
-                        Signup(
-                            login = get("test.mail").toString().usernameFromEmail,
-                            email = get("test.mail").toString(),
-                            password = get("test.mail").toString().usernameFromEmail,
-                            repassword = get("test.mail").toString().usernameFromEmail
-                        )
-                    }
-                    val userTest = context.user(signupTest)
-                    assertEquals(0, context.countUsers())
-                    (userTest to context).save()
-                    assertEquals(1, context.countUsers())
-                    (Signup(
-                        userTest.login,
-                        "password",
-                        "password",
-                        "testuser@example.com"
-                    ) to context).availability().run {
-                        assertEquals(SIGNUP_LOGIN_NOT_AVAILABLE, getOrNull()!!)
-                    }
-                }
-
-            @Test
-            fun `check signup validate implementation`(): Unit {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+            fun `test SendEmailFromTemplate`(): Unit {
+                user.copy(
+                    login = "john",
+                    email = "john.doe@acme.com",
+                    langKey = "en"
+                ).run {
+                    mailService.sendEmailFromTemplate(
+                        mapOf(User.objectName to this),
+                        "mail/testEmail",
+                        "email.activation.title"
                     )
+                    verify(javaMailSender).send(messageCaptor.capture())
+                    messageCaptor.value.run {
+                        assertThat(subject).isEqualTo("school account activation")//.isEqualTo("Account activation")
+                        assertThat("${allRecipients[0]}").isEqualTo(email)
+                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                        assertThat(content.toString()).isEqualToNormalizingNewlines(
+                            "<html>test title, http://127.0.0.1:8080, john</html>"
+                        )
+                        assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+                    }
                 }
-                setOf(PASSWORD_ATTR, EMAIL_ATTR, LOGIN_ATTR)
-                    .map { it to context.getBean<Validator>().validateProperty(signupTest, it) }
-                    .flatMap { (first, second) ->
-                        second.map {
-                            mapOf<String, String?>(
-                                MODEL_FIELD_OBJECTNAME to objectName,
-                                MODEL_FIELD_FIELD to first,
-                                MODEL_FIELD_MESSAGE to it.message
+            }
+
+            @Test
+            fun testSendEmailWithException(): Unit {
+                doThrow(MailSendException::class.java)
+                    .`when`(javaMailSender)
+                    .send(any(MimeMessage::class.java))
+                try {
+                    mailService.sendEmail(
+                        "john.doe@acme.com",
+                        "testSubject",
+                        "testContent",
+                        isMultipart = false,
+                        isHtml = false
+                    )
+                } catch (e: Exception) {
+                    fail<String>("Exception shouldn't have been thrown")
+                }
+            }
+
+            @Test
+            fun testSendLocalizedEmailForAllSupportedLanguages(): Unit {
+                user.copy(login = "john", email = "john.doe@acme.com").run {
+                    for (langKey in languages) {
+                        mailService.sendEmailFromTemplate(
+                            mapOf(User.objectName to copy(langKey = langKey)),
+                            "mail/testEmail",
+                            "email.activation.title"
+                        )
+                        verify(javaMailSender, atLeastOnce()).send(messageCaptor.capture())
+                        val message = messageCaptor.value
+
+                        val resource = this::class.java.classLoader.getResource(
+                            "i18n/messages_${
+                                getJavaLocale(langKey)
+                            }.properties"
+                        )
+                        assertNotNull(resource)
+                        val prop = JProperties()
+                        prop.load(
+                            InputStreamReader(
+                                FileInputStream(File(URI(resource.file).path)),
+                                Charset.forName("UTF-8")
                             )
-                        }
-                    }.toSet()
-                    .apply { run(::isEmpty).let(::assertTrue) }
-            }
-
-            @Test
-            fun `test signup validator with an invalid login`(): Unit = mock<ServerWebExchange>()
-                .validator
-                .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
-                .run {
-                    assertTrue(isNotEmpty())
-                    first().run {
-                        assertEquals(
-                            "{${Pattern::class.java.name}.message}",
-                            messageTemplate
                         )
+                        val emailTitle = prop["email.activation.title"] as String
+                        assertThat(message.subject).isEqualTo(emailTitle)
+//                        assertThat(message.content.toString())
+//                            .isEqualToNormalizingNewlines("<html>$emailTitle, http://127.0.0.1:8080, john</html>")
                     }
                 }
+            }
 
-            @Test
-            fun `test signup validator with an invalid password`(): Unit {
-                val wrongPassword = "123"
-                context.getBean<Validator>()
-                    .validateProperty(signup.copy(password = wrongPassword), PASSWORD_ATTR)
-                    .run {
-                        assertTrue(isNotEmpty())
-                        first().run {
-                            assertEquals(
-                                "{${Size::class.java.name}.message}",
-                                messageTemplate
-                            )
-                        }
-                    }
+            fun getJavaLocale(langKey: String): String {
+                var javaLangKey = langKey
+                val matcher2 = PATTERN_LOCALE_2.matcher(langKey)
+                if (matcher2.matches()) javaLangKey = "${
+                    matcher2.group(1)
+                }_${
+                    matcher2.group(2).uppercase()
+                }"
+                val matcher3 = PATTERN_LOCALE_3.matcher(langKey)
+                if (matcher3.matches()) javaLangKey = "${
+                    matcher3.group(1)
+                }_${
+                    matcher3.group(2)
+                }_${
+                    matcher3.group(3).uppercase()
+                }"
+                return javaLangKey
             }
 
             @Test
-            fun `test signup request with an invalid url`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-
-                val counts = context.countUsers() to context.countUserAuthority()
-                assertThat(counts).isEqualTo(0 to 0)
-                client.post().uri("$API_SIGNUP_PATH/foobar")
-                    .contentType(APPLICATION_JSON)
-                    .bodyValue(signupTest)
-                    .exchange()
-                    .expectStatus()
-                    .isUnauthorized
-                    .expectBody()
-                    .isEmpty
-                    .responseBodyContent!!
-                    .logBody()
-
-                assertThat(counts)
-                    .isEqualTo(context.countUsers() to context.countUserAuthority())
-                context.findOne<User>(signupTest.email).mapLeft {
-                    assertThat(it::class.java).isEqualTo(Exception::class.java)
-                }.map { assertThat(it.id).isEqualTo(user.id) }
-                    .isRight().run(::assertThat).isFalse
-            }
-
-            @Test
-            fun `test signup request with a valid account`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                context.tripleCounts().run {
-                    client
-                        .post()
-                        .uri(API_SIGNUP_PATH)
-                        .contentType(APPLICATION_JSON)
-                        .bodyValue(signupTest)
-                        .exchange()
-                        .expectStatus()
-                        .isCreated
-                        .expectBody()
-                        .isEmpty
-                    assertThat(context.countUsers()).isEqualTo(first + 1)
-                    assertEquals(second + 1, context.countUserAuthority())
-                    assertEquals(third + 1, context.countUserActivation())
-                }
-            }
-
-            @Test
-            fun `test signup request with an invalid login`() = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-
-                context.run {
-                    tripleCounts().run {
-                        client
-                            .post()
-                            .uri(API_SIGNUP_PATH)
-                            .contentType(APPLICATION_PROBLEM_JSON)
-                            .header(ACCEPT_LANGUAGE, FRENCH.language)
-                            .bodyValue(signupTest.copy(login = "funky-log(n"))
-                            .exchange()
-                            .expectStatus()
-                            .isBadRequest
-                            .returnResult<ProblemDetail>()
-                            .responseBodyContent!!
-                            .logBody()
-                            .isNotEmpty()
-                            .run(::assertTrue)
-                        assertEquals(this, tripleCounts())
+            fun testSendActivationEmail(): Unit {
+                (user.copy(
+                    langKey = DEFAULT_LANGUAGE,
+                    login = "john",
+                    email = "john.doe@acme.com"
+                ) to generateActivationKey).run {
+                    run(mailService::sendActivationEmail)
+                    verify(javaMailSender).send(messageCaptor.capture())
+                    messageCaptor.value.run {
+                        assertThat("${allRecipients[0]}").isEqualTo(first.email)
+                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                        assertThat(content.toString()).isNotEmpty
+                        assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+                        content.toString()
+                            .run { i("Activation mail Mime message content: $this") }
                     }
                 }
             }
 
             @Test
-            fun `test signup with an invalid password`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-
-                val countBefore = context.countUsers()
-                assertEquals(0, countBefore)
-                client
-                    .post()
-                    .uri(API_SIGNUP_PATH)
-                    .contentType(APPLICATION_PROBLEM_JSON)
-                    .bodyValue(signupTest.copy(password = "inv"))
-                    .exchange()
-                    .expectStatus()
-                    .isBadRequest
-                    .returnResult<ResponseEntity<ProblemDetail>>()
-                    .responseBodyContent!!
-                    .isNotEmpty()
-                    .run(::assertTrue)
-                assertEquals(0, countBefore)
-            }
-
-            @Test
-            fun `test signup request with an invalid password`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-
-                assertEquals(0, context.countUsers())
-                client
-                    .post()
-                    .uri(API_SIGNUP_PATH)
-                    .contentType(APPLICATION_PROBLEM_JSON)
-                    .bodyValue(signupTest.copy(password = "123"))
-                    .exchange()
-                    .expectStatus()
-                    .isBadRequest
-                    .returnResult<ResponseEntity<ProblemDetail>>()
-                    .responseBodyContent!!
-                    .apply {
-                        map { it.toInt().toChar().toString() }
-                            .reduce { request, s ->
-                                request + buildString {
-                                    append(s)
-                                    if (s == VIRGULE && request.last().isDigit()) append("\n\t")
-                                }
-                            }.replace("{\"", "\n{\n\t\"")
-                            .replace("\"}", "\"\n}")
-                            .replace("\",\"", "\",\n\t\"")
-                            .contains(
-                                context.getBean<Validator>().validateProperty(
-                                    signupTest.copy(password = "123"),
-                                    "password"
-                                ).first().message
-                            )
-                    }.logBody()
-                    .isNotEmpty()
-                    .run(::assertTrue)
-                assertEquals(0, context.countUsers())
-            }
-
-            @Test
-            fun `test signup with an existing email`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                context.tripleCounts().run counts@{
-                    context.getBean<SignupService>().signup(signupTest)
-                    assertEquals(this@counts.first + 1, context.countUsers())
-                    assertEquals(this@counts.second + 1, context.countUserAuthority())
-                    assertEquals(third + 1, context.countUserActivation())
-                }
-                client
-                    .post().uri(API_SIGNUP_PATH)
-                    .contentType(APPLICATION_PROBLEM_JSON)
-                    .bodyValue(signupTest.copy(login = admin.login))
-                    .exchange().expectStatus().isBadRequest
-                    .returnResult<ResponseEntity<ProblemDetail>>()
-                    .responseBodyContent!!.apply {
-                        map { it.toInt().toChar().toString() }
-                            .reduce { request, s ->
-                                request + buildString {
-                                    append(s)
-                                    if (s == VIRGULE && request.last().isDigit()) append("\n\t")
-                                }
-                            }.replace("{\"", "\n{\n\t\"")
-                            .replace("\"}", "\"\n}")
-                            .replace("\",\"", "\",\n\t\"")
-                            .contains("Email is already in use!")
-                    }.logBody()
-                    .isNotEmpty()
-                    .run(::assertTrue)
-            }
-
-            @Test
-            fun `test signup with an existing login`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                context.tripleCounts().run counts@{
-                    context.getBean<SignupService>().signup(signupTest)
-                    assertEquals(this@counts.first + 1, context.countUsers())
-                    assertEquals(this@counts.second + 1, context.countUserAuthority())
-                    assertEquals(third + 1, context.countUserActivation())
-                }
-                client
-                    .post()
-                    .uri(API_SIGNUP_PATH)
-                    .contentType(APPLICATION_PROBLEM_JSON)
-                    .bodyValue(signupTest.copy(email = "foo@localhost"))
-                    .exchange()
-                    .expectStatus()
-                    .isBadRequest
-                    .returnResult<ResponseEntity<ProblemDetail>>()
-                    .responseBodyContent!!
-                    .apply {
-                        map { it.toInt().toChar().toString() }
-                            .reduce { request, s ->
-                                request + buildString {
-                                    append(s)
-                                    if (s == VIRGULE && request.last().isDigit()) append("\n\t")
-                                }
-                            }.replace("{\"", "\n{\n\t\"")
-                            .replace("\"}", "\"\n}")
-                            .replace("\",\"", "\",\n\t\"")
-                            .contains("Login name already used!")
-                    }.logBody()
-                    .isNotEmpty()
-                    .run(::assertTrue)
-            }
-
-            @Test
-            fun `test signupService signup saves user and role_user and user_activation`()
-                    : Unit = runBlocking {
-                privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }.run signup@{
-                    context.tripleCounts().run {
-                        context.getBean<SignupService>().signup(this@signup)
-                        assertThat(first + 1).isEqualTo(context.countUsers())
-                        assertThat(second + 1).isEqualTo(context.countUserAuthority())
-                        assertThat(third + 1).isEqualTo(context.countUserActivation())
-                    }
-                }
-            }
-
-            @Test
-            fun `Verifies the internationalization of validations through REST with an unconform password in French during signup`(): Unit =
-                runBlocking {
-                    val signupTest = privateProperties.run {
-                        Signup(
-                            login = get("test.mail").toString().usernameFromEmail,
-                            email = get("test.mail").toString(),
-                            password = get("test.mail").toString().usernameFromEmail,
-                            repassword = get("test.mail").toString().usernameFromEmail
-                        )
-                    }
-                    assertEquals(0, context.countUsers())
-                    client
-                        .post()
-                        .uri(API_SIGNUP_PATH)
-                        .contentType(APPLICATION_PROBLEM_JSON)
-                        .header(ACCEPT_LANGUAGE, FRENCH.language)
-                        .bodyValue(signupTest.copy(password = "123"))
-                        .exchange()
-                        .expectStatus()
-                        .isBadRequest
-                        .returnResult<ResponseEntity<ProblemDetail>>()
-                        .responseBodyContent!!
+            fun testCreationEmail(): Unit {
+                (user.copy(
+                    langKey = DEFAULT_LANGUAGE,
+                    login = "john",
+                    email = "john.doe@acme.com",
+                ) to generateResetKey).run {
+                    run(mailService::sendCreationEmail)
+                    verify(javaMailSender).send(messageCaptor.capture())
+                    messageCaptor.value
+                        .apply { i("Activation key: $second") }
+                        .apply { i("Mime message content(activation mail): $content") }
                         .run {
-                            assertTrue(isNotEmpty())
-                            assertContains(responseToString(), "la taille doit")
-                        }
-                    assertEquals(0, context.countUsers())
-                }
-
-            @Test
-            fun `test create userActivation inside signup`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                val userTest = context.user(signupTest)
-                context.tripleCounts().run {
-                    (userTest to context).signup().apply { assertThat(isRight()).isTrue }
-                    assertThat(context.countUsers()).isEqualTo(first + 1)
-                    assertThat(context.countUserActivation()).isEqualTo(third + 1)
-                    assertThat(context.countUserAuthority()).isEqualTo(second + 1)
-                }
-            }
-
-            @Test
-            fun `test find userActivation by key`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                val userTest = context.user(signupTest)
-                context.tripleCounts().run counts@{
-                    (userTest to context).signup()
-                        .getOrNull()!!
-                        .run {
-                            assertEquals(this@counts.first + 1, context.countUsers())
-                            assertEquals(this@counts.second + 1, context.countUserAuthority())
-                            assertEquals(third + 1, context.countUserActivation())
-                            second.apply(::i)
-                                .isBlank()
-                                .run(::assertFalse)
-                            assertEquals(
-                                first,
-                                context.findUserActivationByKey(second).getOrNull()!!.id
-                            )
-                            context.findUserActivationByKey(second).getOrNull().toString().run(::i)
-                            // BabyStepping to find an implementation and debugging
-                            assertDoesNotThrow {
-                                first.toString().run(::i)
-                                second.run(::i)
-                                context.getBean<TransactionalOperator>().executeAndAwait {
-                                    FIND_BY_ACTIVATION_KEY
-                                        .run(context.getBean<DatabaseClient>()::sql)
-                                        .bind(ACTIVATION_KEY_ATTR, second)
-                                        .fetch()
-                                        .awaitSingle()
-                                        .apply(::assertNotNull)
-                                        .apply { toString().run(::i) }
-                                        .let {
-                                            UserActivation(
-                                                id = UserActivation.Relations.Fields.ID_FIELD
-                                                    .run(it::get)
-                                                    .toString()
-                                                    .run(UUID::fromString),
-                                                activationKey = ACTIVATION_KEY_FIELD
-                                                    .run(it::get)
-                                                    .toString(),
-                                                createdDate = CREATED_DATE_FIELD
-                                                    .run(it::get)
-                                                    .toString()
-                                                    .run(LocalDateTime::parse)
-                                                    .toInstant(UTC),
-                                                activationDate = ACTIVATION_DATE_FIELD
-                                                    .run(it::get)
-                                                    .run {
-                                                        when {
-                                                            this == null || toString().lowercase() == "null" -> null
-                                                            else -> toString().run(LocalDateTime::parse)
-                                                                .toInstant(UTC)
-                                                        }
-                                                    },
-                                            )
-                                        }.toString().run(::i)
-                                }
-                            }
+                            assertThat("${allRecipients[0]}").isEqualTo(first.email)
+                            assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                            assertThat(content.toString()).isNotEmpty
+                            assertThat(content.toString()).contains(second)
+                            assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
                         }
                 }
             }
 
             @Test
-            fun `test activate user by key`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                val userTest = context.user(signupTest)
-                context.tripleCounts().run counts@{
-                    (userTest to context).signup().getOrNull()!!.run {
-                        assertEquals(
-                            "null",
-                            FIND_ALL_USERACTIVATION
-                                .trimIndent()
-                                .run(context.getBean<DatabaseClient>()::sql)
-                                .fetch()
-                                .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
-                                .toString()
-                                .lowercase()
-                        )
-                        assertEquals(this@counts.first + 1, context.countUsers())
-                        assertEquals(this@counts.second + 1, context.countUserAuthority())
-                        assertEquals(third + 1, context.countUserActivation())
-                        "user.id : $first".run(::i)
-                        "activation key : $second".run(::i)
-                        assertEquals(
-                            1,
-                            context.activate(second).getOrNull()!!
-                        )
-                        assertEquals(this@counts.first + 1, context.countUsers())
-                        assertEquals(this@counts.second + 1, context.countUserAuthority())
-                        assertEquals(third + 1, context.countUserActivation())
-                        assertNotEquals(
-                            "null",
-                            FIND_ALL_USERACTIVATION
-                                .trimIndent()
-                                .run(context.getBean<DatabaseClient>()::sql)
-                                .fetch()
-                                .awaitSingleOrNull()!!
-                                .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
-                                .toString()
-                                .lowercase()
-                        )
-                    }
-                }
-            }
-
-            @Test
-            fun `test activate with key out of bound`(): Unit = runBlocking {
-                UserActivation(
-                    id = randomUUID(),
-                    activationKey = random(
-                        ACTIVATION_KEY_SIZE * 2,
-                        0,
-                        0,
-                        true,
-                        true,
-                        null,
-                        SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
-                    )).run {
-                    i("UserActivation : ${toString()}")
-                    validate(mock<ServerWebExchange>()).run {
-                        assertTrue {
-                            activationKey.length > ACTIVATION_KEY_SIZE
-                            isNotEmpty()
-                            size == 1
-                        }
-                        first().run {
-                            assertTrue {
-                                keys.contains("objectName")
-                                values.contains(UserActivation.objectName)
-                                keys.contains("field")
-                                values.contains(ACTIVATION_KEY_ATTR)
-                                keys.contains("message")
-                                values.contains("size must be between 0 and 20")
-                            }
-                        }
-                    }
-                    context.activate(activationKey).run {
-                        isRight().run(::assertTrue)
-                        onRight { assertThat(it).isEqualTo(0) }
-                    }
-                    assertThrows<IllegalArgumentException>("Activation failed: No user was activated for key: $activationKey") {
-                        context.getBean<SignupService>().activate(activationKey)
-                    }
-                    context.getBean<SignupService>().activate(
-                        activationKey,
-                        mock<ServerWebExchange>()
-                    ).toString().run(::i)
-                }
-            }
-
-            @Test
-            fun `test activateService with a valid key`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                val userTest = context.user(signupTest)
-                context.tripleCounts().run counts@{
-                    (userTest to context).signup().getOrNull()!!.run {
-                        assertEquals(
-                            "null",
-                            FIND_ALL_USERACTIVATION
-                                .trimIndent()
-                                .run(context.getBean<DatabaseClient>()::sql)
-                                .fetch()
-                                .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
-                                .toString()
-                                .lowercase()
-                        )
-                        assertEquals(this@counts.first + 1, context.countUsers())
-                        assertEquals(this@counts.second + 1, context.countUserAuthority())
-                        assertEquals(third + 1, context.countUserActivation())
-                        "user.id : $first".run(::i)
-                        "activation key : $second".run(::i)
-                        assertEquals(
-                            1,
-                            context.getBean<SignupService>().activate(second)
-                        )
-                        assertEquals(this@counts.first + 1, context.countUsers())
-                        assertEquals(this@counts.second + 1, context.countUserAuthority())
-                        assertEquals(third + 1, context.countUserActivation())
-                        assertNotEquals(
-                            "null",
-                            FIND_ALL_USERACTIVATION
-                                .trimIndent()
-                                .run(context.getBean<DatabaseClient>()::sql)
-                                .fetch()
-                                .awaitSingleOrNull()!!
-                                .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
-                                .toString()
-                                .lowercase()
-                        )
-                    }
-                }
-            }
-
-            @Test
-            fun `test activate request with a wrong key producing a 412 PRECONDITION_FAILED`(): Unit {
-                //user does not exist
-                //user_activation does not exist
-                //TODO: is wrong valid key?
-                (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
-                    client.get()
-                        .uri(first, second)
-                        .exchange()
-                        .expectStatus()
-                        .is4xxClientError
-                        .returnResult<ResponseEntity<ProblemDetail>>()
-                        .responseBodyContent!!.apply {
-                            isNotEmpty().apply(::assertTrue)
-                            map { it.toInt().toChar().toString() }
-                                .reduce { request, s ->
-                                    request + buildString {
-                                        append(s)
-                                        if (s == VIRGULE && request.last().isDigit()) append("\n\t")
-                                    }
-                                }.replace("{\"", "\n{\n\t\"")
-                                .replace("\"}", "\"\n}")
-                                .replace("\",\"", "\",\n\t\"")
-                                .contains("Activation failed: No user was activated for key: $second")
-                                .run(::assertTrue)
-                        }.logBody()
-                }
-            }
-
-            @Test
-            fun `test activate request with a valid key`(): Unit = runBlocking {
-                val signupTest = privateProperties.run {
-                    Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
-                    )
-                }
-                val userTest = context.user(signupTest)
-                context.tripleCounts().run counts@{
-                    (userTest to context).signup().getOrNull()!!.run {
-                        assertEquals(
-                            "null",
-                            FIND_ALL_USERACTIVATION
-                                .trimIndent()
-                                .run(context.getBean<DatabaseClient>()::sql)
-                                .fetch()
-                                .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
-                                .toString()
-                                .lowercase()
-                        )
-                        assertEquals(this@counts.first + 1, context.countUsers())
-                        assertEquals(this@counts.second + 1, context.countUserAuthority())
-                        assertEquals(third + 1, context.countUserActivation())
-                        "user.id : $first".run(::i)
-                        "activation key : $second".run(::i)
-
-                        context.findUserActivationByKey(second)
-                            .getOrNull()!!
-                            .activationDate
-                            .run(::assertNull)
-
-                        client.get().uri(
-                            API_ACTIVATE_PATH + API_ACTIVATE_PARAM,
-                            second
-                        ).exchange()
-                            .expectStatus()
-                            .isOk
-                            .returnResult<ResponseEntity<ProblemDetail>>()
-                            .responseBodyContent!!
-                            .logBody()
-
-                        context.findUserActivationByKey(second)
-                            .getOrNull()!!
-                            .activationDate
-                            .run(::assertNotNull)
+            fun testSendPasswordResetMail(): Unit {
+                (user.copy(
+                    langKey = DEFAULT_LANGUAGE,
+                    login = "john",
+                    email = "john.doe@acme.com"
+                ) to generateResetKey).run {
+                    run(mailService::sendPasswordResetMail)
+                    verify(javaMailSender).send(messageCaptor.capture())
+                    messageCaptor.value.run {
+                        assertThat("${allRecipients[0]}").isEqualTo(first.email)
+                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                        assertThat(content.toString()).isNotEmpty
+                        assertThat(content.toString()).contains(second)
+                        assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
                     }
                 }
             }
@@ -3685,549 +2893,1285 @@ class Tests {
 
         @Nested
         @TestInstance(PER_CLASS)
-        inner class EmailSendingTests {
-            lateinit var mailService: UserMailService
+        inner class UserSignupTests {
 
-            @Spy
-            lateinit var javaMailSender: JavaMailSenderImpl
-
-            @Captor
-            lateinit var messageCaptor: ArgumentCaptor<MimeMessage>
-
-            @BeforeTest
-            fun setUpEmailSending(context: ApplicationContext) {
-                openMocks(this)
-                doNothing()
-                    .`when`(javaMailSender)
-                    .send(any(MimeMessage::class.java))
-                mailService = SMTPUserMailService(
-                    context.getBean<Properties>(),
-                    javaMailSender,
-                    context.getBean<MessageSource>(),
-                    context.getBean<SpringWebFluxTemplateEngine>()
+            val gmailConfig by lazy {
+                GoogleAuthConfig(
+                    clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
+                    projectId = "gmail-tester-444502",
+                    authUri = "https://accounts.google.com/o/oauth2/auth",
+                    tokenUri = "https://oauth2.googleapis.com/token",
+                    authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
+                    clientSecret = "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t",
+                    redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
                 )
             }
 
-            @Test
-            fun `test sendEmail`(): Unit {
-                mailService.sendEmail(
-                    to = "john.doe@acme.com",
-                    subject = "testSubject",
-                    content = "testContent",
-                    isMultipart = false,
-                    isHtml = false
-                )
-                verify(javaMailSender).send(messageCaptor.capture())
-                messageCaptor.value.run {
-                    i("Mime message content: $content")
-                    assertThat(subject).isEqualTo("testSubject")
-                    assertThat(allRecipients[0]).hasToString("john.doe@acme.com")
-                    assertThat(from[0]).hasToString(context.getBean<Properties>().mail.from)
-                    assertThat(content).isInstanceOf(String::class.java)
-                    assertThat(content).hasToString("testContent")
-                    assertThat(dataHandler.contentType).isEqualTo("text/plain; charset=UTF-8")
+            fun Triple<String, String, String>.getEstablishConnection(): Store =
+                IMAPS_MAIL_STORE_PROTOCOL.run(
+                    getDefaultInstance(
+                        getProperties().apply {
+                            setProperty(MAIL_STORE_PROTOCOL_PROP, IMAPS_MAIL_STORE_PROTOCOL)
+                        },
+                        null
+                    )::getStore
+                ).apply { connect(first, second, third) }
+
+            fun getMailConnexion(): Store = Triple(
+                GMAIL_IMAP_HOST,
+                privateProperties["test.mail"].toString(),
+                privateProperties["test.mail.password"].toString()
+            ).getEstablishConnection()
+
+            fun Store.getEmailCount(): Int = run {
+                val inbox = getFolder("inbox")
+                val spam = getFolder("[Gmail]/Spam")
+                inbox.open(READ_ONLY)
+                i("nb of Messages : " + inbox.messageCount)
+                i("nb of Unread Messages : " + inbox.unreadMessageCount)
+                i("nb of Messages in spam : " + spam.messageCount)
+                i("nb of Unread Messages in spam : " + spam.unreadMessageCount)
+                inbox.messageCount
+            }
+
+            fun String.getExtractKey(): String {
+                // Define the regex pattern to find the activation key
+                val pattern: java.util.regex.Pattern =
+                    java.util.regex.Pattern.compile("key=([a-zA-Z0-9]+)")
+
+                // Create a matcher object
+                val matcher: java.util.regex.Matcher = pattern.matcher(this)
+
+                // Find the first match
+                return when {
+                    matcher.find() -> matcher.group(1)
+                    else -> EMPTY_STRING
                 }
             }
 
-            @Test
-            fun `test sendMail SendHtmlEmail`(): Unit {
-                mailService.sendEmail(
-                    to = "john.doe@acme.com",
-                    subject = "testSubject",
-                    content = "testContent",
-                    isMultipart = false,
-                    isHtml = true
-                )
-                verify(javaMailSender).send(messageCaptor.capture())
-                messageCaptor.value.run {
-                    assertThat(subject).isEqualTo("testSubject")
-                    assertThat("${allRecipients[0]}").isEqualTo("john.doe@acme.com")
-                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                    assertThat(content).isInstanceOf(String::class.java)
-                    assertThat(content.toString()).isEqualTo("testContent")
-                    assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-                }
-            }
+            fun Store.getFindMostRecentActivationEmail(): String = getFolder("inbox")
+                .apply { open(READ_ONLY) }
+                .messages
+//                .onEach { i("it.content: ${it?.content?.toString()}") }
+                .map { it?.content?.toString() to it.receivedDate.toInstant().epochSecond }
+                .filter { it.first!!.contains(API_ACTIVATE_PATH) }
+//                .apply { i("nb of messages containing $API_ACTIVATE_PATH: $size") }
+                .maxBy { it.second }
+                .first.toString()
 
-            @Test
-            fun `test sendMail SendMultipartEmail`(): Unit {
-                mailService.sendEmail(
-                    to = "john.doe@acme.com",
-                    subject = "testSubject",
-                    content = "testContent",
-                    isMultipart = true,
-                    isHtml = false
-                )
-                verify(javaMailSender).send(messageCaptor.capture())
-                val message = messageCaptor.value
-                val part = ((message.content as MimeMultipart)
-                    .getBodyPart(0).content as MimeMultipart)
-                    .getBodyPart(0) as MimeBodyPart
-                val baos = ByteArrayOutputStream()
-                part.writeTo(baos)
-                assertThat(message.subject).isEqualTo("testSubject")
-                assertThat("${message.allRecipients[0]}").isEqualTo("john.doe@acme.com")
-                assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                assertThat(message.content).isInstanceOf(Multipart::class.java)
-                assertThat("$baos").isEqualTo("\r\ntestContent")
-                assertThat(part.dataHandler.contentType).isEqualTo("text/plain; charset=UTF-8")
-            }
+            fun Store.getFindMostRecentResetPasswordEmail(): Message? = "inbox"
+                .run(::getFolder)
+                .apply { open(READ_ONLY) }
+                .search(FromStringTerm(API_RESET_PASSWORD_FINISH_PATH))
+                .maxBy { it.receivedDate }
 
-            @Test
-            fun `test sendMail SendMultipartHtmlEmail`(): Unit {
-                mailService.sendEmail(
-                    to = "john.doe@acme.com",
-                    subject = "testSubject",
-                    content = "testContent",
-                    isMultipart = true,
-                    isHtml = true
-                )
-                verify(javaMailSender).send(messageCaptor.capture())
-                val message = messageCaptor.value
-                val part = ((message.content as MimeMultipart)
-                    .getBodyPart(0).content as MimeMultipart)
-                    .getBodyPart(0) as MimeBodyPart
-                val aos = ByteArrayOutputStream()
-                part.writeTo(aos)
-                assertThat(message.subject).isEqualTo("testSubject")
-                assertThat("${message.allRecipients[0]}").isEqualTo("john.doe@acme.com")
-                assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                assertThat(message.content).isInstanceOf(Multipart::class.java)
-                assertThat("$aos").isEqualTo("\r\ntestContent")
-                assertThat(part.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-            }
+            fun Store.getLastResetKey(): String = getFindMostRecentResetPasswordEmail()
+                ?.content
+                .toString()
+                .getExtractKey()
 
-            @Test
-            fun `test SendEmailFromTemplate`(): Unit {
-                user.copy(
-                    login = "john",
-                    email = "john.doe@acme.com",
-                    langKey = "en"
-                ).run {
-                    mailService.sendEmailFromTemplate(
-                        mapOf(User.objectName to this),
-                        "mail/testEmail",
-                        "email.test.title"
-                    )
-                    verify(javaMailSender).send(messageCaptor.capture())
-                    messageCaptor.value.run {
-                        assertThat(subject).isEqualTo("test title")
-                        assertThat("${allRecipients[0]}").isEqualTo(email)
-                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                        assertThat(content.toString()).isEqualToNormalizingNewlines(
-                            "<html>test title, http://127.0.0.1:8080, john</html>"
-                        )
-                        assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+            @Throws(MessagingException::class)
+            fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
+                .apply { open(READ_ONLY) }
+                .run {
+                    @Suppress("SimplifyNestedEachInScopeFunction")
+                    copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
+                        forEach {
+                            i("From: " + it?.from?.contentToString())
+                            i("Subject: " + it?.subject)
+                            i("Content: " + it?.content)
+                            i("ActivationKey: " + it?.content?.toString()?.getExtractKey())
+                        }
                     }
                 }
-            }
 
+            /**send mail*/
+            @Ignore
             @Test
-            fun testSendEmailWithException(): Unit {
-                doThrow(MailSendException::class.java)
-                    .`when`(javaMailSender)
-                    .send(any(MimeMessage::class.java))
-                try {
-                    mailService.sendEmail(
-                        "john.doe@acme.com",
-                        "testSubject",
-                        "testContent",
-                        isMultipart = false,
-                        isHtml = false
+            fun `functional test signup and reset password scenario`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
                     )
-                } catch (e: Exception) {
-                    fail<String>("Exception shouldn't have been thrown")
+                }
+
+                context.tripleCounts().run {
+                    client.post()
+                        .uri(API_SIGNUP_PATH)
+                        .contentType(APPLICATION_PROBLEM_JSON)
+                        .bodyValue(signupTest)
+                        .exchange()
+                        .expectStatus().isCreated
+                        .expectBody().isEmpty
+
+                    assertThat(context.countUsers()).isEqualTo(first + 1)
+                    assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+                    assertThat(context.countUserActivation()).isEqualTo(third + 1)
+
+                    when {
+                        getMailConnexion().getEmailCount() == 0 -> return@runBlocking
+                        else -> {
+                            val activationKey: String = getMailConnexion()
+                                .getFindMostRecentActivationEmail()
+                                .getExtractKey()
+                            i("Activation key from mail: $activationKey")
+                            //Cannot test more because I can't rely on gmail,
+                            // every test dont send a mail
+                            // TODO: add resend activation mail with signup mail, must check sent mail before
+                            assertThat(activationKey).asString()
+                                .hasSameSizeAs(generateActivationKey)
+                        }
+                    }
+                    // Let's continue with activation key retrieved from database,
+                    // in order to activate userTest
+                    //                        // here begin change password
+                    //                        FIND_ALL_USERS
+                    //                            .trimIndent()
+                    //                            .run(context.getBean<DatabaseClient>()::sql)
+                    //                            .fetch().awaitSingle().run {
+                    //                                @Suppress("RemoveRedundantQualifierName")
+                    //                                (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
+                    //                                        to this[PASSWORD_FIELD].toString())
+                    //                            }.run {
+                    //                                "user.id retrieved before update password: $first".apply(::i)
+                    ////                                assertEquals(uuid, first, "user.id should be the same")
+                    //                                assertNotEquals(
+                    //                                    password,
+                    //                                    second,
+                    //                                    "password should be encoded and not the same"
+                    //                                )
+                    //
+                    //                                val resetKey: String = context.apply {
+                    //                                    // Given a user well signed up
+                    //                                    assertThat(countUserResets()).isEqualTo(0)
+                    //                                }.getBean<PasswordService>()
+                    //                                    .reset(email)
+                    //                                    .mapLeft { "reset().left: $it".run(::i) }
+                    //                                    .getOrNull()!!.apply {
+                    //                                        assertThat(context.countUserResets()).isEqualTo(1)
+                    //                                        "reset key : $this".run(::i)
+                    //                                    }
+                    //
+                    //                                FIND_ALL_USER_RESETS
+                    //                                    .trimIndent()
+                    //                                    .run(context.getBean<DatabaseClient>()::sql)
+                    //                                    .fetch()
+                    //                                    .awaitSingle().run {
+                    //                                        get(IS_ACTIVE_FIELD).toString()
+                    //                                            .apply(Boolean::parseBoolean)
+                    //                                            .run(::assertThat).asBoolean().isTrue
+                    //                                        get(RESET_KEY_FIELD).toString()
+                    //                                            .run(::assertThat).asString()
+                    //                                            .isEqualTo(resetKey)
+                    //                                    }
+                    //
+                    //                                // finish reset password
+                    //                                "$password&".run {
+                    //                                    client.post().uri(
+                    //                                        API_RESET_PASSWORD_FINISH_PATH.apply {
+                    //                                            "uri : $this".run(::i)
+                    //                                        }).contentType(APPLICATION_PROBLEM_JSON)
+                    //                                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+                    //                                            "resetKey on select: $this".run(::i)
+                    //                                        }, newPassword = this))
+                    //                                        .exchange()
+                    //                                        .expectStatus()
+                    //                                        .isOk
+                    //                                        .returnResult<ProblemDetail>()
+                    //                                        .responseBodyContent!!
+                    //                                        .apply { logBody() }
+                    //                                        .apply(::assertThat)
+                    //                                        .isEmpty()
+                    //
+                    //                                    context.countUserResets().run(::assertThat).isEqualTo(1)
+                    //
+                    //                                    FIND_ALL_USER_RESETS
+                    //                                        .trimIndent()
+                    //                                        .run(context.getBean<DatabaseClient>()::sql)
+                    //                                        .fetch()
+                    //                                        .awaitSingleOrNull()!!.run {
+                    //                                            IS_ACTIVE_FIELD.run(::get).toString()
+                    //                                                .apply(Boolean::parseBoolean)
+                    //                                                .run(::assertThat).asBoolean().isFalse
+                    //
+                    //                                            CHANGE_DATE_FIELD.run(::get).toString()
+                    //                                                .run(::assertThat).asString()
+                    //                                                .containsAnyOf(
+                    //                                                    ofInstant(
+                    //                                                        now(),
+                    //                                                        systemDefault()
+                    //                                                    ).year.toString(),
+                    //                                                    ofInstant(
+                    //                                                        now(),
+                    //                                                        systemDefault()
+                    //                                                    ).month.toString(),
+                    //                                                    ofInstant(
+                    //                                                        now(),
+                    //                                                        systemDefault()
+                    //                                                    ).dayOfMonth.toString(),
+                    //                                                    ofInstant(
+                    //                                                        now(),
+                    //                                                        systemDefault()
+                    //                                                    ).hour.toString(),
+                    //                                                )
+                    //                                        }
+                    //                    }
                 }
             }
 
+            /**send mail*/
             @Test
-            fun testSendLocalizedEmailForAllSupportedLanguages(): Unit {
-                user.copy(login = "john", email = "john.doe@acme.com").run {
-                    for (langKey in languages) {
-                        mailService.sendEmailFromTemplate(
-                            mapOf(User.objectName to copy(langKey = langKey)),
-                            "mail/testEmail",
-                            "email.test.title"
-                        )
-                        verify(javaMailSender, atLeastOnce()).send(messageCaptor.capture())
-                        val message = messageCaptor.value
+            fun `test signupService signup saves user and role_user and user_activation`()
+                    : Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
 
-                        val resource = this::class.java.classLoader.getResource(
-                            "i18n/messages_${
-                                getJavaLocale(langKey)
-                            }.properties"
+                context.tripleCounts().run {
+                    context.getBean<SignupService>().signup(signupTest)
+                    assertThat(first + 1).isEqualTo(context.countUsers())
+                    assertThat(second + 1).isEqualTo(context.countUserAuthority())
+                    assertThat(third + 1).isEqualTo(context.countUserActivation())
+                }
+            }
+
+            /**send mail*/
+            @Test
+            fun `test signup request with a valid account`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                context.tripleCounts().run {
+                    client
+                        .post()
+                        .uri(API_SIGNUP_PATH)
+                        .contentType(APPLICATION_PROBLEM_JSON)
+                        .bodyValue(signupTest)
+                        .exchange()
+                        .expectStatus()
+                        .isCreated
+                        .expectBody()
+                        .isEmpty
+                    assertThat(context.countUsers()).isEqualTo(first + 1)
+                    assertEquals(second + 1, context.countUserAuthority())
+                    assertEquals(third + 1, context.countUserActivation())
+                }
+            }
+
+            @Test//TODO: rewrite test showing the scenario clearly
+            fun `test UserRoleDao signup with existing user without user_role`(): Unit =
+                runBlocking {
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = get("test.mail").toString().usernameFromEmail,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
                         )
-                        assertNotNull(resource)
-                        val prop = JProperties()
-                        prop.load(
-                            InputStreamReader(
-                                FileInputStream(File(URI(resource.file).path)),
-                                Charset.forName("UTF-8")
+                    }
+                    val userTest = context.user(signupTest)
+
+                    val countUserBefore = context.countUsers()
+                    assertThat(countUserBefore).isEqualTo(0)
+                    val countUserAuthBefore = context.countUserAuthority()
+                    assertThat(countUserAuthBefore).isEqualTo(0)
+                    lateinit var result: Either<Throwable, UUID>
+                    (userTest to context).save()
+                    assertThat(context.countUsers()).isEqualTo(countUserBefore + 1)
+                    val userId = context.getBean<DatabaseClient>().sql(FIND_USER_BY_LOGIN)
+                        .bind(LOGIN_ATTR, userTest.login.lowercase())
+                        .fetch()
+                        .one()
+                        .awaitSingle()[User.Attributes.ID_ATTR]
+                        .toString()
+                        .run(UUID::fromString)
+
+                    context.getBean<DatabaseClient>()
+                        .sql(UserRole.Relations.INSERT)
+                        .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+                        .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
+                        .fetch()
+                        .one()
+                        .awaitSingleOrNull()
+
+                    """
+        SELECT ua.${UserRole.Relations.Fields.ID_FIELD} 
+        FROM ${UserRole.Relations.Fields.TABLE_NAME} AS ua 
+        where ua.user_id= :userId and ua."role" = :role"""
+                        .trimIndent()
+                        .run(context.getBean<DatabaseClient>()::sql)
+                        .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+                        .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
+                        .fetch()
+                        .one()
+                        .awaitSingle()[UserRole.Relations.Fields.ID_FIELD]
+                        .toString()
+                        .let { "user_role_id : $it" }
+                        .run(::i)
+                    assertThat(context.countUserAuthority()).isEqualTo(countUserAuthBefore + 1)
+                }
+
+            @Test
+            fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit =
+                runBlocking {
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = get("test.mail").toString().usernameFromEmail,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
+                        )
+                    }
+                    val userTest = context.user(signupTest)
+
+                    assertThat(context.countUsers()).isEqualTo(0)
+                    (userTest to context).signup().onRight {
+                        //Because 36 == UUID.toString().length
+                        it.toString()
+                            .apply { assertThat(it.first.toString().length).isEqualTo(36) }
+                            .apply(::i)
+                    }
+                    assertThat(context.countUsers()).isEqualTo(1)
+                    assertDoesNotThrow {
+                        FIND_ALL_USERS
+                            .trimIndent()
+                            .run(context.getBean<DatabaseClient>()::sql)
+                            .fetch()
+                            .all()
+                            .collect {
+                                it[ID_FIELD]
+                                    .toString()
+                                    .run(UUID::fromString)
+                            }
+                    }
+                }
+
+            @Test
+            fun `signupAvailability should return SIGNUP_AVAILABLE for all when login and email are available`(): Unit =
+                runBlocking {
+                    (Signup(
+                        "testuser",
+                        "password",
+                        "password",
+                        "testuser@example.com"
+                    ) to context).availability().run {
+                        isRight().run(::assertTrue)
+                        assertEquals(SIGNUP_AVAILABLE, getOrNull()!!)
+                    }
+                }
+
+            @Test
+            fun `signupAvailability should return SIGNUP_NOT_AVAILABLE_AGAINST_LOGIN_AND_EMAIL for all when login and email are not available`(): Unit =
+                runBlocking {
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = get("test.mail").toString().usernameFromEmail,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
+                        )
+                    }
+                    val userTest = context.user(signupTest)
+                    assertEquals(0, context.countUsers())
+                    (userTest to context).save()
+                    assertEquals(1, context.countUsers())
+                    (signupTest to context).availability().run {
+                        assertEquals(
+                            SIGNUP_LOGIN_AND_EMAIL_NOT_AVAILABLE,
+                            getOrNull()!!
+                        )
+                    }
+                }
+
+            @Test
+            fun `signupAvailability should return SIGNUP_EMAIL_NOT_AVAILABLE when only email is not available`(): Unit =
+                runBlocking {
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = get("test.mail").toString().usernameFromEmail,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
+                        )
+                    }
+                    val userTest = context.user(signupTest)
+
+                    assertEquals(0, context.countUsers())
+                    (userTest to context).save()
+                    assertEquals(1, context.countUsers())
+                    (Signup(
+                        "testuser",
+                        "password",
+                        "password",
+                        userTest.email
+                    ) to context).availability().run {
+                        assertEquals(SIGNUP_EMAIL_NOT_AVAILABLE, getOrNull()!!)
+                    }
+                }
+
+            @Test
+            fun `signupAvailability should return SIGNUP_LOGIN_NOT_AVAILABLE when only login is not available`(): Unit =
+                runBlocking {
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = get("test.mail").toString().usernameFromEmail,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
+                        )
+                    }
+                    val userTest = context.user(signupTest)
+                    assertEquals(0, context.countUsers())
+                    (userTest to context).save()
+                    assertEquals(1, context.countUsers())
+                    (Signup(
+                        userTest.login,
+                        "password",
+                        "password",
+                        "testuser@example.com"
+                    ) to context).availability().run {
+                        assertEquals(SIGNUP_LOGIN_NOT_AVAILABLE, getOrNull()!!)
+                    }
+                }
+
+            @Test
+            fun `check signup validate implementation`(): Unit {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                setOf(PASSWORD_ATTR, EMAIL_ATTR, LOGIN_ATTR)
+                    .map { it to context.getBean<Validator>().validateProperty(signupTest, it) }
+                    .flatMap { (first, second) ->
+                        second.map {
+                            mapOf<String, String?>(
+                                MODEL_FIELD_OBJECTNAME to objectName,
+                                MODEL_FIELD_FIELD to first,
+                                MODEL_FIELD_MESSAGE to it.message
                             )
+                        }
+                    }.toSet()
+                    .apply { run(::isEmpty).let(::assertTrue) }
+            }
+
+            @Test
+            fun `test signup validator with an invalid login`(): Unit = mock<ServerWebExchange>()
+                .validator
+                .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
+                .run {
+                    assertTrue(isNotEmpty())
+                    first().run {
+                        assertEquals(
+                            "{${Pattern::class.java.name}.message}",
+                            messageTemplate
                         )
-                        val emailTitle = prop["email.test.title"] as String
-                        assertThat(message.subject).isEqualTo(emailTitle)
-                        assertThat(message.content.toString())
-                            .isEqualToNormalizingNewlines("<html>$emailTitle, http://127.0.0.1:8080, john</html>")
+                    }
+                }
+
+            @Test
+            fun `test signup validator with an invalid password`(): Unit {
+                val wrongPassword = "123"
+                context.getBean<Validator>()
+                    .validateProperty(signup.copy(password = wrongPassword), PASSWORD_ATTR)
+                    .run {
+                        assertTrue(isNotEmpty())
+                        first().run {
+                            assertEquals(
+                                "{${Size::class.java.name}.message}",
+                                messageTemplate
+                            )
+                        }
+                    }
+            }
+
+            @Test
+            fun `test signup request with an invalid url`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+
+                val counts = context.countUsers() to context.countUserAuthority()
+                assertThat(counts).isEqualTo(0 to 0)
+                client.post().uri("$API_SIGNUP_PATH/foobar")
+                    .contentType(APPLICATION_JSON)
+                    .bodyValue(signupTest)
+                    .exchange()
+                    .expectStatus()
+                    .isUnauthorized
+                    .expectBody()
+                    .isEmpty
+                    .responseBodyContent!!
+                    .logBody()
+
+                assertThat(counts)
+                    .isEqualTo(context.countUsers() to context.countUserAuthority())
+                context.findOne<User>(signupTest.email).mapLeft {
+                    assertThat(it::class.java).isEqualTo(Exception::class.java)
+                }.map { assertThat(it.id).isEqualTo(user.id) }
+                    .isRight().run(::assertThat).isFalse
+            }
+
+            @Test
+            fun `test signup request with an invalid login`() = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+
+                context.run {
+                    tripleCounts().run {
+                        client
+                            .post()
+                            .uri(API_SIGNUP_PATH)
+                            .contentType(APPLICATION_PROBLEM_JSON)
+                            .header(ACCEPT_LANGUAGE, FRENCH.language)
+                            .bodyValue(signupTest.copy(login = "funky-log(n"))
+                            .exchange()
+                            .expectStatus()
+                            .isBadRequest
+                            .returnResult<ProblemDetail>()
+                            .responseBodyContent!!
+                            .logBody()
+                            .isNotEmpty()
+                            .run(::assertTrue)
+                        assertEquals(this, tripleCounts())
                     }
                 }
             }
 
-            fun getJavaLocale(langKey: String): String {
-                var javaLangKey = langKey
-                val matcher2 = PATTERN_LOCALE_2.matcher(langKey)
-                if (matcher2.matches()) javaLangKey = "${
-                    matcher2.group(1)
-                }_${
-                    matcher2.group(2).uppercase()
-                }"
-                val matcher3 = PATTERN_LOCALE_3.matcher(langKey)
-                if (matcher3.matches()) javaLangKey = "${
-                    matcher3.group(1)
-                }_${
-                    matcher3.group(2)
-                }_${
-                    matcher3.group(3).uppercase()
-                }"
-                return javaLangKey
-            }
-
             @Test
-            fun testSendActivationEmail(): Unit {
-                (user.copy(
-                    langKey = DEFAULT_LANGUAGE,
-                    login = "john",
-                    email = "john.doe@acme.com"
-                ) to generateActivationKey).run {
-                    run(mailService::sendActivationEmail)
-                    verify(javaMailSender).send(messageCaptor.capture())
-                    messageCaptor.value.run {
-                        assertThat("${allRecipients[0]}").isEqualTo(first.email)
-                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                        assertThat(content.toString()).isNotEmpty
-                        assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
-                        content.toString()
-                            .run { i("Activation mail Mime message content: $this") }
-                    }
+            fun `test signup with an invalid password`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
                 }
+
+                val countBefore = context.countUsers()
+                assertEquals(0, countBefore)
+                client
+                    .post()
+                    .uri(API_SIGNUP_PATH)
+                    .contentType(APPLICATION_PROBLEM_JSON)
+                    .bodyValue(signupTest.copy(password = "inv"))
+                    .exchange()
+                    .expectStatus()
+                    .isBadRequest
+                    .returnResult<ResponseEntity<ProblemDetail>>()
+                    .responseBodyContent!!
+                    .isNotEmpty()
+                    .run(::assertTrue)
+                assertEquals(0, countBefore)
             }
 
             @Test
-            fun testCreationEmail(): Unit {
-                (user.copy(
-                    langKey = DEFAULT_LANGUAGE,
-                    login = "john",
-                    email = "john.doe@acme.com",
-                ) to generateResetKey).run {
-                    run(mailService::sendCreationEmail)
-                    verify(javaMailSender).send(messageCaptor.capture())
-                    messageCaptor.value
-                        .apply { i("Activation key: $second") }
-                        .apply { i("Mime message content(activation mail): $content") }
+            fun `test signup request with an invalid password`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+
+                assertEquals(0, context.countUsers())
+                client
+                    .post()
+                    .uri(API_SIGNUP_PATH)
+                    .contentType(APPLICATION_PROBLEM_JSON)
+                    .bodyValue(signupTest.copy(password = "123"))
+                    .exchange()
+                    .expectStatus()
+                    .isBadRequest
+                    .returnResult<ResponseEntity<ProblemDetail>>()
+                    .responseBodyContent!!
+                    .apply {
+                        map { it.toInt().toChar().toString() }
+                            .reduce { request, s ->
+                                request + buildString {
+                                    append(s)
+                                    if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                                }
+                            }.replace("{\"", "\n{\n\t\"")
+                            .replace("\"}", "\"\n}")
+                            .replace("\",\"", "\",\n\t\"")
+                            .contains(
+                                context.getBean<Validator>().validateProperty(
+                                    signupTest.copy(password = "123"),
+                                    "password"
+                                ).first().message
+                            )
+                    }.logBody()
+                    .isNotEmpty()
+                    .run(::assertTrue)
+                assertEquals(0, context.countUsers())
+            }
+
+            @Test
+            fun `test signup with an existing email`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                context.tripleCounts().run counts@{
+                    context.getBean<SignupService>().signup(signupTest)
+                    assertEquals(this@counts.first + 1, context.countUsers())
+                    assertEquals(this@counts.second + 1, context.countUserAuthority())
+                    assertEquals(third + 1, context.countUserActivation())
+                }
+                client
+                    .post().uri(API_SIGNUP_PATH)
+                    .contentType(APPLICATION_PROBLEM_JSON)
+                    .bodyValue(signupTest.copy(login = admin.login))
+                    .exchange().expectStatus().isBadRequest
+                    .returnResult<ResponseEntity<ProblemDetail>>()
+                    .responseBodyContent!!.apply {
+                        map { it.toInt().toChar().toString() }
+                            .reduce { request, s ->
+                                request + buildString {
+                                    append(s)
+                                    if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                                }
+                            }.replace("{\"", "\n{\n\t\"")
+                            .replace("\"}", "\"\n}")
+                            .replace("\",\"", "\",\n\t\"")
+                            .contains("Email is already in use!")
+                    }.logBody()
+                    .isNotEmpty()
+                    .run(::assertTrue)
+            }
+
+            @Test
+            fun `test signup with an existing login`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                context.tripleCounts().run counts@{
+                    context.getBean<SignupService>().signup(signupTest)
+                    assertEquals(this@counts.first + 1, context.countUsers())
+                    assertEquals(this@counts.second + 1, context.countUserAuthority())
+                    assertEquals(third + 1, context.countUserActivation())
+                }
+                client
+                    .post()
+                    .uri(API_SIGNUP_PATH)
+                    .contentType(APPLICATION_PROBLEM_JSON)
+                    .bodyValue(signupTest.copy(email = "foo@localhost"))
+                    .exchange()
+                    .expectStatus()
+                    .isBadRequest
+                    .returnResult<ResponseEntity<ProblemDetail>>()
+                    .responseBodyContent!!
+                    .apply {
+                        map { it.toInt().toChar().toString() }
+                            .reduce { request, s ->
+                                request + buildString {
+                                    append(s)
+                                    if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                                }
+                            }.replace("{\"", "\n{\n\t\"")
+                            .replace("\"}", "\"\n}")
+                            .replace("\",\"", "\",\n\t\"")
+                            .contains("Login name already used!")
+                    }.logBody()
+                    .isNotEmpty()
+                    .run(::assertTrue)
+            }
+
+            @Test
+            fun `Verifies the internationalization of validations through REST with an unconform password in French during signup`(): Unit =
+                runBlocking {
+                    val signupTest = privateProperties.run {
+                        Signup(
+                            login = get("test.mail").toString().usernameFromEmail,
+                            email = get("test.mail").toString(),
+                            password = get("test.mail").toString().usernameFromEmail,
+                            repassword = get("test.mail").toString().usernameFromEmail
+                        )
+                    }
+                    assertEquals(0, context.countUsers())
+                    client
+                        .post()
+                        .uri(API_SIGNUP_PATH)
+                        .contentType(APPLICATION_PROBLEM_JSON)
+                        .header(ACCEPT_LANGUAGE, FRENCH.language)
+                        .bodyValue(signupTest.copy(password = "123"))
+                        .exchange()
+                        .expectStatus()
+                        .isBadRequest
+                        .returnResult<ResponseEntity<ProblemDetail>>()
+                        .responseBodyContent!!
                         .run {
-                            assertThat("${allRecipients[0]}").isEqualTo(first.email)
-                            assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                            assertThat(content.toString()).isNotEmpty
-                            assertThat(content.toString()).contains(second)
-                            assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+                            assertTrue(isNotEmpty())
+                            assertContains(responseToString(), "la taille doit")
+                        }
+                    assertEquals(0, context.countUsers())
+                }
+
+            @Test
+            fun `test create userActivation inside signup`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+                context.tripleCounts().run {
+                    (userTest to context).signup().apply { assertThat(isRight()).isTrue }
+                    assertThat(context.countUsers()).isEqualTo(first + 1)
+                    assertThat(context.countUserActivation()).isEqualTo(third + 1)
+                    assertThat(context.countUserAuthority()).isEqualTo(second + 1)
+                }
+            }
+
+            @Test
+            fun `test find userActivation by key`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+                context.tripleCounts().run counts@{
+                    (userTest to context).signup()
+                        .getOrNull()!!
+                        .run {
+                            assertEquals(this@counts.first + 1, context.countUsers())
+                            assertEquals(this@counts.second + 1, context.countUserAuthority())
+                            assertEquals(third + 1, context.countUserActivation())
+                            second.apply(::i)
+                                .isBlank()
+                                .run(::assertFalse)
+                            assertEquals(
+                                first,
+                                context.findUserActivationByKey(second).getOrNull()!!.id
+                            )
+                            context.findUserActivationByKey(second).getOrNull().toString().run(::i)
+                            // BabyStepping to find an implementation and debugging
+                            assertDoesNotThrow {
+                                first.toString().run(::i)
+                                second.run(::i)
+                                context.getBean<TransactionalOperator>().executeAndAwait {
+                                    FIND_BY_ACTIVATION_KEY
+                                        .run(context.getBean<DatabaseClient>()::sql)
+                                        .bind(ACTIVATION_KEY_ATTR, second)
+                                        .fetch()
+                                        .awaitSingle()
+                                        .apply(::assertNotNull)
+                                        .apply { toString().run(::i) }
+                                        .let {
+                                            UserActivation(
+                                                id = UserActivation.Relations.Fields.ID_FIELD
+                                                    .run(it::get)
+                                                    .toString()
+                                                    .run(UUID::fromString),
+                                                activationKey = ACTIVATION_KEY_FIELD
+                                                    .run(it::get)
+                                                    .toString(),
+                                                createdDate = CREATED_DATE_FIELD
+                                                    .run(it::get)
+                                                    .toString()
+                                                    .run(LocalDateTime::parse)
+                                                    .toInstant(UTC),
+                                                activationDate = ACTIVATION_DATE_FIELD
+                                                    .run(it::get)
+                                                    .run {
+                                                        when {
+                                                            this == null || toString().lowercase() == "null" -> null
+                                                            else -> toString().run(LocalDateTime::parse)
+                                                                .toInstant(UTC)
+                                                        }
+                                                    },
+                                            )
+                                        }.toString().run(::i)
+                                }
+                            }
                         }
                 }
             }
 
             @Test
-            fun testSendPasswordResetMail(): Unit {
-                (user.copy(
-                    langKey = DEFAULT_LANGUAGE,
-                    login = "john",
-                    email = "john.doe@acme.com"
-                ) to generateResetKey).run {
-                    run(mailService::sendPasswordResetMail)
-                    verify(javaMailSender).send(messageCaptor.capture())
-                    messageCaptor.value.run {
-                        assertThat("${allRecipients[0]}").isEqualTo(first.email)
-                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
-                        assertThat(content.toString()).isNotEmpty
-                        assertThat(content.toString()).contains(second)
-                        assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
+            fun `test activate user by key`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+                context.tripleCounts().run counts@{
+                    (userTest to context).signup().getOrNull()!!.run {
+                        assertEquals(
+                            "null",
+                            FIND_ALL_USERACTIVATION
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+                                .toString()
+                                .lowercase()
+                        )
+                        assertEquals(this@counts.first + 1, context.countUsers())
+                        assertEquals(this@counts.second + 1, context.countUserAuthority())
+                        assertEquals(third + 1, context.countUserActivation())
+                        "user.id : $first".run(::i)
+                        "activation key : $second".run(::i)
+                        assertEquals(
+                            1,
+                            context.activate(second).getOrNull()!!
+                        )
+                        assertEquals(this@counts.first + 1, context.countUsers())
+                        assertEquals(this@counts.second + 1, context.countUserAuthority())
+                        assertEquals(third + 1, context.countUserActivation())
+                        assertNotEquals(
+                            "null",
+                            FIND_ALL_USERACTIVATION
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!!
+                                .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
+                                .toString()
+                                .lowercase()
+                        )
+                    }
+                }
+            }
+
+            @Test
+            fun `test activate with key out of bound`(): Unit = runBlocking {
+                UserActivation(
+                    id = randomUUID(),
+                    activationKey = random(
+                        ACTIVATION_KEY_SIZE * 2,
+                        0,
+                        0,
+                        true,
+                        true,
+                        null,
+                        SecureRandom().apply { 64.run(::ByteArray).run(::nextBytes) }
+                    )).run {
+                    i("UserActivation : ${toString()}")
+                    validate(mock<ServerWebExchange>()).run {
+                        assertTrue {
+                            activationKey.length > ACTIVATION_KEY_SIZE
+                            isNotEmpty()
+                            size == 1
+                        }
+                        first().run {
+                            assertTrue {
+                                keys.contains("objectName")
+                                values.contains(UserActivation.objectName)
+                                keys.contains("field")
+                                values.contains(ACTIVATION_KEY_ATTR)
+                                keys.contains("message")
+                                values.contains("size must be between 0 and 20")
+                            }
+                        }
+                    }
+                    context.activate(activationKey).run {
+                        isRight().run(::assertTrue)
+                        onRight { assertThat(it).isEqualTo(0) }
+                    }
+                    assertThrows<IllegalArgumentException>("Activation failed: No user was activated for key: $activationKey") {
+                        context.getBean<SignupService>().activate(activationKey)
+                    }
+                    context.getBean<SignupService>().activate(
+                        activationKey,
+                        mock<ServerWebExchange>()
+                    ).toString().run(::i)
+                }
+            }
+
+            @Test
+            fun `test activateService with a valid key`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+                context.tripleCounts().run counts@{
+                    (userTest to context).signup().getOrNull()!!.run {
+                        assertEquals(
+                            "null",
+                            FIND_ALL_USERACTIVATION
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+                                .toString()
+                                .lowercase()
+                        )
+                        assertEquals(this@counts.first + 1, context.countUsers())
+                        assertEquals(this@counts.second + 1, context.countUserAuthority())
+                        assertEquals(third + 1, context.countUserActivation())
+                        "user.id : $first".run(::i)
+                        "activation key : $second".run(::i)
+                        assertEquals(
+                            1,
+                            context.getBean<SignupService>().activate(second)
+                        )
+                        assertEquals(this@counts.first + 1, context.countUsers())
+                        assertEquals(this@counts.second + 1, context.countUserAuthority())
+                        assertEquals(third + 1, context.countUserActivation())
+                        assertNotEquals(
+                            "null",
+                            FIND_ALL_USERACTIVATION
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!!
+                                .apply { "user_activation : $this".run(::i) }[ACTIVATION_DATE_FIELD]
+                                .toString()
+                                .lowercase()
+                        )
+                    }
+                }
+            }
+
+            @Test
+            fun `test activate request with a wrong key producing a 412 PRECONDITION_FAILED`(): Unit {
+                //user does not exist
+                //user_activation does not exist
+                //TODO: is wrong valid key?
+                (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to "wrongActivationKey").run UrlKeyPair@{
+                    client.get()
+                        .uri(first, second)
+                        .exchange()
+                        .expectStatus()
+                        .is4xxClientError
+                        .returnResult<ResponseEntity<ProblemDetail>>()
+                        .responseBodyContent!!.apply {
+                            isNotEmpty().apply(::assertTrue)
+                            map { it.toInt().toChar().toString() }
+                                .reduce { request, s ->
+                                    request + buildString {
+                                        append(s)
+                                        if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                                    }
+                                }.replace("{\"", "\n{\n\t\"")
+                                .replace("\"}", "\"\n}")
+                                .replace("\",\"", "\",\n\t\"")
+                                .contains("Activation failed: No user was activated for key: $second")
+                                .run(::assertTrue)
+                        }.logBody()
+                }
+            }
+
+            @Test
+            fun `test activate request with a valid key`(): Unit = runBlocking {
+                val signupTest = privateProperties.run {
+                    Signup(
+                        login = get("test.mail").toString().usernameFromEmail,
+                        email = get("test.mail").toString(),
+                        password = get("test.mail").toString().usernameFromEmail,
+                        repassword = get("test.mail").toString().usernameFromEmail
+                    )
+                }
+                val userTest = context.user(signupTest)
+                context.tripleCounts().run counts@{
+                    (userTest to context).signup().getOrNull()!!.run {
+                        assertEquals(
+                            "null",
+                            FIND_ALL_USERACTIVATION
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+                                .toString()
+                                .lowercase()
+                        )
+                        assertEquals(this@counts.first + 1, context.countUsers())
+                        assertEquals(this@counts.second + 1, context.countUserAuthority())
+                        assertEquals(third + 1, context.countUserActivation())
+                        "user.id : $first".run(::i)
+                        "activation key : $second".run(::i)
+
+                        context.findUserActivationByKey(second)
+                            .getOrNull()!!
+                            .activationDate
+                            .run(::assertNull)
+
+                        client.get().uri(
+                            API_ACTIVATE_PATH + API_ACTIVATE_PARAM,
+                            second
+                        ).exchange()
+                            .expectStatus()
+                            .isOk
+                            .returnResult<ResponseEntity<ProblemDetail>>()
+                            .responseBodyContent!!
+                            .logBody()
+
+                        context.findUserActivationByKey(second)
+                            .getOrNull()!!
+                            .activationDate
+                            .run(::assertNotNull)
                     }
                 }
             }
         }
+    }
 
-        @Nested
-        @TestInstance(PER_CLASS)
-        inner class WorkspaceTest {
-            /**
-             *    1/ Workspace
-             *         a. create a workspace
-             *         b. add an entry to the workspace
-             *         c. remove an entry from the workspace
-             *         d. update an entry in the workspace
-             *         e. find an entry in the workspace
-             *     2/ WorkspaceEntry
-             *         a. create an Education
-             *         b. create an Office
-             *         c. create a Job
-             *         d. create a Configuration
-             *         e. create a Communication
-             *         f. create an Organisation
-             *         g. create a Collaboration
-             *         h. create a Dashboard
-             *         i. create a Portfolio
-             *     3/ name
-             *     4/ office
-             *     5/ cores
-             *     6/ job
-             *     7/ configuration
-             *     8/ communication
-             *     9/ organisation
-             *     10/ collaboration
-             *     11/ dashboard
-             *     12/ portfolio
-             *
-             ****************************************************
-             *
-             * 1 - Créer la configuration du workspace
-             * 2 - Ajouter les repositories a la configuration
-             * 2 - Cloner les repositories du workspace
-             * 3 - Créer les dossiers complémentaires du workspace
-             * 4 - lancer les tests gradle
-             */
-            private val workspace = Workspace(
-                entries = WorkspaceEntry(
-                    name = "fonderie",
-                    path = getProperty(USER_HOME_KEY)
-                        .run { "$this/workspace/school" },
-                    office = Office(
-                        books = Books(name = "books-collection"),
-                        datas = Datas(name = "datas"),
-                        formations = TrainingCatalogue(catalogue = "formations"),
-                        bizness = Profession("bizness"),
-                        notebooks = Notebooks(notebooks = "notebooks"),
-                        pilotage = Pilotage(name = "pilotage"),
-                        schemas = Schemas(name = "schemas"),
-                        slides = Slides(
-                            path = getProperty(USER_HOME_KEY)
-                                .run { "$this/workspace/office/slides" }),
-                        sites = Sites(name = "sites"),
-                        path = "office"
+    @Nested
+    @TestInstance(PER_CLASS)
+    inner class WorkspaceTest {
+        /**
+         *    1/ Workspace
+         *         a. create a workspace
+         *         b. add an entry to the workspace
+         *         c. remove an entry from the workspace
+         *         d. update an entry in the workspace
+         *         e. find an entry in the workspace
+         *     2/ WorkspaceEntry
+         *         a. create an Education
+         *         b. create an Office
+         *         c. create a Job
+         *         d. create a Configuration
+         *         e. create a Communication
+         *         f. create an Organisation
+         *         g. create a Collaboration
+         *         h. create a Dashboard
+         *         i. create a Portfolio
+         *     3/ name
+         *     4/ office
+         *     5/ cores
+         *     6/ job
+         *     7/ configuration
+         *     8/ communication
+         *     9/ organisation
+         *     10/ collaboration
+         *     11/ dashboard
+         *     12/ portfolio
+         *
+         ****************************************************
+         *
+         * 1 - Créer la configuration du workspace
+         * 2 - Ajouter les repositories a la configuration
+         * 2 - Cloner les repositories du workspace
+         * 3 - Créer les dossiers complémentaires du workspace
+         * 4 - lancer les tests gradle
+         */
+        private val workspace = Workspace(
+            entries = WorkspaceEntry(
+                name = "fonderie",
+                path = getProperty(USER_HOME_KEY)
+                    .run { "$this/workspace/school" },
+                office = Office(
+                    books = Books(name = "books-collection"),
+                    datas = Datas(name = "datas"),
+                    formations = TrainingCatalogue(catalogue = "formations"),
+                    bizness = Profession("bizness"),
+                    notebooks = Notebooks(notebooks = "notebooks"),
+                    pilotage = Pilotage(name = "pilotage"),
+                    schemas = Schemas(name = "schemas"),
+                    slides = Slides(
+                        path = getProperty(USER_HOME_KEY)
+                            .run { "$this/workspace/office/slides" }),
+                    sites = Sites(name = "sites"),
+                    path = "office"
+                ),
+                cores = mapOf(
+                    "education" to Education(
+                        school = School(name = "talaria"),
+                        student = Student(name = "olivier"),
+                        teacher = Teacher(name = "cheroliv"),
+                        educationTools = EducationTools(name = "edTools")
                     ),
-                    cores = mapOf(
-                        "education" to Education(
-                            school = School(name = "talaria"),
-                            student = Student(name = "olivier"),
-                            teacher = Teacher(name = "cheroliv"),
-                            educationTools = EducationTools(name = "edTools")
-                        ),
-                    ),
-                    job = Job(
-                        position = Position("Teacher"),
-                        resume = Resume(name = "CV")
-                    ),
-                    configuration = Configuration(configuration = "school-configuration"),
-                    communication = Communication(site = "static-website"),
-                    organisation = Organisation(organisation = "organisation"),
-                    collaboration = Collaboration(collaboration = "collaboration"),
-                    dashboard = Dashboard(dashboard = "dashboard"),
-                    portfolio = Portfolio(
-                        mutableMapOf(
-                            "school" to PortfolioProject(
-                                name = "name",
-                                cred = "credential",
-                                builds = mutableMapOf(
-                                    "training" to ProjectBuild(
-                                        name = "training"
-                                    )
+                ),
+                job = Job(
+                    position = Position("Teacher"),
+                    resume = Resume(name = "CV")
+                ),
+                configuration = Configuration(configuration = "school-configuration"),
+                communication = Communication(site = "static-website"),
+                organisation = Organisation(organisation = "organisation"),
+                collaboration = Collaboration(collaboration = "collaboration"),
+                dashboard = Dashboard(dashboard = "dashboard"),
+                portfolio = Portfolio(
+                    mutableMapOf(
+                        "school" to PortfolioProject(
+                            name = "name",
+                            cred = "credential",
+                            builds = mutableMapOf(
+                                "training" to ProjectBuild(
+                                    name = "training"
                                 )
                             )
                         )
-                    ),
-                )
+                    )
+                ),
             )
+        )
 
-            @Test
-            fun checkDisplayWorkspaceStructure(): Unit {
-                workspace.toString().run(::i)
-                workspace.displayWorkspaceStructure()
+        @Test
+        fun checkDisplayWorkspaceStructure(): Unit {
+            workspace.toString().run(::i)
+            workspace.displayWorkspaceStructure()
+        }
+
+        @Test
+        fun `install workspace`(): Unit {
+            install(
+                getProperty(USER_HOME_KEY)
+                    .run { "$this/workspace/school" })
+            // default type : AllInOneWorkspace
+            // ExplodedWorkspace
+        }
+
+        @Test
+        fun `test create workspace with ALL_IN_ONE config`(): Unit {
+            val path = "build/workspace"
+            val configFileName = "config.yaml"
+            path.run(::File).apply {
+                when {
+                    !exists() -> mkdirs().run(::assertTrue)
+                }
+            }.run {
+                exists().run(::assertTrue)
+                isDirectory.run(::assertTrue)
+                WorkspaceConfig(
+                    basePath = toPath(),
+                    type = ALL_IN_ONE,
+                ).run(WorkspaceManager::createWorkspace)
+                entries.forEach { "$this/$it".run(::File).exists().run(::assertTrue) }
+                "$path/$configFileName".run(::File).exists().run(::assertTrue)
+                deleteRecursively().run(::assertTrue)
+            }
+        }
+
+        @Test
+        fun `test create workspace with SEPARATED_FOLDERS config`(): Unit {
+            val workspacePath = "build/workspace"
+            val configFileName = "config.yaml"
+            val subPaths = mutableMapOf<String, Path>()
+
+            entries.mapIndexed { index, workspaceEntryPath ->
+                (workspaceEntryPath to (workspacePath.run(::File)
+                    .parentFile
+                    .listFiles()?.get(index) ?: "build".run(::File)))
+            }.forEach { it: Pair<String, File> ->
+                "${it.second}/${it.first}"
+                    .run(::File)
+                    .apply {
+                        subPaths[it.first] = toPath()
+                        mkdir()
+                    }.isDirectory().run(::assertTrue)
             }
 
-            @Test
-            fun `install workspace`(): Unit {
-                install(
-                    getProperty(USER_HOME_KEY)
-                        .run { "$this/workspace/school" })
-                // default type : AllInOneWorkspace
-                // ExplodedWorkspace
-            }
-
-            @Test
-            fun `test create workspace with ALL_IN_ONE config`(): Unit {
-                val path = "build/workspace"
-                val configFileName = "config.yaml"
-                path.run(::File).apply {
-                    when {
-                        !exists() -> mkdirs().run(::assertTrue)
-                    }
-                }.run {
+            workspacePath.run(::File)
+                .apply { if (!exists()) mkdir().run(::assertTrue) }
+                .run {
                     exists().run(::assertTrue)
                     isDirectory.run(::assertTrue)
-                    WorkspaceConfig(
+
+                    val config = WorkspaceConfig(
                         basePath = toPath(),
-                        type = ALL_IN_ONE,
+                        type = SEPARATED_FOLDERS,
+                        subPaths = subPaths,
+                        configFileName = configFileName
                     ).run(WorkspaceManager::createWorkspace)
-                    entries.forEach { "$this/$it".run(::File).exists().run(::assertTrue) }
-                    "$path/$configFileName".run(::File).exists().run(::assertTrue)
+
+                    "$this/$configFileName"
+                        .run(::File)
+                        .readText()
+                        .apply { assertTrue(isNotBlank()) }
+                        .run { "config :\n$this" }
+                        .run(::i)
+                    assertEquals(
+                        expected = config.subPaths["office"]!!.pathString,
+                        actual = config.workspace.entries.office.path
+                    )
+                    assertEquals(
+                        expected = config.subPaths["education"]!!.pathString,
+                        actual = (config.workspace.entries.cores["education"] as Education).path
+                    )
+                    assertEquals(
+                        expected = config.subPaths["communication"]!!.pathString,
+                        actual = (config.workspace.entries.communication as Communication).path
+                    )
+                    assertEquals(
+                        expected = config.subPaths["configuration"]!!.pathString,
+                        actual = (config.workspace.entries.configuration as Configuration).path
+                    )
+                    assertEquals(
+                        expected = config.subPaths["job"]!!.pathString,
+                        actual = (config.workspace.entries.job as Job).path
+                    )
+
+                    "$this/$configFileName".run(::File).exists().run(::assertTrue)
                     deleteRecursively().run(::assertTrue)
                 }
-            }
-
-            @Test
-            fun `test create workspace with SEPARATED_FOLDERS config`(): Unit {
-                val workspacePath = "build/workspace"
-                val configFileName = "config.yaml"
-                val subPaths = mutableMapOf<String, Path>()
-
-                entries.mapIndexed { index, workspaceEntryPath ->
-                    (workspaceEntryPath to (workspacePath.run(::File)
-                        .parentFile
-                        .listFiles()?.get(index) ?: "build".run(::File)))
-                }.forEach { it: Pair<String, File> ->
-                    "${it.second}/${it.first}"
-                        .run(::File)
-                        .apply {
-                            subPaths[it.first] = toPath()
-                            mkdir()
-                        }.isDirectory().run(::assertTrue)
-                }
-
-                workspacePath.run(::File)
-                    .apply { if (!exists()) mkdir().run(::assertTrue) }
-                    .run {
-                        exists().run(::assertTrue)
-                        isDirectory.run(::assertTrue)
-
-                        val config = WorkspaceConfig(
-                            basePath = toPath(),
-                            type = SEPARATED_FOLDERS,
-                            subPaths = subPaths,
-                            configFileName = configFileName
-                        ).run(WorkspaceManager::createWorkspace)
-
-                        "$this/$configFileName"
-                            .run(::File)
-                            .readText()
-                            .apply { assertTrue(isNotBlank()) }
-                            .run { "config :\n$this" }
-                            .run(::i)
-                        assertEquals(
-                            expected = config.subPaths["office"]!!.pathString,
-                            actual = config.workspace.entries.office.path
-                        )
-                        assertEquals(
-                            expected = config.subPaths["education"]!!.pathString,
-                            actual = (config.workspace.entries.cores["education"] as Education).path
-                        )
-                        assertEquals(
-                            expected = config.subPaths["communication"]!!.pathString,
-                            actual = (config.workspace.entries.communication as Communication).path
-                        )
-                        assertEquals(
-                            expected = config.subPaths["configuration"]!!.pathString,
-                            actual = (config.workspace.entries.configuration as Configuration).path
-                        )
-                        assertEquals(
-                            expected = config.subPaths["job"]!!.pathString,
-                            actual = (config.workspace.entries.job as Job).path
-                        )
-
-                        "$this/$configFileName".run(::File).exists().run(::assertTrue)
-                        deleteRecursively().run(::assertTrue)
-                    }
-                subPaths.map {
-                    it.value.toAbsolutePath().toFile().deleteRecursively().run(::assertTrue)
-                }
-            }
-
-            //@org.junit.jupiter.api.extension.ExtendWith
-            //@org.junit.jupiter.api.TestInstance(PER_CLASS)
-            inner class GUITest {
-                private lateinit var window: FrameFixture
-
-                //    @kotlin.test.BeforeTest
-                fun setUp() = execute {
-                    // context.
-                    window = run(Installer::GUI)
-                        .run(::FrameFixture)
-                        .apply(FrameFixture::show)
-                }
-
-                //    @kotlin.test.AfterTest
-                fun tearDown() = window.cleanUp()
+            subPaths.map {
+                it.value.toAbsolutePath().toFile().deleteRecursively().run(::assertTrue)
             }
         }
+    }
 
-        @Nested
-        @TestInstance(PER_CLASS)
-        inner class AiTests {
-            @Suppress("MemberVisibilityCanBePrivate", "PropertyName")
-            val EXPECTED_KEYWORDS = setOf(
-                "```", "code", "function",
-                "python", "html", "div", "json",
-                "yaml", "xml", "javascript",
-                "css", "kotlin", "if", "else",
-                "for", "while", "return", "print",
-                "true", "false", "program",
-            )
+    //@org.junit.jupiter.api.extension.ExtendWith
+    //@org.junit.jupiter.api.TestInstance(PER_CLASS)
+    inner class GUITest {
+        private lateinit var window: FrameFixture
 
-            @Test
-            fun `test ollama configuration`(): Unit {
-                assertThat(
-                    context.environment["langchain4j.ollama.chat-model.base-url"]
-                ).isEqualTo("http://localhost:11434")
-
-                assertThat(
-                    context.environment["langchain4j.ollama.chat-model.model-name"]
-                ).isEqualTo("smollm:135m")
-
-                context.configuration.run(::assertThat).isNotEmpty
-            }
-
-            @Test
-            fun `test trivial ai api`(): Unit = runBlocking {
-                client.mutate()
-                    .responseTimeout(ofSeconds(60))
-                    .build()
-                    .get().uri("/api/ai/trivial")
-                    .exchange().expectStatus().isOk
-                    .returnResult<ProblemDetail>()
-                    .responseBodyContent!!
-                    .responseToString().run {
-                        context.getBean<ObjectMapper>().readValue<ProblemDetail>(this)
-                    }.detail!!.apply(::i)
-                    .run(::assertThat)
-                    .isNotEmpty
-                    .asString()
-                    .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
-            }
-
-            @Test
-            fun `test simple ai api, json format response`(): Unit = runBlocking {
-                client.mutate()
-                    .responseTimeout(ofSeconds(60))
-                    .build()
-                    .get().uri("/api/ai/simple")
-                    .exchange().expectStatus().isOk
-                    .returnResult<ResponseEntity<AssistantResponse>>()
-                    .responseBodyContent!!.responseToString().run {
-                        context.getBean<ObjectMapper>()
-                            .readValue<Success>(this)
-                            .answer!!
-                            .apply(::i)
-                    }.run(::assertThat)
-                    .isNotBlank()
-                    .asString()
-                    .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
-            }
+        //    @kotlin.test.BeforeTest
+        fun setUp() = execute {
+            // context.
+            window = run(Installer::GUI)
+                .run(::FrameFixture)
+                .apply(FrameFixture::show)
         }
+
+        //    @kotlin.test.AfterTest
+        fun tearDown() = window.cleanUp()
     }
 }
