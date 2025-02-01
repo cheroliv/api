@@ -1,7 +1,9 @@
 package app.ai.translator
 
+import app.ai.AIAssistantWorker
 import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.ENGLISH
 import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.FRENCH
+import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.localModels
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
@@ -51,14 +53,13 @@ class AiTranslatorController(service: ChatModelService) {
             ENGLISH.SYSTEM_MSG.run { "userMessageEn : $this" }.run(::println)
         }
 
-        
-        val localModels
-            get() = setOf(
-                "llama3.2:3b" to "LlamaTiny",
-                "dolphin-llama3:8b" to "DolphinSmall",
-                "aya:8b" to "AyaSmall",
-                "smollm:135m" to "Smoll",
-            )
+//        val localModels
+//            get() = setOf(
+//                "llama3.2:3b" to "LlamaTiny",
+//                "dolphin-llama3:8b" to "DolphinSmall",
+//                "aya:8b" to "AyaSmall",
+//                "smollm:135m" to "Smoll",
+//            )
 
         // Creating tasks for each model
         
