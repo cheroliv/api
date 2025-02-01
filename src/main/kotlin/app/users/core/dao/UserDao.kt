@@ -1,6 +1,8 @@
 package app.users.core.dao
 
 import app.users.core.Constants
+import app.users.core.Constants.ROLE_USER
+import app.users.core.Loggers.i
 import app.users.core.dao.UserRoleDao.signup
 import app.users.core.models.EntityModel
 import app.users.core.models.Role
@@ -47,6 +49,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.transaction.reactive.TransactionalOperator
+import org.springframework.transaction.reactive.executeAndAwait
 import reactor.core.publisher.Mono
 import java.lang.Boolean.parseBoolean
 import java.util.UUID
@@ -133,18 +137,19 @@ object UserDao {
         try {
             (first.copy(
                 password = first.password.run(second.getBean<PasswordEncoder>()::encode)
-            ) to second).save().map {
-
-            }
+            ) to second).save().map {}
             second.findOne<User>(first.email).mapLeft {
                 return Exception("Unable to find user by email").left()
             }.map {
                 when {
                     it.id != null -> {
-                        (UserRole(userId = it.id, role = Constants.ROLE_USER) to second).signup()
+                        (UserRole(userId = it.id, role = ROLE_USER) to second).signup()
                         UserActivation(id = it.id).run {
-                            (this to second).save()
-                            return (it.id to activationKey).right()
+                            (this to second).save().run {
+                                return (id to activationKey)
+                                    .apply { i("UserId and activation key pair: $this") }
+                                    .right()
+                            }
                         }
                     }
 
