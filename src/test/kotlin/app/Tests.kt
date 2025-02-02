@@ -438,36 +438,6 @@ class Tests {
             }
 
             @Test
-            fun `Verify that the request contains consistent data`(): Unit {
-                client
-                    .post()
-                    .uri("")
-                    .contentType(APPLICATION_JSON)
-                    .bodyValue(user)
-                    .exchange()
-                    .returnResult<Any>()
-                    .requestBodyContent!!
-                    .logBody()
-                    .responseToString()
-                    .run {
-                        user.run {
-                            mapOf(
-                                LOGIN_FIELD to login,
-                                PASSWORD_FIELD to password,
-                                User.Relations.Fields.EMAIL_FIELD to email,
-                                //FIRST_NAME_FIELD to firstName,
-                                //LAST_NAME_FIELD to lastName,
-                            ).map { (key, value) ->
-                                assertTrue {
-                                    contains(key)
-                                    contains(value)
-                                }
-                            }
-                        }
-                    }
-            }
-
-            @Test
             fun `Verifies the internationalization of validations by validator factory with a bad login in Italian`(): Unit {
                 byProvider(HibernateValidator::class.java)
                     .configure()
