@@ -291,7 +291,6 @@ class Tests {
         fun cleanUp(context: ApplicationContext): Unit =
             runBlocking { context.deleteAllUsersOnly() }
 
-//        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class AiTests {
@@ -315,26 +314,6 @@ class Tests {
                     .isEqualTo("smollm:135m")
                 ollamaList.run(::assertThat).contains("smollm:135m")
                 context.configuration.run(::assertThat).isNotEmpty
-            }
-	
-@Ignore
-            @Test
-            fun `test trivial ai api`(): Unit = runBlocking {
-                client.mutate()
-                    .responseTimeout(ofSeconds(60))
-                    .build()
-                    .get().uri("/api/ai/trivial")
-                    .exchange().expectStatus().isOk
-                    .returnResult<ProblemDetail>()
-//                    .apply { responseBody.collect { i(it?.detail.toString()) } }
-                    .responseBodyContent!!
-                    .responseToString().run {
-                        context.getBean<ObjectMapper>().readValue<ProblemDetail>(this)
-                    }.detail!!.apply(::i)
-                    .run(::assertThat)
-                    .isNotEmpty
-                    .asString()
-                    .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
             }
 
             @Test

@@ -174,19 +174,6 @@ class AIAssistantWorker {
             Error(e).toResponse
         }
 
-
-        @GetMapping("/api/ai/trivial")
-        suspend fun trivial(
-            @RequestParam(
-                value = "message",
-                defaultValue = FRENCH.USER_MSG
-            ) message: String?
-        ): ResponseEntity<ProblemDetail> = try {
-            forStatusAndDetail(OK, context.getBean<OllamaAssistant>().chat(message)).run(ok()::body)
-        } catch (e: Exception) {
-            forStatusAndDetail(INTERNAL_SERVER_ERROR, e.message).run(internalServerError()::body)
-        }
-
         object LocalLLMModel {
             val ollamaList = listOf(
                 "CognitiveComputations/dolphin-2.9.3-qwen2-0.5b:f16",
