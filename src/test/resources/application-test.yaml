@@ -43,6 +43,8 @@ langchain4j:
     chat-model:
       base-url: http://localhost:11434
       model-name: smollm:135m
+#      model-name: deepseek-r1:1.5b
     streaming-chat-model:
       base-url: http://localhost:11434
       model-name: smollm:135m
+#      model-name: deepseek-r1:1.5b

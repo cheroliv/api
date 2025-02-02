@@ -63,6 +63,8 @@ import app.users.api.dao.UserDao.findOne
 import app.users.api.dao.UserDao.save
 import app.users.api.dao.UserDao.signup
 import app.users.api.dao.UserDao.user
+import app.users.api.mail.MailService
+import app.users.api.mail.SMTPMailService
 import app.users.api.models.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.users.api.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.users.api.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
@@ -82,8 +84,6 @@ import app.users.api.security.SecurityUtils.generateResetKey
 import app.users.api.security.SecurityUtils.getCurrentUserLogin
 import app.users.api.web.HttpUtils.validator
 import app.users.api.web.Web.Companion.configuration
-import app.users.api.mail.MailService
-import app.users.api.mail.SMTPMailService
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
@@ -254,7 +254,6 @@ import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -311,7 +310,7 @@ class Tests {
                     .isEqualTo("http://localhost:11434")
                 context.environment["langchain4j.ollama.chat-model.model-name"]
                     .run(::assertThat)
-                    .isEqualTo("smollm:135m")
+                    .isIn(*ollamaList.toTypedArray())
                 ollamaList.run(::assertThat).contains("smollm:135m")
                 context.configuration.run(::assertThat).isNotEmpty
             }
