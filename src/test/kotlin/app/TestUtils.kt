@@ -142,7 +142,6 @@ object TestUtils {
             tokenUri = "https://oauth2.googleapis.com/token",
             authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
             clientSecret = "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t",
-//            redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
             redirectUris = listOf("$BASE_URL_DEV/oauth2/callback/google")
         )
     }
