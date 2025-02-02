@@ -339,11 +339,6 @@ class Tests {
         @TestInstance(PER_CLASS)
         inner class CoreTests {
 
-//            @Test
-//            fun `test getPrivateProperties`(): Unit = assertDoesNotThrow {
-//                privateProperties
-//            }
-
             @Test
             fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {
                 val salt = string().generateKey().apply { "salt: $this".run(::i) }
