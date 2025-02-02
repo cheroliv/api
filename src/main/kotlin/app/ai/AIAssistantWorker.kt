@@ -8,7 +8,7 @@ import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
 import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.localModels
 import app.ai.translator.AiTranslatorController.AssistantManager.createChatTask
 import app.ai.translator.AiTranslatorController.AssistantManager.createStreamingChatTask
-import app.users.core.web.Web.Companion.configuration
+import app.users.api.web.Web.Companion.configuration
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right

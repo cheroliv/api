@@ -1,10 +1,11 @@
+@file:Suppress("unused")
+
 package app.users.password
 
-import app.users.core.models.User.EndPoint.API_USER
+import app.users.api.models.User.EndPoint.API_USER
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT
-import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity

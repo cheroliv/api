@@ -1,6 +1,6 @@
 package app.users.signup
 
-import app.users.core.models.User.EndPoint.API_USER
+import app.users.api.models.User.EndPoint.API_USER
 import app.users.signup.Signup.EndPoint.API_ACTIVATE
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_KEY
 import app.users.signup.Signup.EndPoint.API_SIGNUP

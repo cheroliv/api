@@ -1,9 +1,9 @@
 package app.workspace
 
-import app.users.core.Constants.EMPTY_STRING
-import app.users.core.Loggers
-import app.users.core.Loggers.i
-import app.users.core.Loggers.w
+import app.users.api.Constants.EMPTY_STRING
+import app.users.api.Loggers
+import app.users.api.Loggers.i
+import app.users.api.Loggers.w
 import app.workspace.Workspace.InstallationType
 import app.workspace.Workspace.InstallationType.ALL_IN_ONE
 import app.workspace.Workspace.InstallationType.SEPARATED_FOLDERS

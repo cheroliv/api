@@ -39,51 +39,51 @@ import app.TestUtils.usernameFromEmail
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse
 import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
 import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.ollamaList
-import app.users.core.Constants.DEFAULT_LANGUAGE
-import app.users.core.Constants.DEVELOPMENT
-import app.users.core.Constants.EMPTY_STRING
-import app.users.core.Constants.PASSWORD
-import app.users.core.Constants.PATTERN_LOCALE_2
-import app.users.core.Constants.PATTERN_LOCALE_3
-import app.users.core.Constants.PRODUCTION
-import app.users.core.Constants.ROLE_USER
-import app.users.core.Constants.STARTUP_LOG_MSG_KEY
-import app.users.core.Constants.USER
-import app.users.core.Constants.VIRGULE
-import app.users.core.Constants.languages
-import app.users.core.Loggers.i
-import app.users.core.Properties
-import app.users.core.Utils.lsWorkingDir
-import app.users.core.Utils.lsWorkingDirProcess
-import app.users.core.Utils.privateProperties
-import app.users.core.Utils.toJson
-import app.users.core.dao.UserDao.availability
-import app.users.core.dao.UserDao.change
-import app.users.core.dao.UserDao.findOne
-import app.users.core.dao.UserDao.save
-import app.users.core.dao.UserDao.signup
-import app.users.core.dao.UserDao.user
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.users.core.models.EntityModel.Members.withId
-import app.users.core.models.Role
-import app.users.core.models.User
-import app.users.core.models.User.Attributes.EMAIL_ATTR
-import app.users.core.models.User.Attributes.LOGIN_ATTR
-import app.users.core.models.User.Attributes.PASSWORD_ATTR
-import app.users.core.models.User.Relations.FIND_ALL_USERS
-import app.users.core.models.User.Relations.Fields.ID_FIELD
-import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
-import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
-import app.users.core.models.UserRole
-import app.users.core.security.SecurityUtils.generateActivationKey
-import app.users.core.security.SecurityUtils.generateResetKey
-import app.users.core.security.SecurityUtils.getCurrentUserLogin
-import app.users.core.web.HttpUtils.validator
-import app.users.core.web.Web.Companion.configuration
-import app.users.mail.MailService
-import app.users.mail.SMTPMailService
+import app.users.api.Constants.DEFAULT_LANGUAGE
+import app.users.api.Constants.DEVELOPMENT
+import app.users.api.Constants.EMPTY_STRING
+import app.users.api.Constants.PASSWORD
+import app.users.api.Constants.PATTERN_LOCALE_2
+import app.users.api.Constants.PATTERN_LOCALE_3
+import app.users.api.Constants.PRODUCTION
+import app.users.api.Constants.ROLE_USER
+import app.users.api.Constants.STARTUP_LOG_MSG_KEY
+import app.users.api.Constants.USER
+import app.users.api.Constants.VIRGULE
+import app.users.api.Constants.languages
+import app.users.api.Loggers.i
+import app.users.api.Properties
+import app.users.api.Utils.lsWorkingDir
+import app.users.api.Utils.lsWorkingDirProcess
+import app.users.api.Utils.privateProperties
+import app.users.api.Utils.toJson
+import app.users.api.dao.UserDao.availability
+import app.users.api.dao.UserDao.change
+import app.users.api.dao.UserDao.findOne
+import app.users.api.dao.UserDao.save
+import app.users.api.dao.UserDao.signup
+import app.users.api.dao.UserDao.user
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.users.api.models.EntityModel.Members.withId
+import app.users.api.models.Role
+import app.users.api.models.User
+import app.users.api.models.User.Attributes.EMAIL_ATTR
+import app.users.api.models.User.Attributes.LOGIN_ATTR
+import app.users.api.models.User.Attributes.PASSWORD_ATTR
+import app.users.api.models.User.Relations.FIND_ALL_USERS
+import app.users.api.models.User.Relations.Fields.ID_FIELD
+import app.users.api.models.User.Relations.Fields.LOGIN_FIELD
+import app.users.api.models.User.Relations.Fields.PASSWORD_FIELD
+import app.users.api.models.UserRole
+import app.users.api.security.SecurityUtils.generateActivationKey
+import app.users.api.security.SecurityUtils.generateResetKey
+import app.users.api.security.SecurityUtils.getCurrentUserLogin
+import app.users.api.web.HttpUtils.validator
+import app.users.api.web.Web.Companion.configuration
+import app.users.api.mail.MailService
+import app.users.api.mail.SMTPMailService
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
@@ -271,7 +271,7 @@ class Tests {
     @ActiveProfiles("test")
     @TestInstance(PER_CLASS)
     @SpringBootTest(
-        classes = [API::class],
+        classes = [Server::class],
         properties = ["spring.main.web-application-type=reactive"]
     )
     inner class IntegrationTests {
@@ -291,7 +291,7 @@ class Tests {
         fun cleanUp(context: ApplicationContext): Unit =
             runBlocking { context.deleteAllUsersOnly() }
 
-        @Ignore
+//        @Ignore
         @Nested
         @TestInstance(PER_CLASS)
         inner class AiTests {
@@ -316,7 +316,8 @@ class Tests {
                 ollamaList.run(::assertThat).contains("smollm:135m")
                 context.configuration.run(::assertThat).isNotEmpty
             }
-
+	
+@Ignore
             @Test
             fun `test trivial ai api`(): Unit = runBlocking {
                 client.mutate()

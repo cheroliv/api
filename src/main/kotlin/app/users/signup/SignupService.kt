@@ -1,15 +1,14 @@
 package app.users.signup
 
-import app.users.core.Loggers.i
-import app.users.core.dao.UserDao.availability
-import app.users.core.dao.UserDao.signup
-import app.users.core.dao.UserDao.user
-import app.users.core.models.User
-import app.users.core.models.User.EndPoint.API_USERS
-import app.users.core.web.HttpUtils.badResponse
-import app.users.mail.MailService
+import app.users.api.Loggers.i
+import app.users.api.dao.UserDao.availability
+import app.users.api.dao.UserDao.signup
+import app.users.api.dao.UserDao.user
+import app.users.api.mail.MailService
+import app.users.api.models.User
+import app.users.api.models.User.EndPoint.API_USERS
+import app.users.api.web.HttpUtils.badResponse
 import app.users.signup.Signup.EndPoint.API_ACTIVATE
-import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
 import app.users.signup.SignupDao.activate
 import app.users.signup.SignupDao.validate
 import app.users.signup.SignupErrors.activateProblems
@@ -24,7 +23,6 @@ import arrow.core.left
 import arrow.core.right
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
-import org.springframework.core.env.get
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.EXPECTATION_FAILED
 import org.springframework.http.HttpStatus.OK
@@ -64,19 +62,14 @@ class SignupService(private val context: ApplicationContext) {
     suspend fun signup(signup: Signup): Either<Throwable, User> = try {
         context.user(signup).let { user ->
             (user to context).signup().mapLeft {
-                return Exception(
-                    "Unable to sign up user with this value : $signup",
-                    it
-                ).left()
+                return "Unable to sign up user with this value : $signup"
+                    .run { Exception(this, it) }
+                    .left()
             }.map {
                 return user.copy(id = it.first).apply {
-                    context
-                        .getBean<MailService>()
-                        .sendActivationEmail(this to it.second
-                            .apply { i("Activation key on email: ${it.second}") })
-                }.apply {
-                    i("Activation key: ${it.second}")
-                    i("Activation link : http://localhost:${context.environment["server.port"]}/$API_ACTIVATE_PATH${it.second}")
+                    //TODO: relegate to async task executor call
+                    context.getBean<MailService>()
+                        .sendActivationEmail(this to it.second)
                 }.right()
             }
         }

@@ -1,15 +1,15 @@
 package app.users.signup
 
-import app.users.core.Constants
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.users.core.models.User
-import app.users.core.models.User.EndPoint.API_USERS
-import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
-import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
-import app.users.core.web.HttpUtils.badResponse
-import app.users.core.web.ProblemsModel
+import app.users.api.Constants
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.users.api.models.User
+import app.users.api.models.User.EndPoint.API_USERS
+import app.users.api.models.User.Relations.Fields.EMAIL_FIELD
+import app.users.api.models.User.Relations.Fields.LOGIN_FIELD
+import app.users.api.web.HttpUtils.badResponse
+import app.users.api.web.ProblemsModel
 import app.users.signup.Signup.EndPoint.API_ACTIVATE
 import app.users.signup.Signup.EndPoint.API_SIGNUP
 import org.springframework.http.HttpStatus

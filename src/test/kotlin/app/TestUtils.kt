@@ -7,43 +7,43 @@ package app
 
 import app.TestUtils.Data.displayInsertUserScript
 import app.TestUtils.WithUnauthenticatedMockUser.Factory
-import app.users.core.Constants
-import app.users.core.Constants.ADMIN
-import app.users.core.Constants.AT_SYMBOLE
-import app.users.core.Constants.BASE_URL_DEV
-import app.users.core.Constants.DOMAIN_DEV_URL
-import app.users.core.Constants.EMPTY_STRING
-import app.users.core.Constants.GMAIL_IMAP_HOST
-import app.users.core.Constants.IMAPS_MAIL_STORE_PROTOCOL
-import app.users.core.Constants.MAIL_STORE_PROTOCOL_PROP
-import app.users.core.Constants.ROLE_ADMIN
-import app.users.core.Constants.ROLE_ANONYMOUS
-import app.users.core.Constants.ROLE_USER
-import app.users.core.Constants.USER
-import app.users.core.Constants.VIRGULE
-import app.users.core.Loggers.i
-import app.users.core.Utils.privateProperties
-import app.users.core.mail.MailConfiguration.GoogleAuthConfig
-import app.users.core.models.EntityModel
-import app.users.core.models.EntityModel.Members.withId
-import app.users.core.models.Role
-import app.users.core.models.Role.Relations
-import app.users.core.models.Role.Relations.DELETE_AUTHORITY_BY_ROLE
-import app.users.core.models.User
-import app.users.core.models.User.Attributes.EMAIL_ATTR
-import app.users.core.models.User.Attributes.ID_ATTR
-import app.users.core.models.User.Attributes.LOGIN_ATTR
-import app.users.core.models.User.Members.ROLES_MEMBER
-import app.users.core.models.User.Relations.Fields.EMAIL_FIELD
-import app.users.core.models.User.Relations.Fields.LANG_KEY_FIELD
-import app.users.core.models.User.Relations.Fields.LOGIN_FIELD
-import app.users.core.models.User.Relations.Fields.PASSWORD_FIELD
-import app.users.core.models.User.Relations.Fields.TABLE_NAME
-import app.users.core.models.User.Relations.Fields.VERSION_FIELD
-import app.users.core.models.UserRole
-import app.users.core.models.UserRole.Attributes.USER_ID_ATTR
-import app.users.core.models.UserRole.Relations.Fields.ROLE_FIELD
-import app.users.core.models.UserRole.Relations.Fields.USER_ID_FIELD
+import app.users.api.Constants
+import app.users.api.Constants.ADMIN
+import app.users.api.Constants.AT_SYMBOLE
+import app.users.api.Constants.BASE_URL_DEV
+import app.users.api.Constants.DOMAIN_DEV_URL
+import app.users.api.Constants.EMPTY_STRING
+import app.users.api.Constants.GMAIL_IMAP_HOST
+import app.users.api.Constants.IMAPS_MAIL_STORE_PROTOCOL
+import app.users.api.Constants.MAIL_STORE_PROTOCOL_PROP
+import app.users.api.Constants.ROLE_ADMIN
+import app.users.api.Constants.ROLE_ANONYMOUS
+import app.users.api.Constants.ROLE_USER
+import app.users.api.Constants.USER
+import app.users.api.Constants.VIRGULE
+import app.users.api.Loggers.i
+import app.users.api.Utils.privateProperties
+import app.users.api.mail.MailConfiguration.GoogleAuthConfig
+import app.users.api.models.EntityModel
+import app.users.api.models.EntityModel.Members.withId
+import app.users.api.models.Role
+import app.users.api.models.Role.Relations
+import app.users.api.models.Role.Relations.DELETE_AUTHORITY_BY_ROLE
+import app.users.api.models.User
+import app.users.api.models.User.Attributes.EMAIL_ATTR
+import app.users.api.models.User.Attributes.ID_ATTR
+import app.users.api.models.User.Attributes.LOGIN_ATTR
+import app.users.api.models.User.Members.ROLES_MEMBER
+import app.users.api.models.User.Relations.Fields.EMAIL_FIELD
+import app.users.api.models.User.Relations.Fields.LANG_KEY_FIELD
+import app.users.api.models.User.Relations.Fields.LOGIN_FIELD
+import app.users.api.models.User.Relations.Fields.PASSWORD_FIELD
+import app.users.api.models.User.Relations.Fields.TABLE_NAME
+import app.users.api.models.User.Relations.Fields.VERSION_FIELD
+import app.users.api.models.UserRole
+import app.users.api.models.UserRole.Attributes.USER_ID_ATTR
+import app.users.api.models.UserRole.Relations.Fields.ROLE_FIELD
+import app.users.api.models.UserRole.Relations.Fields.USER_ID_FIELD
 import app.users.password.UserReset
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.signup.Signup
@@ -726,7 +726,7 @@ object TestUtils {
 
     fun launcher(
         vararg profiles: String, userAuths: Set<Pair<String, String>> = emptySet()
-    ): ConfigurableApplicationContext = runApplication<API> {
+    ): ConfigurableApplicationContext = runApplication<Server> {
         /** before launching: configuration */
         /** before launching: configuration */
         setEnvironment(StandardReactiveWebEnvironment().apply {
@@ -740,13 +740,13 @@ object TestUtils {
             environment.defaultProfiles.isNotEmpty() -> environment.defaultProfiles.reduce { acc, s -> "$acc, $s" }
 
             else -> ""
-        }).let { "defaultProfiles : $it" }.let(app.users.core.Loggers::i)
+        }).let { "defaultProfiles : $it" }.let(app.users.api.Loggers::i)
 
         (when {
             environment.activeProfiles.isNotEmpty() -> environment.activeProfiles.reduce { acc, s -> "$acc, $s" }
 
             else -> ""
-        }).let { "activeProfiles : $it" }.let(app.users.core.Loggers::i)
+        }).let { "activeProfiles : $it" }.let(app.users.api.Loggers::i)
 
         //TODO: ajouter des app.users avec leurs roles
     }

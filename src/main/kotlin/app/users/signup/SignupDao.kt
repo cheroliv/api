@@ -2,12 +2,12 @@
 
 package app.users.signup
 
-import app.users.core.Loggers.i
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
-import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
-import app.users.core.models.User
-import app.users.core.web.HttpUtils.validator
+import app.users.api.Loggers.i
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_FIELD
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
+import app.users.api.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
+import app.users.api.models.User
+import app.users.api.web.HttpUtils.validator
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR

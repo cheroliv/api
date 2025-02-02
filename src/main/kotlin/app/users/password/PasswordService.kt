@@ -1,15 +1,15 @@
 package app.users.password
 
-import app.users.core.Loggers.d
-import app.users.core.dao.UserDao.change
-import app.users.core.dao.UserDao.findOne
-import app.users.core.models.User
-import app.users.core.models.User.Attributes.EMAIL_ATTR
-import app.users.core.models.User.Relations.UPDATE_PASSWORD_RESET
-import app.users.core.security.SecurityUtils.generateResetKey
-import app.users.core.security.SecurityUtils.getCurrentUserLogin
-import app.users.core.web.HttpUtils.validator
-import app.users.mail.MailService
+import app.users.api.Loggers.d
+import app.users.api.dao.UserDao.change
+import app.users.api.dao.UserDao.findOne
+import app.users.api.models.User
+import app.users.api.models.User.Attributes.EMAIL_ATTR
+import app.users.api.models.User.Relations.UPDATE_PASSWORD_RESET
+import app.users.api.security.SecurityUtils.generateResetKey
+import app.users.api.security.SecurityUtils.getCurrentUserLogin
+import app.users.api.web.HttpUtils.validator
+import app.users.api.mail.MailService
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.UserReset.Attributes.RESET_KEY_ATTR
 import app.users.password.UserReset.Relations.FIND_BY_KEY

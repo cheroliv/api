@@ -377,7 +377,7 @@ tasks.named<BootRun>("bootRun") {
 tasks.register<JavaExec>("cli") {
     group = "application"
     description = "Run CLI application: ./gradlew cli -Pargs=--gui"
-    "app.CLI".run(mainClass::set)
+    "app.CommandLine".run(mainClass::set)
     "main".run(sourceSets::get).runtimeClasspath.run(::setClasspath)
     when {
         "args".run(project::hasProperty) -> {
@@ -408,7 +408,7 @@ tasks.register<Exec>("apiCheckFirefox") {
 tasks.register<JavaExec>("displayCreateTestDbSchema") {
     group = "application"
     description = "Display SQL script who creates database tables into test schema."
-    "app.users.core.dao.DatabaseConfiguration".run(mainClass::set)
+    "app.users.api.dao.DatabaseConfiguration".run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
         .run(::setClasspath)

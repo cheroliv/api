@@ -1,7 +1,7 @@
 package app.users.password
 
-import app.users.core.models.User
-import app.users.core.models.User.EndPoint.API_USER
+import app.users.api.models.User
+import app.users.api.models.User.EndPoint.API_USER
 import app.users.password.UserReset.Relations.Fields.ACTIVE_IDX_FIELD
 import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
 import app.users.password.UserReset.Relations.Fields.DATE_IDX_FIELD

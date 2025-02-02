@@ -1,7 +1,7 @@
 package app.users.signup
 
-import app.users.core.models.User.Constraints.LOGIN_REGEX
-import app.users.core.models.User.EndPoint.API_USER
+import app.users.api.models.User.Constraints.LOGIN_REGEX
+import app.users.api.models.User.EndPoint.API_USER
 import app.users.signup.Signup.Constraints.PASSWORD_MAX
 import app.users.signup.Signup.Constraints.PASSWORD_MIN
 import jakarta.validation.constraints.Email

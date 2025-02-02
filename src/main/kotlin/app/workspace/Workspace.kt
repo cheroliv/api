@@ -2,7 +2,7 @@
 
 package app.workspace
 
-import app.users.core.Loggers.i
+import app.users.api.Loggers.i
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Slides
 import java.nio.file.Path

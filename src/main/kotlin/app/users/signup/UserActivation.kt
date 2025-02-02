@@ -2,7 +2,7 @@
 
 package app.users.signup
 
-import app.users.core.models.User
+import app.users.api.models.User
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR
