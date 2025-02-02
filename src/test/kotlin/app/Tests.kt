@@ -42,9 +42,6 @@ import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.ollamaList
 import app.users.core.Constants.DEFAULT_LANGUAGE
 import app.users.core.Constants.DEVELOPMENT
 import app.users.core.Constants.EMPTY_STRING
-import app.users.core.Constants.GMAIL_IMAP_HOST
-import app.users.core.Constants.IMAPS_MAIL_STORE_PROTOCOL
-import app.users.core.Constants.MAIL_STORE_PROTOCOL_PROP
 import app.users.core.Constants.PASSWORD
 import app.users.core.Constants.PATTERN_LOCALE_2
 import app.users.core.Constants.PATTERN_LOCALE_3
@@ -66,7 +63,6 @@ import app.users.core.dao.UserDao.findOne
 import app.users.core.dao.UserDao.save
 import app.users.core.dao.UserDao.signup
 import app.users.core.dao.UserDao.user
-import app.users.core.mail.MailConfiguration.GoogleAuthConfig
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_FIELD
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_MESSAGE
 import app.users.core.models.EntityModel.Companion.MODEL_FIELD_OBJECTNAME
@@ -165,16 +161,10 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import jakarta.mail.Folder.READ_ONLY
-import jakarta.mail.Message
-import jakarta.mail.MessagingException
 import jakarta.mail.Multipart
-import jakarta.mail.Session.getDefaultInstance
-import jakarta.mail.Store
 import jakarta.mail.internet.MimeBodyPart
 import jakarta.mail.internet.MimeMessage
 import jakarta.mail.internet.MimeMultipart
-import jakarta.mail.search.FromStringTerm
 import jakarta.validation.Validation.byProvider
 import jakarta.validation.ValidationException
 import jakarta.validation.Validator
@@ -237,7 +227,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.lang.Boolean
-import java.lang.System.getProperties
 import java.lang.System.getProperty
 import java.net.URI
 import java.nio.charset.Charset
@@ -250,7 +239,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime.ofInstant
-import java.util.Arrays.copyOfRange
 import java.util.Locale.ENGLISH
 import java.util.Locale.FRANCE
 import java.util.Locale.FRENCH
@@ -372,10 +360,10 @@ class Tests {
         @TestInstance(PER_CLASS)
         inner class CoreTests {
 
-            @Test
-            fun `test getPrivateProperties`(): Unit = assertDoesNotThrow {
-                privateProperties
-            }
+//            @Test
+//            fun `test getPrivateProperties`(): Unit = assertDoesNotThrow {
+//                privateProperties
+//            }
 
             @Test
             fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {
@@ -2895,98 +2883,7 @@ class Tests {
         @TestInstance(PER_CLASS)
         inner class UserSignupTests {
 
-            val gmailConfig by lazy {
-                GoogleAuthConfig(
-                    clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
-                    projectId = "gmail-tester-444502",
-                    authUri = "https://accounts.google.com/o/oauth2/auth",
-                    tokenUri = "https://oauth2.googleapis.com/token",
-                    authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
-                    clientSecret = "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t",
-                    redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
-                )
-            }
-
-            fun Triple<String, String, String>.getEstablishConnection(): Store =
-                IMAPS_MAIL_STORE_PROTOCOL.run(
-                    getDefaultInstance(
-                        getProperties().apply {
-                            setProperty(MAIL_STORE_PROTOCOL_PROP, IMAPS_MAIL_STORE_PROTOCOL)
-                        },
-                        null
-                    )::getStore
-                ).apply { connect(first, second, third) }
-
-            fun getMailConnexion(): Store = Triple(
-                GMAIL_IMAP_HOST,
-                privateProperties["test.mail"].toString(),
-                privateProperties["test.mail.password"].toString()
-            ).getEstablishConnection()
-
-            fun Store.getEmailCount(): Int = run {
-                val inbox = getFolder("inbox")
-                val spam = getFolder("[Gmail]/Spam")
-                inbox.open(READ_ONLY)
-                i("nb of Messages : " + inbox.messageCount)
-                i("nb of Unread Messages : " + inbox.unreadMessageCount)
-                i("nb of Messages in spam : " + spam.messageCount)
-                i("nb of Unread Messages in spam : " + spam.unreadMessageCount)
-                inbox.messageCount
-            }
-
-            fun String.getExtractKey(): String {
-                // Define the regex pattern to find the activation key
-                val pattern: java.util.regex.Pattern =
-                    java.util.regex.Pattern.compile("key=([a-zA-Z0-9]+)")
-
-                // Create a matcher object
-                val matcher: java.util.regex.Matcher = pattern.matcher(this)
-
-                // Find the first match
-                return when {
-                    matcher.find() -> matcher.group(1)
-                    else -> EMPTY_STRING
-                }
-            }
-
-            fun Store.getFindMostRecentActivationEmail(): String = getFolder("inbox")
-                .apply { open(READ_ONLY) }
-                .messages
-//                .onEach { i("it.content: ${it?.content?.toString()}") }
-                .map { it?.content?.toString() to it.receivedDate.toInstant().epochSecond }
-                .filter { it.first!!.contains(API_ACTIVATE_PATH) }
-//                .apply { i("nb of messages containing $API_ACTIVATE_PATH: $size") }
-                .maxBy { it.second }
-                .first.toString()
-
-            fun Store.getFindMostRecentResetPasswordEmail(): Message? = "inbox"
-                .run(::getFolder)
-                .apply { open(READ_ONLY) }
-                .search(FromStringTerm(API_RESET_PASSWORD_FINISH_PATH))
-                .maxBy { it.receivedDate }
-
-            fun Store.getLastResetKey(): String = getFindMostRecentResetPasswordEmail()
-                ?.content
-                .toString()
-                .getExtractKey()
-
-            @Throws(MessagingException::class)
-            fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
-                .apply { open(READ_ONLY) }
-                .run {
-                    @Suppress("SimplifyNestedEachInScopeFunction")
-                    copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
-                        forEach {
-                            i("From: " + it?.from?.contentToString())
-                            i("Subject: " + it?.subject)
-                            i("Content: " + it?.content)
-                            i("ActivationKey: " + it?.content?.toString()?.getExtractKey())
-                        }
-                    }
-                }
-
             /**send mail*/
-            @Ignore
             @Test
             fun `functional test signup and reset password scenario`(): Unit = runBlocking {
                 val signupTest = privateProperties.run {
@@ -3010,20 +2907,6 @@ class Tests {
                     assertThat(context.countUsers()).isEqualTo(first + 1)
                     assertThat(context.countUserAuthority()).isEqualTo(second + 1)
                     assertThat(context.countUserActivation()).isEqualTo(third + 1)
-//                    when {
-//                        getMailConnexion().getEmailCount() == 0 -> return@runBlocking
-//                        else -> {
-//                            val activationKey: String = getMailConnexion()
-//                                .getFindMostRecentActivationEmail()
-//                                .getExtractKey()
-//                            i("Activation key from mail: $activationKey")
-//                            //Cannot test more because I can't rely on gmail,
-//                            // every test dont send a mail
-//                            // TODO: add resend activation mail with signup mail, must check sent mail before
-//                            assertThat(activationKey).asString()
-//                                .hasSameSizeAs(generateActivationKey)
-//                        }
-//                    }
                     // Let's continue with activation key retrieved from database,
                     // in order to activate userTest
                     //                        // here begin change password

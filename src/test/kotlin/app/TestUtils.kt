@@ -10,14 +10,20 @@ import app.TestUtils.WithUnauthenticatedMockUser.Factory
 import app.users.core.Constants
 import app.users.core.Constants.ADMIN
 import app.users.core.Constants.AT_SYMBOLE
+import app.users.core.Constants.BASE_URL_DEV
 import app.users.core.Constants.DOMAIN_DEV_URL
 import app.users.core.Constants.EMPTY_STRING
+import app.users.core.Constants.GMAIL_IMAP_HOST
+import app.users.core.Constants.IMAPS_MAIL_STORE_PROTOCOL
+import app.users.core.Constants.MAIL_STORE_PROTOCOL_PROP
 import app.users.core.Constants.ROLE_ADMIN
 import app.users.core.Constants.ROLE_ANONYMOUS
 import app.users.core.Constants.ROLE_USER
 import app.users.core.Constants.USER
 import app.users.core.Constants.VIRGULE
 import app.users.core.Loggers.i
+import app.users.core.Utils.privateProperties
+import app.users.core.mail.MailConfiguration.GoogleAuthConfig
 import app.users.core.models.EntityModel
 import app.users.core.models.EntityModel.Members.withId
 import app.users.core.models.Role
@@ -39,7 +45,9 @@ import app.users.core.models.UserRole.Attributes.USER_ID_ATTR
 import app.users.core.models.UserRole.Relations.Fields.ROLE_FIELD
 import app.users.core.models.UserRole.Relations.Fields.USER_ID_FIELD
 import app.users.password.UserReset
+import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.signup.Signup
+import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Companion.USERACTIVATIONCLASS
@@ -54,6 +62,12 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import jakarta.mail.Folder.READ_ONLY
+import jakarta.mail.Message
+import jakarta.mail.MessagingException
+import jakarta.mail.Session.getDefaultInstance
+import jakarta.mail.Store
+import jakarta.mail.search.FromStringTerm
 import jakarta.validation.ConstraintViolation
 import jakarta.validation.Validator
 import kotlinx.coroutines.reactive.collect
@@ -66,7 +80,6 @@ import org.springframework.boot.web.reactive.context.StandardReactiveWebEnvironm
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
-import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.r2dbc.core.*
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
@@ -74,12 +87,14 @@ import org.springframework.security.test.context.support.WithSecurityContext
 import org.springframework.security.test.context.support.WithSecurityContextFactory
 import java.io.IOException
 import java.lang.Byte
+import java.lang.System.getProperties
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime
 import java.time.format.DateTimeParseException
 import java.util.*
+import java.util.Arrays.copyOfRange
 import java.util.UUID.fromString
 import java.util.regex.Pattern
 import kotlin.Any
@@ -112,12 +127,104 @@ import kotlin.reflect.full.createInstance
 import kotlin.repeat
 import kotlin.run
 import kotlin.test.assertEquals
+import kotlin.to
 import kotlin.toString
 
 
 object TestUtils {
     @JvmStatic
     fun main(args: Array<String>): Unit = displayInsertUserScript()
+    val gmailConfig by lazy {
+        GoogleAuthConfig(
+            clientId = "729140334808-ql2f9rb3th81j15ct9uqnl4pjj61urt0.apps.googleusercontent.com",
+            projectId = "gmail-tester-444502",
+            authUri = "https://accounts.google.com/o/oauth2/auth",
+            tokenUri = "https://oauth2.googleapis.com/token",
+            authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs",
+            clientSecret = "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t",
+//            redirectUris = listOf("http://localhost:${context.environment["server.port"]}/oauth2/callback/google")
+            redirectUris = listOf("$BASE_URL_DEV/oauth2/callback/google")
+        )
+    }
+
+    fun Triple<String, String, String>.getEstablishConnection(): Store =
+        IMAPS_MAIL_STORE_PROTOCOL.run(
+            getDefaultInstance(
+                getProperties().apply {
+                    setProperty(MAIL_STORE_PROTOCOL_PROP, IMAPS_MAIL_STORE_PROTOCOL)
+                },
+                null
+            )::getStore
+        ).apply { connect(first, second, third) }
+
+    fun getMailConnexion(): Store = Triple(
+        GMAIL_IMAP_HOST,
+        privateProperties["test.mail"].toString(),
+        privateProperties["test.mail.password"].toString()
+    ).getEstablishConnection()
+
+    fun Store.getEmailCount(): Int = run {
+        val inbox = getFolder("inbox")
+        val spam = getFolder("[Gmail]/Spam")
+        inbox.open(READ_ONLY)
+        i("nb of Messages : " + inbox.messageCount)
+        i("nb of Unread Messages : " + inbox.unreadMessageCount)
+        i("nb of Messages in spam : " + spam.messageCount)
+        i("nb of Unread Messages in spam : " + spam.unreadMessageCount)
+        inbox.messageCount
+    }
+
+    fun String.getExtractKey(): String {
+        // Define the regex pattern to find the activation key
+        val pattern: java.util.regex.Pattern =
+            java.util.regex.Pattern.compile("key=([a-zA-Z0-9]+)")
+
+        // Create a matcher object
+        val matcher: java.util.regex.Matcher = pattern.matcher(this)
+
+        // Find the first match
+        return when {
+            matcher.find() -> matcher.group(1)
+            else -> EMPTY_STRING
+        }
+    }
+
+    fun Store.getFindMostRecentActivationEmail(): String = getFolder("inbox")
+        .apply { open(READ_ONLY) }
+        .messages
+//                .onEach { i("it.content: ${it?.content?.toString()}") }
+        .map { it?.content?.toString() to it.receivedDate.toInstant().epochSecond }
+        .filter { it.first!!.contains(API_ACTIVATE_PATH) }
+//                .apply { i("nb of messages containing $API_ACTIVATE_PATH: $size") }
+        .maxBy { it.second }
+        .first.toString()
+
+    fun Store.getFindMostRecentResetPasswordEmail(): Message? = "inbox"
+        .run(::getFolder)
+        .apply { open(READ_ONLY) }
+        .search(FromStringTerm(API_RESET_PASSWORD_FINISH_PATH))
+        .maxBy { it.receivedDate }
+
+    fun Store.getLastResetKey(): String = getFindMostRecentResetPasswordEmail()
+        ?.content
+        .toString()
+        .getExtractKey()
+
+    @Throws(MessagingException::class)
+    fun Store.searchEmails(from: String): Array<Message> = getFolder("inbox")
+        .apply { open(READ_ONLY) }
+        .run {
+            @Suppress("SimplifyNestedEachInScopeFunction")
+            copyOfRange(search(FromStringTerm(from)), 0, 5).apply {
+                forEach {
+                    i("From: " + it?.from?.contentToString())
+                    i("Subject: " + it?.subject)
+                    i("Content: " + it?.content)
+                    i("ActivationKey: " + it?.content?.toString()?.getExtractKey())
+                }
+            }
+        }
+
 
     val String.usernameFromEmail: String
         get() = AT_SYMBOLE.run(::indexOf).let { index ->
