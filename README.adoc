@@ -8,15 +8,7 @@
 
 == Running
 
-=== **Test the app**
-
-Open terminal and run :
-[source,bash]
-----
-./gradlew check
-----
-
-=== **Run the app**
+=== **App**
 
 Open terminal and run :
 [source,bash]
@@ -26,7 +18,7 @@ Open terminal and run :
 
 and launch link:http://localhost:8880/[http://localhost:8880/]
 
-=== **to run the cli**
+=== **CLI**
 
 Open terminal and run :
 [source,bash]
@@ -34,7 +26,15 @@ Open terminal and run :
 ./gradlew cli
 ----
 
-=== **to run firefox and show test reports(required firefox installed)
+=== **Test the app**
+
+Open terminal and run :
+[source,bash]
+----
+./gradlew check
+----
+
+=== **Tests reports(required firefox installed)**
 
 Open terminal and run :
 [source,bash]
