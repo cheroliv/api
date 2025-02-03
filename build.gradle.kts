@@ -66,6 +66,7 @@ data class DockerHub(
     val email: String = properties["docker_hub_email"].toString(),
     val image: String = "cheroliv/e3po"
 )
+val mockitoAgent = configurations.create("mockitoAgent")
 
 repositories {
     mavenCentral()
@@ -76,7 +77,6 @@ repositories {
 }
 
 //dependencyManagement { imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") } }
-val mockitoAgent = configurations.create("mockitoAgent")
 
 dependencies {
 //    <dependency>
@@ -244,9 +244,9 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}")
     testImplementation("org.mockito:mockito-junit-jupiter:${properties["mockito_jupiter.version"]}")
 //    testImplementation("io.mockk:mockk:${properties["mockk.version"]}")
-    testImplementation("org.wiremock:wiremock:${properties["wiremock.version"]}") {
-        exclude(module = "commons-fileupload")
-    }
+//    testImplementation("org.wiremock:wiremock:${properties["wiremock.version"]}") {
+//        exclude(module = "commons-fileupload")
+//    }
 //    testImplementation("com.ninja-squad:springmockk:${properties["springmockk.version"]}")
     testImplementation("commons-fileupload:commons-fileupload:1.5.0.redhat-00001")
 
@@ -295,7 +295,6 @@ dependencies {
 
 files("node_modules").run(idea.module.excludeDirs::plusAssign)
 
-tasks.test { jvmArgs("-javaagent:${mockitoAgent.asPath}") }
 
 configurations {
     compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
@@ -325,6 +324,7 @@ tasks.withType<KotlinCompile> {
     compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
 }
 
+
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging { events(FAILED, SKIPPED) }
@@ -332,6 +332,7 @@ tasks.withType<Test> {
         html.required = true
         ignoreFailures = true
     }
+    jvmArgs("-javaagent:${mockitoAgent.asPath}")
 }
 
 tasks.register<Delete>("cleanResources") {
@@ -413,3 +414,5 @@ tasks.register<JavaExec>("displayCreateTestDbSchema") {
         .runtimeClasspath
         .run(::setClasspath)
 }
+
+

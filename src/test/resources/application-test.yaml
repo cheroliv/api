@@ -1,5 +1,12 @@
 app:
   message: hello test
+#  text_to_add="# google
+  #app.mail.account.no-reply.host=smtp.gmail.com
+  #app.mail.account.no-reply.port=587
+  #
+  ## google account test
+  #app.mail.account.no-reply.email=tester@gmail.com
+  #app.mail.account.no-reply.password=sxckqebcmaimwfvl"
   mail:
     base-url: http://127.0.0.1:8080
     from: webapp-r2dbc-jwt@localhost

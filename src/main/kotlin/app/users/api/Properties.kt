@@ -7,13 +7,8 @@ import org.springframework.context.annotation.PropertySources
 import org.springframework.web.cors.CorsConfiguration
 
 @PropertySources(
-    PropertySource(
-        "classpath:git.properties",
-        ignoreResourceNotFound = true
-    ), PropertySource(
-        "classpath:META-INF/build-info.properties",
-        ignoreResourceNotFound = true
-    )
+    PropertySource("classpath:git.properties", ignoreResourceNotFound = true),
+    PropertySource("classpath:META-INF/build-info.properties", ignoreResourceNotFound = true)
 )
 @ConfigurationProperties(prefix = "app", ignoreUnknownFields = false)
 class Properties @ConstructorBinding constructor(
@@ -37,25 +32,58 @@ class Properties @ConstructorBinding constructor(
     )
 
     class ClientApp(val name: String = "")
-    class Database(
-        val populatorPath: String = "",
-//        val dao: Dao = Dao(),
-    ) {
-//        class Dao(
-//            val user: Table = Table(),
-//            val role: Table = Table(),
-//            val userRole: Table = Table(),
-//        ) {
-//            class Table(
-//                val name: String = "",
-//                val fields: List<Field> = mutableListOf(),
-//                val sqlScript: String = "",
-//                val insert : String=""+fields.joinToString(",") { "null" },
-//            ) {
-//                class Field(val name: String = "")
-//            }
-//        }
+    class Database(val populatorPath: String = "")
+
+    class MailClient() {
+        class MailAccount(
+            val name: String = "",
+            val token: String = "",
+            val enabled: Boolean = false,
+            val from: String = "",
+            val baseUrl: String = "",
+            val host: String = "",
+            val port: Int = -1,
+            val password: String = "",
+            val smptProperty: SmtpProperty = SmtpProperty(),
+            val imapsProperty: ImapsProperty = ImapsProperty(),
+        ) {
+            class SmtpProperty(
+                val debug: Boolean = false,
+                val transport: Transport = Transport(),
+                val smtp: Smtp = Smtp()
+            ) {
+                class Transport(val protocol: String = "")
+                class Smtp(
+                    val auth: Boolean = false,
+                    val starttls: Starttls = Starttls()
+                ) {
+                    class Starttls(val enable: Boolean = false)
+                }
+            }
+
+            class ImapsProperty(
+                val debug: Boolean = false,
+                val transport: Transport = Transport(),
+                val imaps: Imaps = Imaps()
+            ) {
+                class Transport(val protocol: String = "")
+                class Imaps(
+                    val auth: Boolean = false,
+                    val starttls: Starttls = Starttls()
+                ) {
+                    class Starttls(val enable: Boolean = false)
+                }
+            }
+        }
     }
+
+    //    text_to_add="# google
+    //    app.mail.no-reply.host=smtp.gmail.com
+    //    app.mail.no-reply.port=587
+    //
+    //    # google account test
+    //    app.mail.no-reply.email=tester@gmail.com
+    //    app.mail.no-reply.password=sxckqebcmaimwfvl"
 
     class Mail(
         val name: String = "",
@@ -68,6 +96,7 @@ class Properties @ConstructorBinding constructor(
         val password: String = "",
         val property: SmtpProperty = SmtpProperty(),
     ) {
+
         class SmtpProperty(
             val debug: Boolean = false,
             val transport: Transport = Transport(),

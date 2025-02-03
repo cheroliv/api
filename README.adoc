@@ -41,39 +41,41 @@ Open terminal and run :
 ----
 ./gradlew :apiCheckFirefox
 ----
-
-=== Set smtp configuration
-
-Create a gmail account, add a password application. link:https://knowledge.workspace.google.com/kb/how-to-create-app-passwords-000009237[product documentation]
-
-Add credential to properties file like this:
-
-Open terminal and run :
-[source,bash]
-----
-file_path="src/main/resources/private.properties"
-text_to_add="# google
-test.mail.host=smtp.gmail.com
-test.mail.port=587
-
-# google account test
-test.mail=tester@gmail.com
-test.mail.password=sxckqebcmaimwfvl"
-
-if [ ! -f "$file_path" ]; then
-  echo "File '$file_path' does not exist. Creating it..."
-  touch "$file_path"
-  if [ $? -eq 0 ]; then
-    echo "$text_to_add" > "$file_path"
-    if [ $? -eq 0 ]; then
-      echo "File '$file_path' created and content added successfully."
-    else
-      echo "Error adding content to file '$file_path'."
-    fi
-  else
-    echo "Error creating file '$file_path'."
-  fi
-else
-  echo "File '$file_path' already exists."
-fi
-----
+// == Mail configuration
+// === SMTP configuration
+//
+// Create a gmail account, add a password application. link:https://knowledge.workspace.google.com/kb/how-to-create-app-passwords-000009237[product documentation]
+//
+// Add credential to properties file like this:
+//
+// Open terminal and run :
+// [source,bash]
+// ----
+// file_path="src/main/resources/private.properties"
+// text_to_add="# google
+// test.mail.host=smtp.gmail.com
+// test.mail.port=587
+//
+// # google account test
+// test.mail=tester@gmail.com
+// test.mail.password=sxckqebcmaimwfvl"
+//
+// if [ ! -f "$file_path" ]; then
+//   echo "File '$file_path' does not exist. Creating it..."
+//   touch "$file_path"
+//   if [ $? -eq 0 ]; then
+//     echo "$text_to_add" > "$file_path"
+//     if [ $? -eq 0 ]; then
+//       echo "File '$file_path' created and content added successfully."
+//     else
+//       echo "Error adding content to file '$file_path'."
+//     fi
+//   else
+//     echo "Error creating file '$file_path'."
+//   fi
+// else
+//   echo "File '$file_path' already exists."
+// fi
+// ----
+//
+// === IMAPS configuration
