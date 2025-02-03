@@ -1,0 +1,78 @@
+#[versions]
+#kotlin = "2.0.21"
+#langchain4j = "0.36.2"
+#commonsIo = "2.13.0"
+#jackson = "2.17.2"
+#jgit = "6.10.0.202406032230-r"
+#testcontainers = "1.20.1"
+#springShell = "3.3.3"
+#arrowKt = "1.2.4"
+#api = "0.0.1"
+#
+#[libraries]
+#assertj-swing = { group = "org.assertj", name = "assertj-swing", version = "3.17.1" }
+#kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test" }
+#kotlin-test-junit5 = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit5" }
+#junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+#commons-beanutils = { group = "commons-beanutils", name = "commons-beanutils", version = "1.9.4" }
+#google-api-services-forms = { group = "com.google.apis", name = "google-api-services-forms", version = "v1-rev20220908-2.0.0" }
+#google-api-services-drive = { group = "com.google.apis", name = "google-api-services-drive", version = "v3-rev197-1.25.0" }
+#google-api-client-jackson2 = { group = "com.google.api-client", name = "google-api-client-jackson2", version = "2.3.0" }
+#google-auth-library-oauth2-http = { group = "com.google.auth", name = "google-auth-library-oauth2-http", version = "1.23.0" }
+#xz = { group = "org.tukaani", name = "xz", version = "1.9" }
+#poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version = "5.2.5" }
+#asciidoctorj-diagram = { group = "org.asciidoctor", name = "asciidoctorj-diagram", version = "2.3.1" }
+#okhttp-digest = { group = "io.github.rburgst", name = "okhttp-digest", version = "3.1.1" }
+#grolifant = { group = "org.ysb33r.gradle", name = "grolifant", version = "0.12.1" }
+#langchain4j-core = { group = "dev.langchain4j", name = "langchain4j", version.ref = "langchain4j" }
+#commons-io = { group = "commons-io", name = "commons-io", version.ref = "commonsIo" }
+#jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin" }
+#jackson-module-jsonSchema = { group = "com.fasterxml.jackson.module", name = "jackson-module-jsonSchema", version.ref = "jackson" }
+#jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jackson" }
+#jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jackson" }
+#jgit-core = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "jgit" }
+#jgit-archive = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.archive", version.ref = "jgit" }
+#jgit-ssh = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.ssh.jsch", version.ref = "jgit" }
+#kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect" }
+#kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8" }
+#kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core" }
+#kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json.version" }
+#spring-boot-devtools = { group = "org.springframework.boot", name = "spring-boot-devtools" }
+#spring-boot-configuration-processor = { group = "org.springframework.boot", name = "spring-boot-configuration-processor" }
+#spring-boot-properties-migrator = { group = "org.springframework.boot", name = "spring-boot-properties-migrator" }
+#spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+#spring-boot-starter-mail = { group = "org.springframework.boot", name = "spring-boot-starter-mail" }
+#spring-boot-starter-thymeleaf = { group = "org.springframework.boot", name = "spring-boot-starter-thymeleaf" }
+#spring-boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
+#spring-boot-starter-webflux = { group = "org.springframework.boot", name = "spring-boot-starter-webflux" }
+#spring-boot-starter-data-r2dbc = { group = "org.springframework.boot", name = "spring-boot-starter-data-r2dbc" }
+#spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+#spring-boot-starter-security = { group = "org.springframework.boot", name = "spring-boot-starter-security" }
+#spring-security-data = { group = "org.springframework.security", name = "spring-security-data" }
+#spring-security-test = { group = "org.springframework.security", name = "spring-security-test" }
+#spring-cloud-starter-contract-verifier = { group = "org.springframework.cloud", name = "spring-cloud-starter-contract-verifier", version.ref = "spring_cloud_starter.version" }
+#jjwt-impl = { group = "io.jsonwebtoken", name = "jjwt-impl", version.ref = "jsonwebtoken.version" }
+#jjwt-jackson = { group = "io.jsonwebtoken", name = "jjwt-jackson", version.ref = "jsonwebtoken.version" }
+#netty-tcnative-boringssl-static = { group = "io.netty", name = "netty-tcnative-boringssl-static", version.ref = "boring_ssl.version" }
+#r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql.version" }
+#mockito-core = { group = "org.mockito", name = "mockito-core" }
+#mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito_kotlin_version" }
+#mockito-junit-jupiter = { group = "org.mockito", name = "mockito-junit-jupiter", version.ref = "mockito_jupiter.version" }
+#commons-fileupload = { group = "commons-fileupload", name = "commons-fileupload", version = "1.5.0.redhat-00001" }
+#langchain4j-reactor = { group = "dev.langchain4j", name = "langchain4j-reactor", version.ref = "langchain4j.version" }
+#langchain4j-spring-boot-starter = { group = "dev.langchain4j", name = "langchain4j-spring-boot-starter", version.ref = "langchain4j.version" }
+#langchain4j-ollama-spring-boot-starter = { group = "dev.langchain4j", name = "langchain4j-ollama-spring-boot-starter", version.ref = "langchain4j.version" }
+#langchain4j-hugging-face = { group = "dev.langchain4j", name = "langchain4j-hugging-face", version.ref = "langchain4j.version" }
+#langchain4j-mistral-ai = { group = "dev.langchain4j", name = "langchain4j-mistral-ai", version.ref = "langchain4j.version" }
+#langchain4j-web-search-engine-google-custom = { group = "dev.langchain4j", name = "langchain4j-web-search-engine-google-custom", version.ref = "langchain4j.version" }
+#langchain4j-google-ai-gemini = { group = "dev.langchain4j", name = "langchain4j-google-ai-gemini", version.ref = "langchain4j.version" }
+#langchain4j-pgvector = { group = "dev.langchain4j", name = "langchain4j-pgvector", version.ref = "langchain4j.version" }
+#langchain4j-spring-boot-tests = { group = "dev.langchain4j", name = "langchain4j-spring-boot-tests", version.ref = "langchain4j.version" }
+#arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow-kt.version" }
+#arrow-fx-coroutines = { group = "io.arrow-kt", name = "arrow-fx-coroutines", version.ref = "arrow-kt.version" }
+#arrow-integrations-jackson-module = { group = "io.arrow-kt", name = "arrow-integrations-jackson-module", version.ref = "arrow-kt_jackson.version" }
+#reactor-kotlin-extensions = { group = "io.projectreactor.kotlin", name = "reactor-kotlin-extensions" }
+#kotlinx-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor" }
+#reactor-test = { group = "io.projectreactor", name = "reactor-test" }
+#commons-lang3 = { group = "org.apache.commons", name = "commons-lang3" }
+#commons-collections4 = { group = "org.apache.commons", name = "commons-collections4", version = "4.5.0-M1" }

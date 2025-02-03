@@ -37,6 +37,7 @@ plugins {
     kotlin("plugin.serialization")
     id("org.springframework.boot")
     id("io.spring.dependency-management")
+    id("com.github.ben-manes.versions")
 }
 
 "app.workspace.Installer".run(application.mainClass::set)
@@ -77,6 +78,11 @@ repositories {
 }
 
 //dependencyManagement { imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") } }
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.boot:spring-boot-dependencies:${properties["springboot.version"]}")
+    }
+}
 
 dependencies {
 //    <dependency>
