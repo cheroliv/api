@@ -8,8 +8,11 @@ jgit = "6.10.0.202406032230-r"
 testcontainers = "1.20.1"
 springShell = "3.3.3"
 arrowKt = "1.2.4"
-jsonwebtoken ="0.11.2"
-
+jsonwebtoken = "0.11.2"
+kotlinx-serialization-json = "1.7.2"
+spring_cloud_starter = "4.2.0"
+boring_ssl = "2.0.62.Final"
+r2dbc-postgresql = "1.0.7.RELEASE"
 
 [libraries]
 assertj-swing = { group = "org.assertj", name = "assertj-swing", version = "3.17.1" }
@@ -38,7 +41,7 @@ jgit-ssh = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.ssh.jsch", ver
 kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect" }
 kotlin-stdlib-jdk8 = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib-jdk8" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core" }
-#kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json.version" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 spring-boot-devtools = { group = "org.springframework.boot", name = "spring-boot-devtools" }
 spring-boot-configuration-processor = { group = "org.springframework.boot", name = "spring-boot-configuration-processor" }
 spring-boot-properties-migrator = { group = "org.springframework.boot", name = "spring-boot-properties-migrator" }
@@ -53,11 +56,11 @@ spring-boot-starter-tomcat = { group = "org.springframework.boot", name = "sprin
 spring-boot-starter-security = { group = "org.springframework.boot", name = "spring-boot-starter-security" }
 spring-security-data = { group = "org.springframework.security", name = "spring-security-data" }
 spring-security-test = { group = "org.springframework.security", name = "spring-security-test" }
-#spring-cloud-starter-contract-verifier = { group = "org.springframework.cloud", name = "spring-cloud-starter-contract-verifier", version.ref = "spring_cloud_starter.version" }
+spring-cloud-starter-contract-verifier = { group = "org.springframework.cloud", name = "spring-cloud-starter-contract-verifier", version.ref = "spring_cloud_starter" }
 jjwt-impl = { group = "io.jsonwebtoken", name = "jjwt-impl", version.ref = "jsonwebtoken" }
 jjwt-jackson = { group = "io.jsonwebtoken", name = "jjwt-jackson", version.ref = "jsonwebtoken" }
-#netty-tcnative-boringssl-static = { group = "io.netty", name = "netty-tcnative-boringssl-static", version.ref = "boring_ssl.version" }
-#r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql.version" }
+netty-tcnative-boringssl-static = { group = "io.netty", name = "netty-tcnative-boringssl-static", version.ref = "boring_ssl" }
+r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
 mockito-core = { group = "org.mockito", name = "mockito-core" }
 #mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito_kotlin_version" }
 #mockito-junit-jupiter = { group = "org.mockito", name = "mockito-junit-jupiter", version.ref = "mockito_jupiter.version" }
