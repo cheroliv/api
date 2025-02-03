@@ -49,7 +49,8 @@ extra["springShellVersion"] = "3.3.3"
 object Constants {
     const val langchain4jVersion = "0.36.2"
     const val testcontainersVersion = "1.20.1"
-//    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
+
+    //    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
     const val commonsIoVersion = "2.13.0"
     const val jacksonVersion = "2.17.2"//2.18.0
     const val arrowKtVersion = "1.2.4"
@@ -67,6 +68,7 @@ data class DockerHub(
     val email: String = properties["docker_hub_email"].toString(),
     val image: String = "cheroliv/e3po"
 )
+
 val mockitoAgent = configurations.create("mockitoAgent")
 
 repositories {
@@ -85,101 +87,27 @@ dependencyManagement {
 }
 
 dependencies {
-//    <dependency>
-//    <groupId>org.jspecify</groupId>
-//    <artifactId>jspecify</artifactId>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.jetbrains.kotlin</groupId>
-//    <artifactId>kotlin-stdlib</artifactId>
-//    <optional>true</optional>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.jetbrains.kotlinx</groupId>
-//    <artifactId>kotlinx-coroutines-core-jvm</artifactId>
-//    <optional>true</optional>
-//    </dependency>
-//
-//    <!-- Test dependencies -->
-//    <dependency>
-//    <groupId>org.junit.jupiter</groupId>
-//    <artifactId>junit-jupiter-api</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.junit.jupiter</groupId>
-//    <artifactId>junit-jupiter-params</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.assertj</groupId>
-//    <artifactId>assertj-core</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.mockito.kotlin</groupId>
-//    <artifactId>mockito-kotlin</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>com.willowtreeapps.assertk</groupId>
-//    <artifactId>assertk-coroutines-jvm</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.awaitility</groupId>
-//    <artifactId>awaitility</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.jetbrains.kotlinx</groupId>
-//    <artifactId>kotlinx-coroutines-test</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//
-//    <dependency>
-//    <groupId>org.tinylog</groupId>
-//    <artifactId>tinylog-impl</artifactId>
-//    <scope>test</scope>
-//    </dependency>
-//    <dependency>
-//    <groupId>org.tinylog</groupId>
-//    <artifactId>slf4j-tinylog</artifactId>
-//    <scope>test</scope>
-//    </dependency>
+    testImplementation(libs.assertj.swing)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlin.test.junit5)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
-
-
-    testImplementation("org.assertj:assertj-swing:3.17.1")
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-    implementation("commons-beanutils:commons-beanutils:1.9.4")
+    implementation(libs.commons.beanutils)
     implementation("com.google.apis:google-api-services-forms:v1-rev20220908-2.0.0")
     implementation("com.google.apis:google-api-services-drive:v3-rev197-1.25.0")
     implementation("com.google.api-client:google-api-client-jackson2:2.3.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.23.0")
 
-    implementation("org.tukaani:xz:1.9")
-    implementation("org.apache.poi:poi-ooxml:5.2.5")
-    implementation("org.asciidoctor:asciidoctorj-diagram:2.3.1")
-    implementation("io.github.rburgst:okhttp-digest:3.1.1")
+    implementation(libs.xz)
+    implementation(libs.poi.ooxml)
+    implementation(libs.asciidoctorj.diagram)
+    implementation(libs.okhttp.digest)
     implementation("org.ysb33r.gradle:grolifant:0.12.1")
     implementation("dev.langchain4j:langchain4j:$langchain4jVersion")
     implementation("commons-io:commons-io:$commonsIoVersion")
 
     // Jackson marshaller
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation(libs.jackson.module.kotlin)
     implementation("com.fasterxml.jackson.module:jackson-module-jsonSchema:$jacksonVersion")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")
@@ -190,32 +118,32 @@ dependencies {
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:$jgitVersion")
 
     // Kotlin
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation(libs.kotlin.reflect)
+    implementation(libs.kotlin.stdlib.jdk8)
+    implementation(libs.kotlinx.coroutines.core)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${properties["kotlinx-serialization-json.version"]}")
 
     // Spring tools
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    runtimeOnly("org.springframework.boot:spring-boot-properties-migrator")
+    developmentOnly(libs.spring.boot.devtools)
+    annotationProcessor(libs.spring.boot.configuration.processor)
+    runtimeOnly(libs.spring.boot.properties.migrator)
     //developmentOnly("org.springframework.boot:spring-boot-docker-compose")
 
     // Springboot
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-mail")
-    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
-    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-    testImplementation("org.springframework.boot:spring-boot-starter-test") {
-        exclude(module = "mockito-core")
-    }
+    implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.mail)
+    implementation(libs.spring.boot.starter.thymeleaf)
+    implementation(libs.spring.boot.starter.validation)
+    implementation(libs.spring.boot.starter.webflux)
+    implementation(libs.spring.boot.starter.data.r2dbc)
+
+    implementation(libs.spring.boot.starter.test) { exclude(module = libs.mockito.core.get().module.name) }
+
+//    testImplementation(libs)
     // Spring security
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.security:spring-security-data")
-    testImplementation("org.springframework.security:spring-security-test")
+    implementation(libs.spring.boot.starter.security)
+    implementation(libs.spring.security.data)
+    testImplementation(libs.spring.security.test)
 
     // Spring cloud
     testImplementation("org.springframework.cloud:spring-cloud-starter-contract-verifier:${properties["spring_cloud_starter.version"]}") {
@@ -241,12 +169,12 @@ dependencies {
     runtimeOnly("org.postgresql:r2dbc-postgresql:${properties["r2dbc-postgresql.version"]}")
 
     // Kotlin-JUnit5
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlin.test.junit5)
 
     // Mock
-    testImplementation("org.mockito:mockito-core")
-    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
+    testImplementation(libs.mockito.core)
+    mockitoAgent(libs.mockito.core) { isTransitive = false }
     testImplementation("org.mockito.kotlin:mockito-kotlin:${properties["mockito_kotlin_version"]}")
     testImplementation("org.mockito:mockito-junit-jupiter:${properties["mockito_jupiter.version"]}")
 //    testImplementation("io.mockk:mockk:${properties["mockk.version"]}")
@@ -254,7 +182,7 @@ dependencies {
 //        exclude(module = "commons-fileupload")
 //    }
 //    testImplementation("com.ninja-squad:springmockk:${properties["springmockk.version"]}")
-    testImplementation("commons-fileupload:commons-fileupload:1.5.0.redhat-00001")
+    testImplementation(libs.commons.fileupload)
 
     // Archunit
 //    testImplementation("com.tngtech.archunit:archunit-junit5-api:${properties["archunit_junit5.version"]}")
@@ -290,21 +218,15 @@ dependencies {
 //    implementation("org.testcontainers:ollama:$testcontainersVersion")
 
     // Reactor
-    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-    testImplementation("io.projectreactor:reactor-test")
+    implementation(libs.reactor.kotlin.extensions)
+    implementation(libs.kotlinx.coroutines.reactor)
+    testImplementation(libs.reactor.test)
 
     // misc
-    implementation("org.apache.commons:commons-lang3")
-    testImplementation("org.apache.commons:commons-collections4:4.5.0-M1")
+    implementation(libs.commons.lang3)
+    testImplementation(libs.commons.collections4)
+
 }
-
-"node_modules"
-    .run(::listOf)
-    .toTypedArray()
-    .run(::files)
-    .run(idea.module.excludeDirs::plusAssign)
-
 
 configurations {
     compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
@@ -317,10 +239,18 @@ configurations {
             when {
                 it.first.isNotBlank() && it.second?.isNotBlank() == true ->
                     exclude(it.first, it.second)
+
+                else -> exclude(it.first)
             }
         }
     }
 }
+
+"node_modules"
+    .run(::listOf)
+    .toTypedArray()
+    .run(::files)
+    .run(idea.module.excludeDirs::plusAssign)
 
 tasks {
     withType<JavaCompile>().configureEach { options.encoding = "UTF-8" }
