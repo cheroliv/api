@@ -57,7 +57,7 @@ object Constants {
     const val BLANK = ""
 }
 
-val Project.sep: String get() = FileSystems.getDefault().separator
+val sep: String get() = FileSystems.getDefault().separator
 
 data class DockerHub(
     val username: String = properties["docker_hub_login"].toString(),
@@ -293,7 +293,11 @@ dependencies {
     testImplementation("org.apache.commons:commons-collections4:4.5.0-M1")
 }
 
-files("node_modules").run(idea.module.excludeDirs::plusAssign)
+"node_modules"
+    .run(::listOf)
+    .toTypedArray()
+    .run(::files)
+    .run(idea.module.excludeDirs::plusAssign)
 
 
 configurations {
