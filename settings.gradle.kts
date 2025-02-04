@@ -8,7 +8,7 @@ pluginManagement {
             "https://plugins.gradle.org/m2/",
             "https://mvnrepository.com/repos/springio-plugins-release",
             "https://maven.xillio.com/artifactory/libs-release/",
-            "https://archiva-repository.apache.org/archiva/repository/public/",
+            "https://archiva-repository.apache.org/archiva/repository/public/"
         ).forEach(::maven)
     }
     plugins {
