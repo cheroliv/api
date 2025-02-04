@@ -16,7 +16,7 @@ boring_ssl = "2.0.62.Final"
 r2dbc-postgresql = "1.0.7.RELEASE"
 mockito-kotlin = "5.3.1"
 mockito-jupiter = "5.12.0"
-
+springboot = "3.4.2"
 
 [libraries]
 assertj-swing = { group = "org.assertj", name = "assertj-swing", version = "3.17.1" }
@@ -89,7 +89,5 @@ commons-collections4 = { group = "org.apache.commons", name = "commons-collectio
 junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version = "5.12.0-M1" }
 tomcat-servlet-api = { group = "org.apache.tomcat", name = "tomcat-servlet-api" }
 commons-collections-obsolete = { group = "commons-collections", name = "3.2.1" }
-
 [bundles]
-
 [plugins]
