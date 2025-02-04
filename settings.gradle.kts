@@ -12,7 +12,14 @@ pluginManagement {
         ).forEach(::maven)
     }
     plugins {
-        kotlin("jvm").version(extra["kotlin.version"].toString())
+//    id(libs.plugins.`kotlin-jvm`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`kotlin-spring`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`kotlin-allopen`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`kotlin-noarg`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`kotlin-serialization`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`spring-boot`.get().id) version libs.versions.springboot
+//    id(libs.plugins.`dependency-management`.get().id) version libs.versions.`dependency-management`
+//    id(libs.plugins.versions.get().id) version libs.versions.versions
         kotlin("plugin.serialization").version(extra["kotlin.version"].toString())
         kotlin("plugin.allopen").version(extra["kotlin.version"].toString())
         kotlin("plugin.noarg").version(extra["kotlin.version"].toString())
@@ -20,12 +27,6 @@ pluginManagement {
         id("org.springframework.boot").version(extra["springboot.version"].toString())
         id("io.spring.dependency-management").version(extra["spring_dependency_management.version"].toString())
         id("com.github.ben-manes.versions").version(extra["deps.version"].toString())
-//        id("org.jbake.site").version(extra["jbake-gradle.version"].toString())
-//        id("com.github.node-gradle.node").version(extra["node-gradle.version"].toString())
-//        id("org.gradle.toolchains.foojay-resolver-convention") version ("0.8.0")
-//        id("org.asciidoctor:asciidoctor-gradle-jvm-slides") version (extra["asciidoctor.gradle.version"].toString())
-//        id("org.asciidoctor:asciidoctor-gradle-base") version (extra["asciidoctor.gradle.version"].toString())
-//        id("org.asciidoctor:asciidoctor-gradle-jvm-gems") version (extra["asciidoctor.gradle.version"].toString())
     }
 }
 
