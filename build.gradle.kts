@@ -30,22 +30,14 @@ plugins {
     jacoco
     application
     `java-library`
-    kotlin("plugin.spring")
-    kotlin("plugin.allopen")
-    kotlin("plugin.noarg")
-    kotlin("plugin.serialization")
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
-    id("com.github.ben-manes.versions")
     id(libs.plugins.kotlin.jvm.get().pluginId).version(libs.versions.kotlin)
-//    id(libs.plugins.`kotlin-spring`.get().id) version libs.versions.kotlin
-//    id(libs.plugins.`kotlin-allopen`.get().id) version libs.versions.kotlin
-//    id(libs.plugins.`kotlin-noarg`.get().id) version libs.versions.kotlin
-//    id(libs.plugins.`kotlin-serialization`.get().id) version libs.versions.kotlin
-//    id(libs.plugins.`spring-boot`.get().id) version libs.versions.springboot
-//    id(libs.plugins.`dependency-management`.get().id) version libs.versions.`dependency-management`
-//    id(libs.plugins.versions.get().id) version libs.versions.versions
-
+    id(libs.plugins.kotlin.spring.get().pluginId).version(libs.versions.kotlin)
+    id(libs.plugins.kotlin.allopen.get().pluginId).version(libs.versions.kotlin)
+    id(libs.plugins.kotlin.noarg.get().pluginId).version(libs.versions.kotlin)
+    id(libs.plugins.kotlin.serialization.get().pluginId).version(libs.versions.kotlin)
+    id(libs.plugins.spring.boot.get().pluginId).version(libs.versions.springboot)
+    id(libs.plugins.versions.get().pluginId).version(libs.versions.deps.versions)
+    id(libs.plugins.dependency.management.get().pluginId).version(libs.versions.spring.dependency.management)
 }
 
 "app.workspace.Installer".run(application.mainClass::set)
@@ -65,10 +57,11 @@ repositories {
 }
 
 dependencyManagement.imports {
-    properties["springboot.version"]
+    libs.versions.springboot.get()
         .run { "org.springframework.boot:spring-boot-dependencies:$this" }
         .run(::mavenBom)
 }
+
 
 dependencies {
     implementation(libs.kotlin.reflect)
