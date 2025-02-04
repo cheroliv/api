@@ -25,6 +25,7 @@ class Properties @ConstructorBinding constructor(
     val cors: CorsConfiguration = CorsConfiguration(),
 ) {
     class MailBox(
+        val noReply: Mail = Mail(),
         val signup: Mail = Mail(),
         val password: Mail = Mail(),
         val contact: Mail = Mail(),
