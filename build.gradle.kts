@@ -5,12 +5,12 @@
     "RedundantSuppression"
 )
 
-import Build_gradle.Constants.langchain4jVersion
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
-import java.nio.file.FileSystems
+import java.io.File.separator
+
 
 buildscript {
     repositories {
@@ -19,7 +19,10 @@ buildscript {
         google()
         maven { url = uri("https://plugins.gradle.org/m2/") }
     }
-    dependencies { classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.10") }
+    dependencies {
+        extra["kotlinVersion"] = "2.1.10"
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${extra["kotlinVersion"]}")
+    }
 }
 
 plugins {
@@ -42,24 +45,6 @@ plugins {
 
 group = properties["artifact.group"].toString()
 version = "0.0.1"
-extra["springShellVersion"] = "3.3.3"
-
-object Constants {
-    const val langchain4jVersion = "0.36.2"
-    const val testcontainersVersion = "1.20.1"
-    //    const val asciidoctorGradleVersion = "4.0.0-alpha.1"
-    const val BLANK = ""
-}
-
-val sep: String get() = FileSystems.getDefault().separator
-
-data class DockerHub(
-    val username: String = properties["docker_hub_login"].toString(),
-    val password: String = properties["docker_hub_password"].toString(),
-    val token: String = properties["docker_hub_login_token"].toString(),
-    val email: String = properties["docker_hub_email"].toString(),
-    val image: String = "cheroliv/e3po"
-)
 
 val mockitoAgent = configurations.create("mockitoAgent")
 
@@ -71,11 +56,10 @@ repositories {
     maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
 }
 
-//dependencyManagement { imports { mavenBom("org.springframework.shell:spring-shell-dependencies:${property("springShellVersion")}") } }
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.boot:spring-boot-dependencies:${properties["springboot.version"]}")
-    }
+dependencyManagement.imports {
+    properties["springboot.version"]
+        .run { "org.springframework.boot:spring-boot-dependencies:$this" }
+        .run(::mavenBom)
 }
 
 dependencies {
@@ -92,9 +76,13 @@ dependencies {
     implementation(libs.arrow.fx.coroutines)
     implementation(libs.arrow.integrations.jackson.module)
 
-    testImplementation(libs.assertj.swing)
+    implementation(libs.reactor.kotlin.extensions)
+    implementation(libs.kotlinx.coroutines.reactor)
+    testImplementation(libs.reactor.test)
 
     implementation(libs.commons.beanutils)
+    implementation(libs.commons.lang3)
+    testImplementation(libs.commons.collections4)
 
     implementation(libs.google.api.services.forms)
     implementation(libs.google.api.services.drive)
@@ -127,10 +115,8 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.data.r2dbc)
+    runtimeOnly(libs.r2dbc.postgresql)
 
-    implementation(libs.spring.boot.starter.test) {
-        exclude(module = libs.mockito.core.get().module.name)
-    }
 
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.security.data)
@@ -140,38 +126,37 @@ dependencies {
         exclude(module = libs.commons.collections.obsolete.get().module.name)
     }
 
-    // Spring AOP
-//    testImplementation("org.springframework.boot:spring-boot-starter-aop")
-
-    // Spring tests
-    // Spring-Shell
-//    implementation("org.springframework.shell:spring-shell-starter")
-//    testImplementation("org.springframework.shell:spring-shell-starter-test")
-
     implementation(libs.jjwt.impl)
     implementation(libs.jjwt.jackson)
     implementation(libs.netty.tcnative.boringssl.static)
-    runtimeOnly(libs.r2dbc.postgresql)
 
+    implementation(libs.spring.boot.starter.test) {
+        exclude(module = libs.mockito.core.get().module.name)
+    }
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlin.test.junit5)
+    testImplementation(libs.assertj.swing)
+    testImplementation(libs.mockito.core.apply {
+        mockitoAgent(this) { isTransitive = false }
+    })
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.mockito.junit.jupiter)
+//    testImplementation("org.springframework.boot:spring-boot-starter-aop")
 //    testImplementation("org.wiremock:wiremock:${properties["wiremock.version"]}") {
 //        exclude(module = "commons-fileupload")
 //    }
     testImplementation(libs.commons.fileupload)
-
-    testImplementation(libs.kotlin.test)
-    testImplementation(libs.kotlin.test.junit5)
-
-    testImplementation(libs.mockito.core)
-    mockitoAgent(libs.mockito.core) { isTransitive = false }
-    testImplementation(libs.mockito.kotlin)
-    testImplementation(libs.mockito.junit.jupiter)
 //    testImplementation("io.mockk:mockk:${properties["mockk.version"]}")
 //    testImplementation("com.ninja-squad:springmockk:${properties["springmockk.version"]}")
-
+    // Testcontainers
+//    const val testcontainersVersion = "1.20.1"
+//    testImplementation("org.testcontainers:junit-jupiter")
+//    testImplementation("org.testcontainers:postgresql")
+//    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
+//    implementation("org.testcontainers:ollama:$testcontainersVersion")
     // Archunit
 //    testImplementation("com.tngtech.archunit:archunit-junit5-api:${properties["archunit_junit5.version"]}")
 //    testRuntimeOnly("com.tngtech.archunit:archunit-junit5-engine:${properties["archunit_junit5.version"]}")
-
     implementation(libs.langchain4j.core)
     implementation(libs.langchain4j.reactor)
     implementation(libs.langchain4j.spring.boot.starter)
@@ -187,21 +172,6 @@ dependencies {
 //    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini-spring-boot-starter:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai:${properties["langchain4j.version"]}")
 //    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini:${properties["langchain4j.version"]}")
-
-    // Testcontainers
-//    testImplementation("org.testcontainers:junit-jupiter")
-//    testImplementation("org.testcontainers:postgresql")
-//    implementation("org.testcontainers:testcontainers:$testcontainersVersion")
-//    implementation("org.testcontainers:ollama:$testcontainersVersion")
-
-    // Reactor
-    implementation(libs.reactor.kotlin.extensions)
-    implementation(libs.kotlinx.coroutines.reactor)
-    testImplementation(libs.reactor.test)
-
-    // misc
-    implementation(libs.commons.lang3)
-    testImplementation(libs.commons.collections4)
 }
 
 configurations {
@@ -254,18 +224,18 @@ tasks.withType<Test> {
 tasks.register<Delete>("cleanResources") {
     description = "Delete directory build/resources"
     group = "build"
-    delete("build${sep}resources")
+    delete("build${separator}resources")
 }
 
 tasks.jacocoTestReport {
-    executionData(files("${layout.buildDirectory}${sep}jacoco${sep}test.exec"))
+    executionData(files("${layout.buildDirectory}${separator}jacoco${separator}test.exec"))
     reports.xml.required = true
 }
 
 tasks.register<TestReport>("testReport") {
     description = "Generates an HTML test report from the results of testReport task."
     group = "report"
-    "${layout.buildDirectory}${sep}reports${sep}tests"
+    "${layout.buildDirectory}${separator}reports${separator}tests"
         .run(::file)
         .run(destinationDirectory::set)
     "test".run(tasks::get)
@@ -316,7 +286,7 @@ tasks.register<Exec>("apiCheckFirefox") {
     commandLine(
         "firefox",
         "--new-tab",
-        "build${sep}reports${sep}tests${sep}test${sep}index.html"
+        "build${separator}reports${separator}tests${separator}test${separator}index.html"
             .run(layout.projectDirectory.asFile.toPath()::resolve)
             .toAbsolutePath(),
     )
@@ -330,5 +300,3 @@ tasks.register<JavaExec>("displayCreateTestDbSchema") {
         .runtimeClasspath
         .run(::setClasspath)
 }
-
-
