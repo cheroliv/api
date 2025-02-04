@@ -7,12 +7,16 @@ jackson = "2.17.2"
 jgit = "6.10.0.202406032230-r"
 testcontainers = "1.20.1"
 springShell = "3.3.3"
-arrowKt = "1.2.4"
+arrow-kt = "1.2.4"
+arrow-kt_jackson = "0.14.1"
 jsonwebtoken = "0.11.2"
 kotlinx-serialization-json = "1.7.2"
-spring_cloud_starter = "4.2.0"
+spring-cloud-starter = "4.2.0"
 boring_ssl = "2.0.62.Final"
 r2dbc-postgresql = "1.0.7.RELEASE"
+mockito-kotlin = "5.3.1"
+mockito-jupiter = "5.12.0"
+
 
 [libraries]
 assertj-swing = { group = "org.assertj", name = "assertj-swing", version = "3.17.1" }
@@ -56,32 +60,35 @@ spring-boot-starter-tomcat = { group = "org.springframework.boot", name = "sprin
 spring-boot-starter-security = { group = "org.springframework.boot", name = "spring-boot-starter-security" }
 spring-security-data = { group = "org.springframework.security", name = "spring-security-data" }
 spring-security-test = { group = "org.springframework.security", name = "spring-security-test" }
-spring-cloud-starter-contract-verifier = { group = "org.springframework.cloud", name = "spring-cloud-starter-contract-verifier", version.ref = "spring_cloud_starter" }
+spring-cloud-starter-contract-verifier = { group = "org.springframework.cloud", name = "spring-cloud-starter-contract-verifier", version.ref = "spring-cloud-starter" }
 jjwt-impl = { group = "io.jsonwebtoken", name = "jjwt-impl", version.ref = "jsonwebtoken" }
 jjwt-jackson = { group = "io.jsonwebtoken", name = "jjwt-jackson", version.ref = "jsonwebtoken" }
 netty-tcnative-boringssl-static = { group = "io.netty", name = "netty-tcnative-boringssl-static", version.ref = "boring_ssl" }
 r2dbc-postgresql = { group = "org.postgresql", name = "r2dbc-postgresql", version.ref = "r2dbc-postgresql" }
 mockito-core = { group = "org.mockito", name = "mockito-core" }
-#mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito_kotlin_version" }
-#mockito-junit-jupiter = { group = "org.mockito", name = "mockito-junit-jupiter", version.ref = "mockito_jupiter.version" }
+mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockito-kotlin" }
+mockito-junit-jupiter = { group = "org.mockito", name = "mockito-junit-jupiter", version.ref = "mockito-jupiter" }
 commons-fileupload = { group = "commons-fileupload", name = "commons-fileupload", version = "1.5.0.redhat-00001" }
-#langchain4j-reactor = { group = "dev.langchain4j", name = "langchain4j-reactor", version.ref = "langchain4j.version" }
-#langchain4j-spring-boot-starter = { group = "dev.langchain4j", name = "langchain4j-spring-boot-starter", version.ref = "langchain4j.version" }
-#langchain4j-ollama-spring-boot-starter = { group = "dev.langchain4j", name = "langchain4j-ollama-spring-boot-starter", version.ref = "langchain4j.version" }
-#langchain4j-hugging-face = { group = "dev.langchain4j", name = "langchain4j-hugging-face", version.ref = "langchain4j.version" }
-#langchain4j-mistral-ai = { group = "dev.langchain4j", name = "langchain4j-mistral-ai", version.ref = "langchain4j.version" }
-#langchain4j-web-search-engine-google-custom = { group = "dev.langchain4j", name = "langchain4j-web-search-engine-google-custom", version.ref = "langchain4j.version" }
-#langchain4j-google-ai-gemini = { group = "dev.langchain4j", name = "langchain4j-google-ai-gemini", version.ref = "langchain4j.version" }
-#langchain4j-pgvector = { group = "dev.langchain4j", name = "langchain4j-pgvector", version.ref = "langchain4j.version" }
-#langchain4j-spring-boot-tests = { group = "dev.langchain4j", name = "langchain4j-spring-boot-tests", version.ref = "langchain4j.version" }
-#arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow-kt.version" }
-#arrow-fx-coroutines = { group = "io.arrow-kt", name = "arrow-fx-coroutines", version.ref = "arrow-kt.version" }
-#arrow-integrations-jackson-module = { group = "io.arrow-kt", name = "arrow-integrations-jackson-module", version.ref = "arrow-kt_jackson.version" }
+langchain4j-reactor = { group = "dev.langchain4j", name = "langchain4j-reactor", version.ref = "langchain4j" }
+langchain4j-spring-boot-starter = { group = "dev.langchain4j", name = "langchain4j-spring-boot-starter", version.ref = "langchain4j" }
+langchain4j-ollama-spring-boot-starter = { group = "dev.langchain4j", name = "langchain4j-ollama-spring-boot-starter", version.ref = "langchain4j" }
+langchain4j-hugging-face = { group = "dev.langchain4j", name = "langchain4j-hugging-face", version.ref = "langchain4j" }
+langchain4j-mistral-ai = { group = "dev.langchain4j", name = "langchain4j-mistral-ai", version.ref = "langchain4j" }
+langchain4j-web-search-engine-google-custom = { group = "dev.langchain4j", name = "langchain4j-web-search-engine-google-custom", version.ref = "langchain4j" }
+langchain4j-google-ai-gemini = { group = "dev.langchain4j", name = "langchain4j-google-ai-gemini", version.ref = "langchain4j" }
+langchain4j-pgvector = { group = "dev.langchain4j", name = "langchain4j-pgvector", version.ref = "langchain4j" }
+langchain4j-spring-boot-tests = { group = "dev.langchain4j", name = "langchain4j-spring-boot-tests", version.ref = "langchain4j" }
+arrow-core = { group = "io.arrow-kt", name = "arrow-core", version.ref = "arrow-kt" }
+arrow-fx-coroutines = { group = "io.arrow-kt", name = "arrow-fx-coroutines", version.ref = "arrow-kt" }
+arrow-integrations-jackson-module = { group = "io.arrow-kt", name = "arrow-integrations-jackson-module", version.ref = "arrow-kt_jackson" }
 reactor-kotlin-extensions = { group = "io.projectreactor.kotlin", name = "reactor-kotlin-extensions" }
 kotlinx-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor" }
 reactor-test = { group = "io.projectreactor", name = "reactor-test" }
 commons-lang3 = { group = "org.apache.commons", name = "commons-lang3" }
 commons-collections4 = { group = "org.apache.commons", name = "commons-collections4", version = "4.5.0-M1" }
+junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version = "5.12.0-M1" }
+tomcat-servlet-api = { group = "org.apache.tomcat", name = "tomcat-servlet-api" }
+commons-collections-obsolete = { group = "commons-collections", name = "3.2.1" }
 
 [bundles]
 
