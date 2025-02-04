@@ -30,7 +30,6 @@ plugins {
     jacoco
     application
     `java-library`
-    kotlin("jvm")
     kotlin("plugin.spring")
     kotlin("plugin.allopen")
     kotlin("plugin.noarg")
@@ -38,6 +37,15 @@ plugins {
     id("org.springframework.boot")
     id("io.spring.dependency-management")
     id("com.github.ben-manes.versions")
+    id(libs.plugins.kotlin.jvm.get().pluginId).version(libs.versions.kotlin)
+//    id(libs.plugins.`kotlin-spring`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`kotlin-allopen`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`kotlin-noarg`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`kotlin-serialization`.get().id) version libs.versions.kotlin
+//    id(libs.plugins.`spring-boot`.get().id) version libs.versions.springboot
+//    id(libs.plugins.`dependency-management`.get().id) version libs.versions.`dependency-management`
+//    id(libs.plugins.versions.get().id) version libs.versions.versions
+
 }
 
 "app.workspace.Installer".run(application.mainClass::set)
