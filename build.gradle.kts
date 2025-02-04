@@ -36,8 +36,8 @@ plugins {
     id(libs.plugins.kotlin.noarg.get().pluginId).version(libs.versions.kotlin)
     id(libs.plugins.kotlin.serialization.get().pluginId).version(libs.versions.kotlin)
     id(libs.plugins.spring.boot.get().pluginId).version(libs.versions.springboot)
-    id(libs.plugins.versions.get().pluginId).version(libs.versions.deps.versions)
     id(libs.plugins.dependency.management.get().pluginId).version(libs.versions.spring.dependency.management)
+    id(libs.plugins.versions.get().pluginId).version(libs.versions.deps.versions)
 }
 
 "app.workspace.Installer".run(application.mainClass::set)
@@ -61,7 +61,6 @@ dependencyManagement.imports {
         .run { "org.springframework.boot:spring-boot-dependencies:$this" }
         .run(::mavenBom)
 }
-
 
 dependencies {
     implementation(libs.kotlin.reflect)
@@ -117,7 +116,6 @@ dependencies {
     implementation(libs.spring.boot.starter.webflux)
     implementation(libs.spring.boot.starter.data.r2dbc)
     runtimeOnly(libs.r2dbc.postgresql)
-
 
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.security.data)
