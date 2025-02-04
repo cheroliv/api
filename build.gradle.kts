@@ -210,7 +210,6 @@ tasks.withType<KotlinCompile> {
     compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
 }
 
-
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging { events(FAILED, SKIPPED) }
