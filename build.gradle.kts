@@ -1,10 +1,7 @@
-@file:Suppress(
-    "UnstableApiUsage",
-    "ConstPropertyName",
-    "VulnerableLibrariesLocal",
-    "RedundantSuppression"
-)
-
+import Build_gradle.Application.API
+import Build_gradle.Application.CLI
+import Build_gradle.Application.INSTALLER
+import Build_gradle.Application.SQL_SCHEMA
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -18,7 +15,7 @@ buildscript {
         mavenLocal()
         gradlePluginPortal()
         google()
-        maven { url = uri("https://plugins.gradle.org/m2/") }
+        maven("https://plugins.gradle.org/m2/")
     }
     dependencies {
         extra["kotlinVersion"] = "2.1.10"
@@ -43,9 +40,15 @@ plugins {
     ).forEach { id(it.first.get().pluginId).version(it.second) }
 }
 
-"app.workspace.Installer".run(application.mainClass::set)
-"app.API".run(springBoot.mainClass::set)
+object Application {
+    const val API = "app.API"
+    const val CLI = "app.CommandLine"
+    const val INSTALLER = "app.workspace.Installer"
+    const val SQL_SCHEMA = "app.users.api.dao.DatabaseConfiguration"
+}
 
+INSTALLER.run(application.mainClass::set)
+API.run(springBoot.mainClass::set)
 val mockitoAgent = configurations.create("mockitoAgent")
 
 repositories {
@@ -154,6 +157,7 @@ dependencies {
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.assertj.swing)
     testImplementation(libs.mockito.core.apply {
+        @Suppress("UnstableApiUsage")
         mockitoAgent(this) { isTransitive = false }
     })
     testImplementation(libs.mockito.kotlin)
@@ -245,18 +249,17 @@ tasks.register<TestReport>("testReport") {
         .run(testResults::setFrom)
 }
 
-
 tasks.register<JavaExec>("runWorkspaceInstaller") {
     group = "application"
     description = "Runs the Swing application"
-    "app.workspace.Installer".run(mainClass::set)
+    INSTALLER.run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
         .run(::setClasspath)
 }
 
 tasks.named<BootRun>("bootRun") {
-    "app.API".run(mainClass::set)
+    API.run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
         .run(::setClasspath)
@@ -265,7 +268,7 @@ tasks.named<BootRun>("bootRun") {
 tasks.register<JavaExec>("cli") {
     group = "application"
     description = "Run CLI application: ./gradlew cli -Pargs=--gui"
-    "app.CommandLine".run(mainClass::set)
+    CLI.run(mainClass::set)
     "main".run(sourceSets::get).runtimeClasspath.run(::setClasspath)
     when {
         "args".run(project::hasProperty) -> {
@@ -296,7 +299,7 @@ tasks.register<Exec>("apiCheckFirefox") {
 tasks.register<JavaExec>("displayCreateTestDbSchema") {
     group = "application"
     description = "Display SQL script who creates database tables into test schema."
-    "app.users.api.dao.DatabaseConfiguration".run(mainClass::set)
+    SQL_SCHEMA.run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
         .run(::setClasspath)
