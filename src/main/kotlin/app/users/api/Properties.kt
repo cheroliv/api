@@ -58,14 +58,14 @@ class Properties @ConstructorBinding constructor(
     }
 
     class MailBox(
-        val noReply: Mail = Mail(),//MailAccount(),
+        val noReply: MailAccount = MailAccount(),
 //        val signup: Mail = Mail(),
 //        val password: Mail = Mail(),
 //        val contact: Mail = Mail(),
 //        val test: Mail = Mail(),
     ) {
         class MailAccount(
-            val name: String = "",
+            val name: String = "no-reply",
             val token: String = "",
             val enabled: Boolean = false,
             val from: String = "",
