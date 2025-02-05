@@ -1,10 +1,10 @@
 = REST-API
 
 .features:
-* Signup account
-* Password reset and update
-* Account settings
-* Users management
+* Signup account (work in progress)
+* Password reset and update (work in progress)
+* Account settings (todo)
+* Users management (todo)
 
 == Running
 
@@ -13,7 +13,7 @@
 Open terminal and run :
 [source,bash]
 ----
-./gradlew bootRun
+./gradlew :bootRun
 ----
 
 and launch link:http://localhost:8880/[http://localhost:8880/]
@@ -23,7 +23,7 @@ and launch link:http://localhost:8880/[http://localhost:8880/]
 Open terminal and run :
 [source,bash]
 ----
-./gradlew cli
+./gradlew :cli
 ----
 
 === **Test the app**
@@ -31,7 +31,7 @@ Open terminal and run :
 Open terminal and run :
 [source,bash]
 ----
-./gradlew check
+./gradlew :check
 ----
 
 === **Tests reports(required firefox installed)**

@@ -348,6 +348,7 @@ class Tests {
                 }
             }
 
+            @Suppress("SpellCheckingInspection")
             @Test
             fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {
                 val salt = string().generateKey().apply { "salt: $this".run(::i) }
