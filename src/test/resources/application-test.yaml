@@ -23,9 +23,9 @@ app:
         starttls:
           enable: true
     token: 2e2a7d47-0476-4046-9c66-9f990f8d6d35-f840450f-e853-43a5-b3f4-bbc
-  mailbox:
-    test:
-      token: 2e2a7d47-0476-4046-9c66-9f990f8d6d35-f840450f-e853-43a5-b3f4-bbc
+#  mailbox:
+#    test:
+#      token: 2e2a7d47-0476-4046-9c66-9f990f8d6d35-f840450f-e853-43a5-b3f4-bbc
 
 spring:
   devtools:

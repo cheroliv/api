@@ -24,18 +24,46 @@ class Properties @ConstructorBinding constructor(
     val security: Security = Security(),
     val cors: CorsConfiguration = CorsConfiguration(),
 ) {
+    //    text_to_add="# google
+    //    app.mail.no-reply.host=smtp.gmail.com
+    //    app.mail.no-reply.port=587
+    //
+    //    # google account test
+    //    app.mail.no-reply.email=tester@gmail.com
+    //    app.mail.no-reply.password=sxckqebcmaimwfvl"
+    class Mail(
+        val name: String = "",
+        val token: String = "",
+        val enabled: Boolean = false,
+        val from: String = "",
+        val baseUrl: String = "",
+        val host: String = "",
+        val port: Int = -1,
+        val password: String = "",
+        val property: SmtpProperty = SmtpProperty(),
+    ) {
+        class SmtpProperty(
+            val debug: Boolean = false,
+            val transport: Transport = Transport(),
+            val smtp: Smtp = Smtp()
+        ) {
+            class Transport(val protocol: String = "")
+            class Smtp(
+                val auth: Boolean = false,
+                val starttls: Starttls = Starttls()
+            ) {
+                class Starttls(val enable: Boolean = false)
+            }
+        }
+    }
+
     class MailBox(
-        val noReply: Mail = Mail(),
-        val signup: Mail = Mail(),
-        val password: Mail = Mail(),
-        val contact: Mail = Mail(),
-        val test: Mail = Mail(),
-    )
-
-    class ClientApp(val name: String = "")
-    class Database(val populatorPath: String = "")
-
-    class MailClient() {
+        val noReply: Mail = Mail(),//MailAccount(),
+//        val signup: Mail = Mail(),
+//        val password: Mail = Mail(),
+//        val contact: Mail = Mail(),
+//        val test: Mail = Mail(),
+    ) {
         class MailAccount(
             val name: String = "",
             val token: String = "",
@@ -78,40 +106,10 @@ class Properties @ConstructorBinding constructor(
         }
     }
 
-    //    text_to_add="# google
-    //    app.mail.no-reply.host=smtp.gmail.com
-    //    app.mail.no-reply.port=587
-    //
-    //    # google account test
-    //    app.mail.no-reply.email=tester@gmail.com
-    //    app.mail.no-reply.password=sxckqebcmaimwfvl"
 
-    class Mail(
-        val name: String = "",
-        val token: String = "",
-        val enabled: Boolean = false,
-        val from: String = "",
-        val baseUrl: String = "",
-        val host: String = "",
-        val port: Int = -1,
-        val password: String = "",
-        val property: SmtpProperty = SmtpProperty(),
-    ) {
+    class ClientApp(val name: String = "")
+    class Database(val populatorPath: String = "")
 
-        class SmtpProperty(
-            val debug: Boolean = false,
-            val transport: Transport = Transport(),
-            val smtp: Smtp = Smtp()
-        ) {
-            class Transport(val protocol: String = "")
-            class Smtp(
-                val auth: Boolean = false,
-                val starttls: Starttls = Starttls()
-            ) {
-                class Starttls(val enable: Boolean = false)
-            }
-        }
-    }
 
     class Http(val cache: Cache = Cache()) {
         class Cache(val timeToLiveInDays: Int = 1461)
