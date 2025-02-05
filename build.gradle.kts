@@ -31,21 +31,20 @@ plugins {
     jacoco
     application
     `java-library`
-    id(libs.plugins.kotlin.jvm.get().pluginId).version(libs.versions.kotlin)
-    id(libs.plugins.kotlin.spring.get().pluginId).version(libs.versions.kotlin)
-    id(libs.plugins.kotlin.allopen.get().pluginId).version(libs.versions.kotlin)
-    id(libs.plugins.kotlin.noarg.get().pluginId).version(libs.versions.kotlin)
-    id(libs.plugins.kotlin.serialization.get().pluginId).version(libs.versions.kotlin)
-    id(libs.plugins.spring.boot.get().pluginId).version(libs.versions.springboot)
-    id(libs.plugins.dependency.management.get().pluginId).version(libs.versions.spring.dependency.management)
-    id(libs.plugins.versions.get().pluginId).version(libs.versions.deps.versions)
+    setOf(
+        libs.plugins.kotlin.jvm to libs.versions.kotlin,
+        libs.plugins.kotlin.spring to libs.versions.kotlin,
+        libs.plugins.kotlin.allopen to libs.versions.kotlin,
+        libs.plugins.kotlin.noarg to libs.versions.kotlin,
+        libs.plugins.kotlin.serialization to libs.versions.kotlin,
+        libs.plugins.spring.boot to libs.versions.springboot,
+        libs.plugins.spring.dependency.management to libs.versions.spring.dependency.management,
+        libs.plugins.versions to libs.versions.deps.versions,
+    ).forEach { id(it.first.get().pluginId).version(it.second) }
 }
 
 "app.workspace.Installer".run(application.mainClass::set)
 "app.API".run(springBoot.mainClass::set)
-
-group = properties["artifact.group"].toString()
-version = "0.0.1"
 
 val mockitoAgent = configurations.create("mockitoAgent")
 
@@ -108,6 +107,22 @@ dependencies {
     implementation(libs.jgit.archive)
     implementation(libs.jgit.ssh)
 
+    implementation(libs.langchain4j.core)
+    implementation(libs.langchain4j.reactor)
+    implementation(libs.langchain4j.spring.boot.starter)
+    implementation(libs.langchain4j.ollama.spring.boot.starter)
+    implementation(libs.langchain4j.hugging.face)
+    implementation(libs.langchain4j.mistral.ai)
+    implementation(libs.langchain4j.web.search.engine.google.custom)
+    implementation(libs.langchain4j.google.ai.gemini)
+    implementation(libs.langchain4j.pgvector)
+    testImplementation(libs.langchain4j.spring.boot.tests)
+//    implementation("dev.langchain4j:langchain4j-document-parser-apache-pdfbox:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-easy-rag:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini-spring-boot-starter:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-vertex-ai:${properties["langchain4j.version"]}")
+//    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini:${properties["langchain4j.version"]}")
+
     developmentOnly(libs.spring.boot.devtools)
     annotationProcessor(libs.spring.boot.configuration.processor)
     runtimeOnly(libs.spring.boot.properties.migrator)
@@ -159,21 +174,6 @@ dependencies {
     // Archunit
 //    testImplementation("com.tngtech.archunit:archunit-junit5-api:${properties["archunit_junit5.version"]}")
 //    testRuntimeOnly("com.tngtech.archunit:archunit-junit5-engine:${properties["archunit_junit5.version"]}")
-    implementation(libs.langchain4j.core)
-    implementation(libs.langchain4j.reactor)
-    implementation(libs.langchain4j.spring.boot.starter)
-    implementation(libs.langchain4j.ollama.spring.boot.starter)
-    implementation(libs.langchain4j.hugging.face)
-    implementation(libs.langchain4j.mistral.ai)
-    implementation(libs.langchain4j.web.search.engine.google.custom)
-    implementation(libs.langchain4j.google.ai.gemini)
-    implementation(libs.langchain4j.pgvector)
-    testImplementation(libs.langchain4j.spring.boot.tests)
-//    implementation("dev.langchain4j:langchain4j-document-parser-apache-pdfbox:${properties["langchain4j.version"]}")
-//    implementation("dev.langchain4j:langchain4j-easy-rag:${properties["langchain4j.version"]}")
-//    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini-spring-boot-starter:${properties["langchain4j.version"]}")
-//    implementation("dev.langchain4j:langchain4j-vertex-ai:${properties["langchain4j.version"]}")
-//    implementation("dev.langchain4j:langchain4j-vertex-ai-gemini:${properties["langchain4j.version"]}")
 }
 
 configurations {
