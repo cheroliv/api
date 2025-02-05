@@ -10,6 +10,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
 import java.io.File.separator
+import kotlin.text.Charsets.UTF_8
 
 
 buildscript {
@@ -50,10 +51,12 @@ val mockitoAgent = configurations.create("mockitoAgent")
 
 repositories {
     mavenCentral()
-    maven("https://maven.repository.redhat.com/ga/")
-    maven("https://repo.spring.io/milestone")
-    maven("https://repo.spring.io/snapshot")
-    maven("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/")
+    setOf(
+        "https://maven.repository.redhat.com/ga/",
+        "https://repo.spring.io/milestone",
+        "https://repo.spring.io/snapshot",
+        "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/"
+    ).forEach(::maven)
 }
 
 dependencyManagement.imports {
@@ -198,11 +201,11 @@ configurations {
     .run(idea.module.excludeDirs::plusAssign)
 
 tasks {
-    withType<JavaCompile>().configureEach { options.encoding = "UTF-8" }
-    withType<JavaExec>().configureEach { defaultCharacterEncoding = "UTF-8" }
-    withType<Javadoc>().configureEach { options.encoding = "UTF-8" }
-    withType<Test>().configureEach { defaultCharacterEncoding = "UTF-8" }
-    withType<BootRun>().configureEach { defaultCharacterEncoding = "UTF-8" }
+    withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
+    withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
+    withType<Javadoc>().configureEach { options.encoding = UTF_8.name() }
+    withType<Test>().configureEach { defaultCharacterEncoding = UTF_8.name() }
+    withType<BootRun>().configureEach { defaultCharacterEncoding = UTF_8.name() }
 }
 
 tasks.withType<KotlinCompile> {
