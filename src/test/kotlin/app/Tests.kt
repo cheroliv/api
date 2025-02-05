@@ -340,6 +340,15 @@ class Tests {
         inner class CoreTests {
 
             @Test
+            fun `test no-reply mailbox properties coherence`(): Unit = assertDoesNotThrow {
+                context.getBean<Properties>().run {
+                    mailbox.noReply.name
+                        .run { "properties.mailbox.no-reply.name: $this" }
+                        .run(::i)
+                }
+            }
+
+            @Test
             fun `test text symetric encryption and decryption`(): Unit = assertDoesNotThrow {
                 val salt = string().generateKey().apply { "salt: $this".run(::i) }
                 val encryptor = text("RGPD", salt)
