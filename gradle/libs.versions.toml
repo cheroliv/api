@@ -98,5 +98,5 @@ kotlin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "ko
 kotlin-noarg = { id = "org.jetbrains.kotlin.plugin.noarg", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 spring-boot = { id = "org.springframework.boot", version.ref = "springboot" }
-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
 versions = { id = "com.github.ben-manes.versions", version.ref = "deps-versions" }
