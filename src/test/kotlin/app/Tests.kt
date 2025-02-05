@@ -340,13 +340,17 @@ class Tests {
         inner class CoreTests {
 
             @Test
-            fun `test no-reply mailbox properties coherence`(): Unit = assertDoesNotThrow {
-                context.getBean<Properties>().run {
-                    mailbox.noReply.name
-                        .run { "properties.mailbox.no-reply.name: $this" }
-                        .run(::i)
+            fun `test properties_mailbox_no-reply_from should be a valid email`(): Unit =
+                assertDoesNotThrow {
+                    context.getBean<Properties>().run {
+                        mailbox.noReply.from.apply {
+                            assertThat(
+                                context.getBean<Validator>()
+                                    .validateProperty(user.copy(email = this), EMAIL_ATTR)
+                            ).isEmpty()
+                        }.run { i("properties.mailbox.no-reply.from: $this") }
+                    }
                 }
-            }
 
             @Suppress("SpellCheckingInspection")
             @Test
