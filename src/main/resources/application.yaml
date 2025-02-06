@@ -5,18 +5,11 @@ app:
   clientApp:
     name: 'server'
 
-  #  text_to_add="# google
-  #app.mail.account.no-reply.host=smtp.gmail.com
-  #app.mail.account.no-reply.port=587
-  #
-  ## google account test
-  #app.mail.account.no-reply.email=tester@gmail.com
-  #app.mail.account.no-reply.password=sxckqebcmaimwfvl"
   mailbox:
     no-reply:
-      from: webapp-r2dbc-jwt@localhost
+      from: no-reply@localhost
       name: no-reply
-      base-url: http://127.0.0.1:8080
+      base-url: http://127.0.0.1:8880
       password: password
       enabled: true
       host: localhost
@@ -34,23 +27,6 @@ app:
           starttls:
             enable: true
 
-
-  mail:
-    base-url: http://127.0.0.1:8080
-    from: webapp-r2dbc-jwt@localhost
-    password: password
-    enabled: true
-    host: localhost
-    port: 587
-    property:
-      debug: true
-      transport:
-        protocol: smtp
-      smtp:
-        auth: true
-        starttls:
-          enable: true
-    token: 2e2a7d47-0476-4046-9c66-9f990f8d6d35-f840450f-e853-43a5-b3f4-bbc
   security:
     authentication:
       jwt:
@@ -66,10 +42,6 @@ app:
     exposed-headers: 'Authorization,Link,X-Total-Count'
     allow-credentials: true
     max-age: 1800
-
-#  encrypter:
-#    secret: RGPD
-#    salt: 33a9ef2640cb9830
 
 spring:
   profiles:
@@ -116,3 +88,7 @@ langchain4j:
     streaming-chat-model:
       base-url: http://localhost:11434
       model-name: smollm:135m
+
+      #  encrypter:
+      #    secret: RGPD
+      #    salt: 33a9ef2640cb9830
