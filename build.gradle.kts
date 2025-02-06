@@ -64,6 +64,7 @@ dependencyManagement.imports {
 }
 
 dependencies {
+    implementation(project(":installer"))
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.stdlib.jdk8)
     implementation(libs.kotlinx.coroutines.core)
