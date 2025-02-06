@@ -1,25 +1,36 @@
 package app.workspace
 
-import app.users.api.Constants.EMPTY_STRING
-import app.users.api.Loggers
-import app.users.api.Loggers.i
-import app.users.api.Loggers.w
 import app.workspace.Workspace.InstallationType
 import app.workspace.Workspace.InstallationType.ALL_IN_ONE
 import app.workspace.Workspace.InstallationType.SEPARATED_FOLDERS
 import app.workspace.Workspace.WorkspaceConfig
 import java.awt.EventQueue.invokeLater
 import java.nio.file.Path
-import javax.swing.*
-import javax.swing.GroupLayout.Alignment.*
+import javax.swing.BorderFactory
+import javax.swing.ButtonGroup
+import javax.swing.GroupLayout
+import javax.swing.GroupLayout.Alignment.BASELINE
+import javax.swing.GroupLayout.Alignment.LEADING
+import javax.swing.GroupLayout.Alignment.TRAILING
 import javax.swing.GroupLayout.DEFAULT_SIZE
 import javax.swing.GroupLayout.PREFERRED_SIZE
+import javax.swing.JButton
+import javax.swing.JFileChooser
 import javax.swing.JFileChooser.APPROVE_OPTION
 import javax.swing.JFileChooser.DIRECTORIES_ONLY
-import javax.swing.JOptionPane.*
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JOptionPane.ERROR_MESSAGE
+import javax.swing.JOptionPane.INFORMATION_MESSAGE
+import javax.swing.JOptionPane.showMessageDialog
+import javax.swing.JPanel
+import javax.swing.JRadioButton
+import javax.swing.JTextField
 import javax.swing.LayoutStyle.ComponentPlacement.RELATED
 import javax.swing.LayoutStyle.ComponentPlacement.UNRELATED
+import javax.swing.UIManager
 import javax.swing.UIManager.getInstalledLookAndFeels
+import javax.swing.UnsupportedLookAndFeelException
 import kotlin.Short.Companion.MAX_VALUE
 
 object Installer {
@@ -34,7 +45,7 @@ object Installer {
             is ClassNotFoundException,
             is InstantiationException,
             is IllegalAccessException,
-            is UnsupportedLookAndFeelException -> w(EMPTY_STRING, ex)
+            is UnsupportedLookAndFeelException -> println(ex)
             // Rethrow unknown exceptions
             else -> throw ex
         }
@@ -43,9 +54,13 @@ object Installer {
     internal class GUI(
         private val selectedPaths: MutableMap<String, Path?> = HashMap(),
         private var currentInstallationType: InstallationType = ALL_IN_ONE,
-        private val communicationPathLabel: JLabel = JLabel("Communication").apply { toolTipText = "" },
+        private val communicationPathLabel: JLabel = JLabel("Communication").apply {
+            toolTipText = ""
+        },
         private val communicationPathTextField: JTextField = JTextField(),
-        private val configurationPathLabel: JLabel = JLabel("Configuration").apply { toolTipText = "" },
+        private val configurationPathLabel: JLabel = JLabel("Configuration").apply {
+            toolTipText = ""
+        },
         private val configurationPathTextField: JTextField = JTextField(),
         private val educationPathLabel: JLabel = JLabel("Education").apply { toolTipText = "" },
         private val educationPathTextField: JTextField = JTextField(),
@@ -67,7 +82,9 @@ object Installer {
         private val workspaceEntriesPanel: JPanel = JPanel(),
         private val splitWorkspaceRadioButton: JRadioButton = JRadioButton("Separated folders")
             .apply { isSelected = false },
-        private val allInOneWorkspaceRadioButton: JRadioButton = JRadioButton("All-in-one").apply { isSelected = true },
+        private val allInOneWorkspaceRadioButton: JRadioButton = JRadioButton("All-in-one").apply {
+            isSelected = true
+        },
         private val browseCommunicationPathButton: JButton = JButton(),
         private val browseConfigurationPathButton: JButton = JButton(),
         private val browseEducationPathButton: JButton = JButton(),
@@ -81,7 +98,7 @@ object Installer {
         },
     ) : JFrame("Workspace Project Installer") {
         init {
-            initUI().let { "Init, currentInstallationType : $currentInstallationType".run(Loggers::i) }
+            initUI().let { "Init, currentInstallationType : $currentInstallationType".run(::println) }
         }
 
         private fun GUI.clearSpecificPaths() {
@@ -111,7 +128,7 @@ object Installer {
                 }
 
                 else -> try {
-                    i("Creating app.workspace... : $currentInstallationType")
+                    println("Creating app.workspace... : $currentInstallationType")
                     if (currentInstallationType == SEPARATED_FOLDERS) arrayOf(
                         "office",
                         "education",
@@ -160,16 +177,20 @@ object Installer {
         }
 
         private fun GUI.handleInstallationTypeChange(type: InstallationType) {
-            "currentInstallationType : $currentInstallationType".run(Loggers::i)
+            "currentInstallationType : $currentInstallationType".run(::println)
             currentInstallationType = type
-            "Installation type changed to $type".run(Loggers::i)
+            "Installation type changed to $type".run(::println)
             setWorkspaceEntriesVisibility(type == SEPARATED_FOLDERS)
             if (type == ALL_IN_ONE) clearSpecificPaths()
         }
 
 
         private fun GUI.addListeners(): GUI {
-            splitWorkspaceRadioButton.addActionListener { handleInstallationTypeChange(SEPARATED_FOLDERS) }
+            splitWorkspaceRadioButton.addActionListener {
+                handleInstallationTypeChange(
+                    SEPARATED_FOLDERS
+                )
+            }
             allInOneWorkspaceRadioButton.addActionListener { handleInstallationTypeChange(ALL_IN_ONE) }
             browseCommunicationPathButton.addActionListener {
                 selectDirectory("communication", communicationPathTextField)
@@ -177,9 +198,24 @@ object Installer {
             browseConfigurationPathButton.addActionListener {
                 selectDirectory("configuration", configurationPathTextField)
             }
-            browseEducationPathButton.addActionListener { selectDirectory("education", educationPathTextField) }
-            browseOfficePathButton.addActionListener { selectDirectory("office", officePathTextField) }
-            browseWorkspacePathButton.addActionListener { selectDirectory("workspace", workspacePathTextField) }
+            browseEducationPathButton.addActionListener {
+                selectDirectory(
+                    "education",
+                    educationPathTextField
+                )
+            }
+            browseOfficePathButton.addActionListener {
+                selectDirectory(
+                    "office",
+                    officePathTextField
+                )
+            }
+            browseWorkspacePathButton.addActionListener {
+                selectDirectory(
+                    "workspace",
+                    workspacePathTextField
+                )
+            }
             browseJobPathButton.addActionListener { selectDirectory("job", jobPathTextField) }
             createWorkspaceButton.addActionListener { handleCreateWorkspace() }
             installationTypeGroup.selection.addActionListener {
