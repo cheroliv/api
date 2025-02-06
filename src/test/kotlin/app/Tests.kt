@@ -35,7 +35,6 @@ import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
 import app.TestUtils.tripleCounts
-import app.TestUtils.usernameFromEmail
 import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse
 import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse.Success
 import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.ollamaList
@@ -55,7 +54,6 @@ import app.users.api.Loggers.i
 import app.users.api.Properties
 import app.users.api.Utils.lsWorkingDir
 import app.users.api.Utils.lsWorkingDirProcess
-import app.users.api.Utils.privateProperties
 import app.users.api.Utils.toJson
 import app.users.api.dao.UserDao.availability
 import app.users.api.dao.UserDao.change
@@ -83,7 +81,6 @@ import app.users.api.security.SecurityUtils.generateActivationKey
 import app.users.api.security.SecurityUtils.generateResetKey
 import app.users.api.security.SecurityUtils.getCurrentUserLogin
 import app.users.api.web.HttpUtils.validator
-import app.users.api.web.Web.Companion.configuration
 import app.users.password.InvalidPasswordException
 import app.users.password.PasswordChange
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
@@ -223,7 +220,7 @@ import kotlin.test.assertTrue
 import java.util.Properties as JProperties
 
 @Nested
-@ActiveProfiles("test")
+@ActiveProfiles("test", "mailbox")
 @TestInstance(PER_CLASS)
 @SpringBootTest(
     classes = [Server::class],
@@ -268,7 +265,6 @@ class Tests {
                 .run(::assertThat)
                 .isIn(*ollamaList.toTypedArray())
             ollamaList.run(::assertThat).contains("smollm:135m")
-            context.configuration.run(::assertThat).isNotEmpty
         }
 
         @Test
@@ -745,7 +741,7 @@ class Tests {
                         user.withId(it.first).copy(
                             roles =
                             resultRoles
-                                .map { it.id.run(::Role) }
+                                .map { role -> role.id.run(::Role) }
                                 .toMutableSet())
                             .roles.first().id
                     )
@@ -916,7 +912,7 @@ class Tests {
                 i("Mime message content: $content")
                 assertThat(subject).isEqualTo("testSubject")
                 assertThat(allRecipients[0]).hasToString("john.doe@acme.com")
-                assertThat(from[0]).hasToString(context.getBean<Properties>().mail.from)
+                assertThat(from[0]).hasToString(context.getBean<Properties>().mailbox.noReply.from)
                 assertThat(content).isInstanceOf(String::class.java)
                 assertThat(content).hasToString("testContent")
                 assertThat(dataHandler.contentType).isEqualTo("text/plain; charset=UTF-8")
@@ -936,7 +932,7 @@ class Tests {
             messageCaptor.value.run {
                 assertThat(subject).isEqualTo("testSubject")
                 assertThat("${allRecipients[0]}").isEqualTo("john.doe@acme.com")
-                assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
                 assertThat(content).isInstanceOf(String::class.java)
                 assertThat(content.toString()).isEqualTo("testContent")
                 assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
@@ -961,7 +957,7 @@ class Tests {
             part.writeTo(baos)
             assertThat(message.subject).isEqualTo("testSubject")
             assertThat("${message.allRecipients[0]}").isEqualTo("john.doe@acme.com")
-            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
             assertThat(message.content).isInstanceOf(Multipart::class.java)
             assertThat("$baos").isEqualTo("\r\ntestContent")
             assertThat(part.dataHandler.contentType).isEqualTo("text/plain; charset=UTF-8")
@@ -985,7 +981,7 @@ class Tests {
             part.writeTo(aos)
             assertThat(message.subject).isEqualTo("testSubject")
             assertThat("${message.allRecipients[0]}").isEqualTo("john.doe@acme.com")
-            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+            assertThat("${message.from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
             assertThat(message.content).isInstanceOf(Multipart::class.java)
             assertThat("$aos").isEqualTo("\r\ntestContent")
             assertThat(part.dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
@@ -1007,7 +1003,7 @@ class Tests {
                 messageCaptor.value.run {
                     assertThat(subject).isEqualTo("school account activation")//.isEqualTo("Account activation")
                     assertThat("${allRecipients[0]}").isEqualTo(email)
-                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
                     assertThat(content.toString()).isEqualToNormalizingNewlines(
                         "<html>test title, http://127.0.0.1:8080, john</html>"
                     )
@@ -1097,7 +1093,7 @@ class Tests {
                 verify(javaMailSender).send(messageCaptor.capture())
                 messageCaptor.value.run {
                     assertThat("${allRecipients[0]}").isEqualTo(first.email)
-                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
                     assertThat(content.toString()).isNotEmpty
                     assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
                     content.toString()
@@ -1120,7 +1116,7 @@ class Tests {
                     .apply { i("Mime message content(activation mail): $content") }
                     .run {
                         assertThat("${allRecipients[0]}").isEqualTo(first.email)
-                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                        assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
                         assertThat(content.toString()).isNotEmpty
                         assertThat(content.toString()).contains(second)
                         assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
@@ -1139,7 +1135,7 @@ class Tests {
                 verify(javaMailSender).send(messageCaptor.capture())
                 messageCaptor.value.run {
                     assertThat("${allRecipients[0]}").isEqualTo(first.email)
-                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mail.from)
+                    assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
                     assertThat(content.toString()).isNotEmpty
                     assertThat(content.toString()).contains(second)
                     assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
@@ -1154,12 +1150,12 @@ class Tests {
 
         @Test
         fun `test dao update user password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -1223,12 +1219,12 @@ class Tests {
         @Test
         @WithMockUser(username = USER, roles = [ROLE_USER])
         fun `test service update user password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = User(
@@ -1293,12 +1289,12 @@ class Tests {
         @WithMockUser("change-password-wrong-existing-password")
         fun `test change password with wrong existing password, only service layer`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
                         login = USER,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 val userTest = User(
@@ -1351,12 +1347,12 @@ class Tests {
         @Test
         @WithMockUser("change-password-wrong-existing-password")
         fun `test change password with wrong existing password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -1462,12 +1458,12 @@ class Tests {
         @Test
         @WithMockUser("change-password", roles = [ROLE_USER])
         fun `test change password with valid password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -1577,12 +1573,12 @@ class Tests {
         @Test
         @WithMockUser("change-password-too-small")
         fun `test change password with too small password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -1701,12 +1697,12 @@ class Tests {
         @Test
         @WithMockUser("change-password-too-long")
         fun `test change password with too long password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -1825,12 +1821,12 @@ class Tests {
         @Test
         @WithMockUser("change-password-empty")
         fun `test change password with empty password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -1954,12 +1950,12 @@ class Tests {
         @Test
         fun `test initiate reset password with valid email on well signed up user`()
                 : Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -2047,12 +2043,12 @@ class Tests {
 
         @Test
         fun `test request password reset with uppercased email`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -2134,12 +2130,12 @@ class Tests {
 
         @Test
         fun `test request password reset against unexisting email`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = User(
@@ -2217,12 +2213,12 @@ class Tests {
         @Test
         fun `test service finish password reset, reset password scenario`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
                         login = USER,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 val userTest = User(
@@ -2362,12 +2358,12 @@ class Tests {
 
         @Test
         fun `test finish password reset, reset password scenario`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = User(
@@ -2501,12 +2497,12 @@ class Tests {
 
         @Test
         fun `test finish password reset too small`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
                     login = USER,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = User(
@@ -2648,12 +2644,12 @@ class Tests {
 
         @Test
         fun `test finish password reset with a wrong key`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = User(
@@ -2797,12 +2793,12 @@ class Tests {
         /**send mail*/
         @Test
         fun `functional test signup and reset password scenario`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
 
@@ -2919,12 +2915,12 @@ class Tests {
         @Test
         fun `test signupService signup saves user and role_user and user_activation`()
                 : Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
 
@@ -2939,12 +2935,12 @@ class Tests {
         /**send mail*/
         @Test
         fun `test signup request with a valid account`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             context.tripleCounts().run {
@@ -2967,12 +2963,12 @@ class Tests {
         @Test//TODO: rewrite test showing the scenario clearly
         fun `test UserRoleDao signup with existing user without user_role`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        login = name,
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 val userTest = context.user(signupTest)
@@ -3020,12 +3016,12 @@ class Tests {
         @Test
         fun `test signup and trying to retrieve the user id from databaseClient object`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        login = name,
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 val userTest = context.user(signupTest)
@@ -3069,12 +3065,12 @@ class Tests {
         @Test
         fun `signupAvailability should return SIGNUP_NOT_AVAILABLE_AGAINST_LOGIN_AND_EMAIL for all when login and email are not available`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        login = name,
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 val userTest = context.user(signupTest)
@@ -3092,12 +3088,12 @@ class Tests {
         @Test
         fun `signupAvailability should return SIGNUP_EMAIL_NOT_AVAILABLE when only email is not available`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        login = name,
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 val userTest = context.user(signupTest)
@@ -3118,12 +3114,12 @@ class Tests {
         @Test
         fun `signupAvailability should return SIGNUP_LOGIN_NOT_AVAILABLE when only login is not available`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        login = name,
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 val userTest = context.user(signupTest)
@@ -3142,12 +3138,12 @@ class Tests {
 
         @Test
         fun `check signup validate implementation`(): Unit {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             setOf(PASSWORD_ATTR, EMAIL_ATTR, LOGIN_ATTR)
@@ -3196,12 +3192,12 @@ class Tests {
 
         @Test
         fun `test signup request with an invalid url`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
 
@@ -3228,12 +3224,12 @@ class Tests {
 
         @Test
         fun `test signup request with an invalid login`() = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
 
@@ -3260,12 +3256,12 @@ class Tests {
 
         @Test
         fun `test signup with an invalid password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
 
@@ -3288,12 +3284,12 @@ class Tests {
 
         @Test
         fun `test signup request with an invalid password`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
 
@@ -3332,12 +3328,12 @@ class Tests {
 
         @Test
         fun `test signup with an existing email`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             context.tripleCounts().run counts@{
@@ -3370,12 +3366,12 @@ class Tests {
 
         @Test
         fun `test signup with an existing login`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             context.tripleCounts().run counts@{
@@ -3413,12 +3409,12 @@ class Tests {
         @Test
         fun `Verifies the internationalization of validations through REST with an unconform password in French during signup`(): Unit =
             runBlocking {
-                val signupTest = privateProperties.run {
+                val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
-                        login = get("test.mail").toString().usernameFromEmail,
-                        email = get("test.mail").toString(),
-                        password = get("test.mail").toString().usernameFromEmail,
-                        repassword = get("test.mail").toString().usernameFromEmail
+                        login = name,
+                        email = from,
+                        password = password,
+                        repassword = password
                     )
                 }
                 assertEquals(0, context.countUsers())
@@ -3442,12 +3438,12 @@ class Tests {
 
         @Test
         fun `test create userActivation inside signup`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -3461,12 +3457,12 @@ class Tests {
 
         @Test
         fun `test find userActivation by key`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -3530,12 +3526,12 @@ class Tests {
 
         @Test
         fun `test activate user by key`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -3625,12 +3621,12 @@ class Tests {
 
         @Test
         fun `test activateService with a valid key`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
@@ -3704,12 +3700,12 @@ class Tests {
 
         @Test
         fun `test activate request with a valid key`(): Unit = runBlocking {
-            val signupTest = privateProperties.run {
+            val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                 Signup(
-                    login = get("test.mail").toString().usernameFromEmail,
-                    email = get("test.mail").toString(),
-                    password = get("test.mail").toString().usernameFromEmail,
-                    repassword = get("test.mail").toString().usernameFromEmail
+                    login = name,
+                    email = from,
+                    password = password,
+                    repassword = password
                 )
             }
             val userTest = context.user(signupTest)
