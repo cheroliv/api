@@ -1,11 +1,11 @@
 package app.ai
 
-import app.ai.AIAssistantWorker.AiConfiguration.HuggingfaceAssistant
-import app.ai.AIAssistantWorker.AiConfiguration.OllamaAssistant
-import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.FRENCH
-import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Error
-import app.ai.AIAssistantWorker.SimpleAiController.AssistantResponse.Success
-import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.localModels
+import app.ai.AIAssistantManager.AiConfiguration.HuggingfaceAssistant
+import app.ai.AIAssistantManager.AiConfiguration.OllamaAssistant
+import app.ai.AIAssistantManager.AiConfiguration.PromptManager.FRENCH
+import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse.Error
+import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse.Success
+import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.localModels
 import app.ai.translator.AiTranslatorController.AssistantManager.createChatTask
 import app.ai.translator.AiTranslatorController.AssistantManager.createStreamingChatTask
 import app.users.api.web.Web.Companion.configuration
@@ -40,8 +40,6 @@ import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
-import org.springframework.http.ResponseEntity.internalServerError
-import org.springframework.http.ResponseEntity.ok
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -50,7 +48,7 @@ import java.time.Duration.ofSeconds
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class AIAssistantWorker {
+class AIAssistantManager {
     @Configuration
     class AiConfiguration(private val context: ApplicationContext) {
 
