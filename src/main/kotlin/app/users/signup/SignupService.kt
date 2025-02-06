@@ -67,7 +67,7 @@ class SignupService(private val context: ApplicationContext) {
                     .left()
             }.map {
                 return user.copy(id = it.first).apply {
-                    //TODO: relegate to async task executor call
+                    //TODO: delegate to async task executor call
                     context.getBean<MailService>()
                         .sendActivationEmail(this to it.second)
                 }.right()
@@ -87,14 +87,9 @@ class SignupService(private val context: ApplicationContext) {
         ex.left()
     }
 
-    suspend fun activate(key: String): Long = context.activate(key)
-        .getOrElse {
-            throw IllegalStateException(
-                "Error activating user with key: $key",
-                it
-            )
-        }
-        .takeIf { it == ONE_ROW_UPDATED }
+    suspend fun activate(key: String): Long = context.activate(key).getOrElse {
+        throw IllegalStateException("Error activating user with key: $key", it)
+    }.takeIf { it == ONE_ROW_UPDATED }
         ?: throw IllegalArgumentException("Activation failed: No user was activated for key: $key")
 
     suspend fun activate(

@@ -37,12 +37,6 @@ class Web(private val context: ApplicationContext) : WebFluxConfigurer {
         @Bean
         fun validationPostProcessor() = MethodValidationPostProcessor()
 
-        val ApplicationContext.configuration: Properties
-            get() = Properties().apply {
-                "private.properties"
-                    .run(classLoader!!::getResourceAsStream)
-                    .use(::load)
-            }
     }
 
     @Component
