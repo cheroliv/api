@@ -1,14 +1,11 @@
 package app.users.api
 
-import app.users.api.Constants.PRIVATE_PROPERTIES_FILE_PATH
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.commons.lang3.StringUtils.stripAccents
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
-import org.springframework.core.io.ClassPathResource
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileInputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
 import java.nio.file.Files.isDirectory
@@ -21,15 +18,6 @@ import kotlin.reflect.KClass
 import kotlin.streams.asSequence
 
 object Utils {
-
-    val privateProperties: java.util.Properties
-        get() = java.util.Properties().apply {
-            PRIVATE_PROPERTIES_FILE_PATH
-                .run(::ClassPathResource)
-                .run(ClassPathResource::getFile)
-                .run(::FileInputStream)
-                .run(::load)
-        }
 
     val Pair<Any, ApplicationContext>.toJson: String
         get() = first.run(second.getBean<ObjectMapper>()::writeValueAsString)

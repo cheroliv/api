@@ -5,7 +5,6 @@ import app.users.api.Constants.MAIL_SMTP_AUTH
 import app.users.api.Constants.MAIL_TRANSPORT_PROTOCOL
 import app.users.api.Constants.MAIL_TRANSPORT_STARTTLS_ENABLE
 import app.users.api.Properties
-import app.users.api.Utils.privateProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.mail.javamail.JavaMailSender
@@ -26,18 +25,16 @@ class MailConfiguration(private val properties: Properties) {
 
     @Bean
     fun noReply(): JavaMailSender = JavaMailSenderImpl().apply {
-        privateProperties.apply {
-            host = get("test.mail.host").toString()
-            port = get("test.mail.port").toString().toInt()
-            username = get("test.mail").toString()
-            password = get("test.mail.password").toString()
-            mapOf(
-                MAIL_SMTP_AUTH to properties.mail.property.smtp.auth,
-                MAIL_TRANSPORT_STARTTLS_ENABLE to properties.mail.property.smtp.starttls.enable,
-                MAIL_TRANSPORT_PROTOCOL to properties.mail.property.transport.protocol,
-                MAIL_DEBUG to properties.mail.property.debug,
-                "spring.mail.test-connection" to true,
-            ).forEach { javaMailProperties[it.key] = it.value }
-        }
+        username = properties.mailbox.noReply.from
+        password = properties.mailbox.noReply.password
+        host = properties.mailbox.noReply.host
+        port = properties.mailbox.noReply.port
+        mapOf(
+            MAIL_SMTP_AUTH to properties.mailbox.noReply.properties.transfer.auth,
+            MAIL_TRANSPORT_STARTTLS_ENABLE to properties.mailbox.noReply.properties.transfer.starttls.enable,
+            MAIL_TRANSPORT_PROTOCOL to properties.mailbox.noReply.properties.transport.protocol,
+            MAIL_DEBUG to properties.mailbox.noReply.properties.debug,
+            "spring.mail.test-connection" to true,
+        ).forEach { javaMailProperties[it.key] = it.value }
     }
 }
