@@ -59,29 +59,24 @@ class Properties @ConstructorBinding constructor(
 
     class MailBox(
         val noReply: MailAccount = MailAccount(),
-//        val signup: Mail = Mail(),
-//        val password: Mail = Mail(),
 //        val contact: Mail = Mail(),
-//        val test: Mail = Mail(),
+//        val recrutment: Mail = Mail(),
     ) {
         class MailAccount(
-            val name: String = "no-reply",
-            val token: String = "",
-            val enabled: Boolean = false,
             val from: String = "",
+            val password: String = "",
             val baseUrl: String = "",
+            val name: String = "no-reply",
             val host: String = "",
             val port: Int = -1,
-            val password: String = "",
-            val smptProperty: SmtpProperty = SmtpProperty(),
-            val imapsProperty: ImapsProperty = ImapsProperty(),
+            val enabled: Boolean = false,
+            val smptProperties: SmtpProperties = SmtpProperties(),
+            val imapsProperties: ImapsProperties = ImapsProperties(),
         ) {
-            class SmtpProperty(
+            class SmtpProperties(
                 val debug: Boolean = false,
-                val transport: Transport = Transport(),
                 val smtp: Smtp = Smtp()
             ) {
-                class Transport(val protocol: String = "")
                 class Smtp(
                     val auth: Boolean = false,
                     val starttls: Starttls = Starttls()
@@ -90,12 +85,10 @@ class Properties @ConstructorBinding constructor(
                 }
             }
 
-            class ImapsProperty(
+            class ImapsProperties(
                 val debug: Boolean = false,
-                val transport: Transport = Transport(),
                 val imaps: Imaps = Imaps()
             ) {
-                class Transport(val protocol: String = "")
                 class Imaps(
                     val auth: Boolean = false,
                     val starttls: Starttls = Starttls()
