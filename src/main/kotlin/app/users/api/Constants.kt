@@ -12,7 +12,6 @@ object Constants {
     const val GMAIL_IMAP_HOST = "imap.googlemail.com"
     const val MAIL_STORE_PROTOCOL_PROP = "mail.store.protocol"
     const val IMAPS_MAIL_STORE_PROTOCOL = "imaps"
-    const val PRIVATE_PROPERTIES_FILE_PATH = "private.properties"
     const val ROOT_PACKAGE = "app"
     const val BLANK = ""
     val languages = arrayOf("en", "fr", "de", "it", "es")
@@ -104,6 +103,8 @@ object Constants {
     const val INVALID_TOKEN = false
 
     //Email
+    const val SMTP = "smtp"
+    const val IMAPS = "imaps"
     const val MAIL_DEBUG = "mail.debug"
     const val MAIL_TRANSPORT_STARTTLS_ENABLE = "mail.smtp.starttls.enable"
     const val MAIL_SMTP_AUTH = "mail.smtp.auth"

@@ -268,7 +268,7 @@ tasks.register<JavaExec>("cli") {
 tasks.register<Exec>("apiCheckFirefox") {
     group = "verification"
     description = "Check spring boot project then show report in firefox"
-    dependsOn("check")
+    dependsOn("check -Pmailbox")
     commandLine(
         "firefox",
         "--new-tab",
