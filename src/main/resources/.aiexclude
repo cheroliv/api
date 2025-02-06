@@ -1,4 +1,4 @@
 application-prod.yaml
 application-local.yaml
 config.tls/keystore.p12
-private.properties
+../../../../office/private/draft-codebase/private.properties
