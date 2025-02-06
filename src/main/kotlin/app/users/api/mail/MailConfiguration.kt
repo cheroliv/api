@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package app.users.api.mail
 
 import app.users.api.Constants.MAIL_DEBUG
@@ -8,17 +6,14 @@ import app.users.api.Constants.MAIL_TRANSPORT_PROTOCOL
 import app.users.api.Constants.MAIL_TRANSPORT_STARTTLS_ENABLE
 import app.users.api.Properties
 import app.users.api.Utils.privateProperties
-import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.JavaMailSenderImpl
 
 @Configuration
-class MailConfiguration(
-    private val properties: Properties,
-    private val context: ApplicationContext
-) {
+class MailConfiguration(private val properties: Properties) {
+
     data class GoogleAuthConfig(
         val clientId: String,
         val projectId: String,
@@ -30,7 +25,7 @@ class MailConfiguration(
     )
 
     @Bean
-    fun javaMailSender(): JavaMailSender = JavaMailSenderImpl().apply {
+    fun noReply(): JavaMailSender = JavaMailSenderImpl().apply {
         privateProperties.apply {
             host = get("test.mail.host").toString()
             port = get("test.mail.port").toString().toInt()
