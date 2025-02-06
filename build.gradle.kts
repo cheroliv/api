@@ -1,6 +1,5 @@
-import Build_gradle.Application.API
 import Build_gradle.Application.CLI
-import Build_gradle.Application.INSTALLER
+import Build_gradle.Application.SERVER
 import Build_gradle.Application.SQL_SCHEMA
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
@@ -8,7 +7,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
 import java.io.File.separator
 import kotlin.text.Charsets.UTF_8
-
 
 buildscript {
     repositories {
@@ -26,7 +24,6 @@ buildscript {
 plugins {
     idea
     jacoco
-    application
     `java-library`
     setOf(
         libs.plugins.kotlin.jvm to libs.versions.kotlin,
@@ -41,14 +38,13 @@ plugins {
 }
 
 object Application {
-    const val API = "app.API"
+    const val SERVER = "app.Server"
     const val CLI = "app.CommandLine"
-    const val INSTALLER = "app.workspace.Installer"
     const val SQL_SCHEMA = "app.users.api.dao.DatabaseConfiguration"
 }
 
-INSTALLER.run(application.mainClass::set)
-API.run(springBoot.mainClass::set)
+SERVER.run(springBoot.mainClass::set)
+
 val mockitoAgent = configurations.create("mockitoAgent")
 
 repositories {
@@ -155,7 +151,6 @@ dependencies {
     }
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlin.test.junit5)
-    testImplementation(libs.assertj.swing)
     testImplementation(libs.mockito.core.apply {
         @Suppress("UnstableApiUsage")
         mockitoAgent(this) { isTransitive = false }
@@ -249,27 +244,13 @@ tasks.register<TestReport>("testReport") {
         .run(testResults::setFrom)
 }
 
-tasks.register<JavaExec>("runWorkspaceInstaller") {
-    group = "application"
-    description = "Runs the Swing application"
-    INSTALLER.run(mainClass::set)
-    "main".run(sourceSets::get)
-        .runtimeClasspath
-        .run(::setClasspath)
-}
-
-tasks.named<BootRun>("bootRun") {
-    API.run(mainClass::set)
-    "main".run(sourceSets::get)
-        .runtimeClasspath
-        .run(::setClasspath)
-}
-
 tasks.register<JavaExec>("cli") {
     group = "application"
     description = "Run CLI application: ./gradlew cli -Pargs=--gui"
     CLI.run(mainClass::set)
-    "main".run(sourceSets::get).runtimeClasspath.run(::setClasspath)
+    "main".run(sourceSets::get)
+        .runtimeClasspath
+        .run(::setClasspath)
     when {
         "args".run(project::hasProperty) -> {
             args = "args"
