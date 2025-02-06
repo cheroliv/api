@@ -29,7 +29,10 @@ class CommandLine : CommandLineRunner {
     }
 
     override fun run(vararg args: String?) = runBlocking {
-        "command line interface: $args".run(::i)
-        "Bienvenu dans le school:cli:  ".run(::i)
+        when (args.isEmpty()) {
+            true -> "no arguments"
+            else -> args.joinToString()
+        }.run { "command line interface: $this" }
+            .run(::i)
     }
 }

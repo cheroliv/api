@@ -15,7 +15,7 @@ import app.users.api.Constants.SERVER_SSL_KEY_STORE
 import app.users.api.Constants.SPRING_APPLICATION_NAME
 import app.users.api.Constants.STARTUP_HOST_WARN_LOG_MSG
 import app.users.api.Constants.STARTUP_LOG_MSG_KEY
-import app.workspace.Workspace
+import app.Server
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.getBean
@@ -26,7 +26,7 @@ import java.net.UnknownHostException
 import java.util.Locale.getDefault
 
 object Loggers {
-    private val log: Logger by lazy { LoggerFactory.getLogger(Workspace::class.java) }
+    private val log: Logger by lazy { LoggerFactory.getLogger(Server::class.java) }
 
     fun i(message: String): Unit = log.info(message)
     fun d(message: String): Unit = log.debug(message)
