@@ -7,25 +7,21 @@ app:
 
   mailbox:
     no-reply:
-      from: no-reply@localhost
       name: no-reply
-      base-url: http://127.0.0.1:8880
+      from: no-reply@localhost
       password: password
       enabled: true
       host: localhost
       port: 587
-      smpt-properties:
+      properties:
         debug: true
-        smtp:
+        transfer:
           auth: true
           starttls:
             enable: true
-      imaps-properties:
-        debug: true
-        imaps:
-          auth: true
-          starttls:
-            enable: true
+        transport:
+          protocol: smtp
+      base-url: http://127.0.0.1:8880
 
   security:
     authentication:
