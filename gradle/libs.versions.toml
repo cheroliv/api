@@ -2,7 +2,7 @@
 api = "0.0.1"
 kotlin = "2.1.10"
 langchain4j = "0.36.2"
-commonsIo = "2.13.0"
+commons-io = "2.13.0"
 jackson = "2.17.2"
 jgit = "6.10.0.202406032230-r"
 arrow-kt = "1.2.4"
@@ -18,6 +18,7 @@ springboot = "3.4.2"
 spring-dependency-management = "1.0.11.RELEASE"
 deps-versions = "0.52.0"
 testcontainers = "1.20.1"
+commons-lang3 = "3.14.0"
 
 [libraries]
 assertj-swing = { group = "org.assertj", name = "assertj-swing", version = "3.17.1" }
@@ -35,7 +36,7 @@ asciidoctorj-diagram = { group = "org.asciidoctor", name = "asciidoctorj-diagram
 okhttp-digest = { group = "io.github.rburgst", name = "okhttp-digest", version = "3.1.1" }
 grolifant = { group = "org.ysb33r.gradle", name = "grolifant", version = "0.12.1" }
 langchain4j-core = { group = "dev.langchain4j", name = "langchain4j", version.ref = "langchain4j" }
-commons-io = { group = "commons-io", name = "commons-io", version.ref = "commonsIo" }
+commons-io = { group = "commons-io", name = "commons-io", version.ref = "commons-io" }
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin" }
 jackson-module-jsonSchema = { group = "com.fasterxml.jackson.module", name = "jackson-module-jsonSchema", version.ref = "jackson" }
 jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jackson" }
@@ -85,11 +86,12 @@ arrow-integrations-jackson-module = { group = "io.arrow-kt", name = "arrow-integ
 reactor-kotlin-extensions = { group = "io.projectreactor.kotlin", name = "reactor-kotlin-extensions" }
 kotlinx-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor" }
 reactor-test = { group = "io.projectreactor", name = "reactor-test" }
-commons-lang3 = { group = "org.apache.commons", name = "commons-lang3" }
+commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version.ref = "commons-lang3" }
 commons-collections4 = { group = "org.apache.commons", name = "commons-collections4", version = "4.5.0-M1" }
 junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version = "5.12.0-M1" }
 tomcat-servlet-api = { group = "org.apache.tomcat", name = "tomcat-servlet-api" }
 commons-collections-obsolete = { group = "commons-collections", name = "3.2.1" }
+
 [bundles]
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
