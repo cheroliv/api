@@ -40,7 +40,7 @@ object WorkspaceManager {
             "job"
         )
     }
-    fun Workspace.displayWorkspaceStructure(): Unit = toYaml.run(app.users.api.Loggers::i)
+    fun Workspace.displayWorkspaceStructure(): Unit = toYaml.run(::println)
 
     val Workspace.toYaml: String
         get() = run(YAMLMapper()::writeValueAsString)

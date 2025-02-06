@@ -1,7 +1,7 @@
 package app.workspace
 
-import org.springframework.context.ApplicationContext
-import org.springframework.stereotype.Service
+//import org.springframework.context.ApplicationContext
+//import org.springframework.stereotype.Service
 
 /**
  * WorkspaceService.
@@ -36,8 +36,10 @@ import org.springframework.stereotype.Service
  *     12/ portfolio
  */
 
-@Service
-class WorkspaceService(context:ApplicationContext) {
+//@Service
+class WorkspaceService
+//    (context:ApplicationContext)
+{
 
     fun initializeWorkspace() {
         println("Initializing workspace")

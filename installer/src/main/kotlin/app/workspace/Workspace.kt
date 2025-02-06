@@ -2,7 +2,6 @@
 
 package app.workspace
 
-import app.users.api.Loggers.i
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office
 import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Slides
 import java.nio.file.Path
@@ -126,6 +125,6 @@ data class Workspace(val entries: WorkspaceEntry) {
     )
 
     companion object {
-        fun install(path: String) = i("Installing workspace on path : $path")
+        fun install(path: String) = println("Installing workspace on path : $path")
     }
 }
