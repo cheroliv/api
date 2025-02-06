@@ -1,9 +1,8 @@
 package app.ai.translator
 
-import app.ai.AIAssistantWorker
-import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.ENGLISH
-import app.ai.AIAssistantWorker.AiConfiguration.PromptManager.FRENCH
-import app.ai.AIAssistantWorker.SimpleAiController.LocalLLMModel.localModels
+import app.ai.AIAssistantManager.AiConfiguration.PromptManager.ENGLISH
+import app.ai.AIAssistantManager.AiConfiguration.PromptManager.FRENCH
+import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.localModels
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
