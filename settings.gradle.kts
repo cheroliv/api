@@ -27,3 +27,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "api"
+include("installer")
