@@ -31,7 +31,7 @@ class SMTPMailService(
         try {
             MimeMessageHelper(this, isMultipart, UTF_8.name()).apply {
                 setTo(to)
-                setFrom(properties.mail.from)
+                setFrom(properties.mailbox.noReply.from)
                 setSubject(subject)
                 setText(content, isHtml)
             }
