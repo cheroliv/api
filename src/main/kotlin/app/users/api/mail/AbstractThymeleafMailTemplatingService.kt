@@ -50,7 +50,7 @@ abstract class AbstractThymeleafMailTemplatingService(
                     templateEngine.process(templateName, Context(this).apply {
                         setVariable(USER, map[User.objectName])
                         setVariable(ACTIVATION_KEY_ATTR, map[ACTIVATION_KEY_ATTR])
-                        setVariable(BASE_URL, properties.mail.baseUrl)
+                        setVariable(BASE_URL, properties.mailbox.noReply.baseUrl)
                         setVariable(RESET_KEY_ATTR, map[RESET_KEY_ATTR].toString())
                     }),
                     isMultipart = false,

@@ -8,7 +8,7 @@ import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse.Success
 import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.localModels
 import app.ai.translator.AiTranslatorController.AssistantManager.createChatTask
 import app.ai.translator.AiTranslatorController.AssistantManager.createStreamingChatTask
-import app.users.api.web.Web.Companion.configuration
+import app.users.api.Properties
 import arrow.core.Either
 import arrow.core.Either.Left
 import arrow.core.Either.Right
@@ -58,15 +58,15 @@ class AIAssistantManager {
             fun chat(userMessage: String?): String?
         }
 
-        @AiService(chatModel = "HugginfaceChatModel", wiringMode = EXPLICIT)
+        @AiService(chatModel = "huggingfaceChatModel", wiringMode = EXPLICIT)
         interface HuggingfaceAssistant {
             @SystemMessage(FRENCH.SYSTEM_MSG)
             fun chat(userMessage: String?): String?
         }
 
-        @Bean(name = ["HugginfaceChatModel"])
-        fun chatLanguageModel(): ChatLanguageModel = "huggingface.1.api-key.1.key"
-            .run(context.configuration::getProperty)
+        @Bean(name = ["huggingfaceChatModel"])
+        fun chatLanguageModel(): ChatLanguageModel = context.getBean<Properties>()
+            .ai.huggingface.apiKey
             .run(HuggingFaceChatModel.builder()::accessToken)
             .modelId(TII_UAE_FALCON_7B_INSTRUCT)
             .timeout(ofSeconds(15))
