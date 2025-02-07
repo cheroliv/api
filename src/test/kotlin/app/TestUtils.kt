@@ -22,7 +22,7 @@ import app.users.api.Constants.ROLE_USER
 import app.users.api.Constants.USER
 import app.users.api.Constants.VIRGULE
 import app.users.api.Loggers.i
-import app.users.api.Utils.privateProperties
+import app.users.api.Properties
 import app.users.api.mail.MailConfiguration.GoogleAuthConfig
 import app.users.api.models.EntityModel
 import app.users.api.models.EntityModel.Members.withId
@@ -156,10 +156,10 @@ object TestUtils {
             )::getStore
         ).apply { connect(first, second, third) }
 
-    fun getMailConnexion(): Store = Triple(
+    fun ApplicationContext.getMailConnexion(): Store = Triple(
         GMAIL_IMAP_HOST,
-        privateProperties["test.mail"].toString(),
-        privateProperties["test.mail.password"].toString()
+        getBean<Properties>().mailbox.noReply.from,
+        getBean<Properties>().mailbox.noReply.password
     ).getEstablishConnection()
 
     fun Store.getEmailCount(): Int = run {
