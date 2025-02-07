@@ -220,7 +220,7 @@ import kotlin.test.assertTrue
 import java.util.Properties as JProperties
 
 @Nested
-@ActiveProfiles("test", "mailbox")
+@ActiveProfiles("test", "mailbox","ai")
 @TestInstance(PER_CLASS)
 @SpringBootTest(
     classes = [Server::class],
@@ -1005,7 +1005,7 @@ class Tests {
                     assertThat("${allRecipients[0]}").isEqualTo(email)
                     assertThat("${from[0]}").isEqualTo(context.getBean<Properties>().mailbox.noReply.from)
                     assertThat(content.toString()).isEqualToNormalizingNewlines(
-                        "<html>test title, http://127.0.0.1:8080, john</html>"
+                        "<html>test title, http://127.0.0.1:8880, john</html>"
                     )
                     assertThat(dataHandler.contentType).isEqualTo("text/html;charset=UTF-8")
                 }
