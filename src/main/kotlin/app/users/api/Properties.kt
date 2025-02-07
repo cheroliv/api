@@ -23,7 +23,23 @@ class Properties @ConstructorBinding constructor(
     val cache: Cache = Cache(),
     val security: Security = Security(),
     val cors: CorsConfiguration = CorsConfiguration(),
+    val ai: AI = AI(),
 ) {
+    class AI(
+        val huggingface: AiServiceProvider = AiServiceProvider(),
+        val mistral: AiServiceProvider = AiServiceProvider(),
+        val gemini: AiServiceProvider = AiServiceProvider(),
+        val groq: AiServiceProvider = AiServiceProvider(),
+        val deepseek: AiServiceProvider = AiServiceProvider(),
+    ) {
+        class AiServiceProvider(
+            val username: String = "",
+            val apiKey: String = "",
+            val email: String = "",
+            val url: String = ""
+        )
+    }
+
     class MailBox(
         val noReply: MailAccount = MailAccount(),
 //        val contact: Mail = Mail(),
