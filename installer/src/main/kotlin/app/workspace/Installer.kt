@@ -51,7 +51,7 @@ object Installer {
         }
     }.run { invokeLater { run(Installer::GUI).run { isVisible = true } } }
 
-    internal class GUI(
+    class GUI(
         private val selectedPaths: MutableMap<String, Path?> = HashMap(),
         private var currentInstallationType: InstallationType = ALL_IN_ONE,
         private val communicationPathLabel: JLabel = JLabel("Communication").apply {

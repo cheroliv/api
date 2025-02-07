@@ -73,6 +73,7 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation(libs.kotlin.test.junit5)
     testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.assertj.swing)
 
     implementation(libs.arrow.core)
     implementation(libs.arrow.fx.coroutines)
@@ -150,8 +151,6 @@ dependencies {
     implementation(libs.spring.boot.starter.test) {
         exclude(module = libs.mockito.core.get().module.name)
     }
-    testImplementation(libs.kotlin.test)
-    testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.mockito.core.apply {
         @Suppress("UnstableApiUsage")
         mockitoAgent(this) { isTransitive = false }
@@ -268,7 +267,7 @@ tasks.register<JavaExec>("cli") {
 tasks.register<Exec>("apiCheckFirefox") {
     group = "verification"
     description = "Check spring boot project then show report in firefox"
-    dependsOn("check -Pmailbox")
+    dependsOn("check")
     commandLine(
         "firefox",
         "--new-tab",
