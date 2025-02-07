@@ -10,7 +10,6 @@ app:
       name: no-reply
       from: no-reply@localhost
       password: password
-      enabled: true
       host: localhost
       port: 587
       properties:

@@ -1,7 +1,9 @@
 [versions]
 api = "0.0.1"
 kotlin = "2.1.10"
-langchain4j = "0.36.2"
+#langchain4j = "0.36.2"
+langchain4j = "1.0.0-alpha1"
+#langchain4j = "1.0.0-beta1"
 commons-io = "2.13.0"
 jackson = "2.17.2"
 jgit = "6.10.0.202406032230-r"
@@ -92,7 +94,6 @@ junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engi
 tomcat-servlet-api = { group = "org.apache.tomcat", name = "tomcat-servlet-api" }
 commons-collections-obsolete = { group = "commons-collections", name = "3.2.1" }
 
-[bundles]
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
@@ -102,3 +103,5 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 spring-boot = { id = "org.springframework.boot", version.ref = "springboot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
 versions = { id = "com.github.ben-manes.versions", version.ref = "deps-versions" }
+
+[bundles]
