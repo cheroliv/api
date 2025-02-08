@@ -21,7 +21,8 @@ data class Workspace(val entries: WorkspaceEntry) {
         val portfolio: PortfolioEntry,
     ) {
         sealed interface PortfolioEntry {
-            data class Portfolio(val project: MutableMap<String, PortfolioProject>) : PortfolioEntry {
+            data class Portfolio(val project: MutableMap<String, PortfolioProject>) :
+                PortfolioEntry {
                 data class PortfolioProject(
                     val name: String,
                     val cred: String,
@@ -90,12 +91,14 @@ data class Workspace(val entries: WorkspaceEntry) {
         }
 
         sealed interface ConfigurationEntry {
-            data class Configuration(val path: String = "configuration", val configuration: String) : ConfigurationEntry
+            data class Configuration(val path: String = "configuration", val configuration: String) :
+                ConfigurationEntry
         }
 
         sealed interface CommunicationEntry {
 
-            data class Communication(val path: String = "communication", val site: String) : CommunicationEntry
+            data class Communication(val path: String = "communication", val site: String) :
+                CommunicationEntry
         }
 
         sealed interface OrganisationEntry {

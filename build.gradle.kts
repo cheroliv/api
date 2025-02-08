@@ -3,7 +3,6 @@ import Build_gradle.Application.SERVER
 import Build_gradle.Application.SQL_SCHEMA
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
 import java.io.File.separator
 import kotlin.text.Charsets.UTF_8
@@ -64,7 +63,6 @@ dependencyManagement.imports {
 }
 
 dependencies {
-    implementation(project(":installer"))
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.stdlib.jdk8)
     implementation(libs.kotlinx.coroutines.core)
@@ -207,9 +205,9 @@ tasks {
     withType<BootRun>().configureEach { defaultCharacterEncoding = UTF_8.name() }
 }
 
-tasks.withType<KotlinCompile> {
-    compilerOptions.freeCompilerArgs = listOf("-Xjsr305=strict")
-}
+kotlin.compilerOptions
+    .freeCompilerArgs
+    .addAll("-Xjsr305=strict")
 
 tasks.withType<Test> {
     useJUnitPlatform()
