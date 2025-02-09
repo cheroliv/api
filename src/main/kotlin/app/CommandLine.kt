@@ -14,11 +14,14 @@ import kotlin.system.exitProcess
 @Component
 @Profile(CLI)
 class CommandLine : CommandLineRunner {
+
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
             runApplication<Server>(*args) {
-                setAdditionalProfiles(CLI)
+                listOf(CLI, "local", "ai")
+                    .toTypedArray()
+                    .run(::setAdditionalProfiles)
                 setDefaultProperties(CLI_PROPS)
                 //before loading config
             }.run {
