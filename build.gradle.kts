@@ -242,25 +242,25 @@ tasks.register<TestReport>("testReport") {
         .run(testResults::setFrom)
 }
 
+tasks.register<BootRun>("localBootRun") {
+    group = "application"
+    description = "Run bootRun task: ./gradlew cli with cli,ai,local active profiles"
+    SERVER.run(mainClass::set)
+    "main".run(sourceSets::get)
+        .runtimeClasspath
+        .run(::setClasspath)
+    systemProperty("spring.profiles.active", "local")
+}
+
 tasks.register<JavaExec>("cli") {
     group = "application"
-    description = "Run CLI application: ./gradlew cli -Pargs=--gui"
+    description = "Run CLI application: ./gradlew cli with cli,ai,local active profiles"
     CLI.run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
         .run(::setClasspath)
-    when {
-        "args".run(project::hasProperty) -> {
-            args = "args"
-                .run(project::property)
-                .toString()
-                .trim()
-                .split(" ")
-                .filter(String::isNotEmpty)
-                .also { "Passing args to CLI: $it".run(logger::info) }
-        }
-    }
 }
+
 
 tasks.register<Exec>("apiCheckFirefox") {
     group = "verification"
