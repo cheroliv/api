@@ -5,23 +5,6 @@ app:
   clientApp:
     name: 'server'
 
-#  mailbox:
-#    no-reply:
-#      name: no-reply
-#      from: no-reply@localhost
-#      password: password
-#      host: localhost
-#      port: 587
-#      properties:
-#        debug: true
-#        transfer:
-#          auth: true
-#          starttls:
-#            enable: true
-#        transport:
-#          protocol: smtp
-#      base-url: http://127.0.0.1:8880
-
   security:
     authentication:
       jwt:
