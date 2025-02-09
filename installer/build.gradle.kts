@@ -34,7 +34,7 @@ dependencyManagement.imports {
         .run(::mavenBom)
 }
 
-dependencies.implementation(project.parent!!)
+parent?.let { dependencies.implementation(it) }
 
 configurations.compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
 
@@ -46,16 +46,27 @@ tasks {
     withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
     withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
     withType<Javadoc>().configureEach { options.encoding = UTF_8.name() }
-//    // Configuration du JAR
-//    jar {
-//        manifest {
-//            attributes(
-//                "Main-Class" to "app.workspace.Installer",
-//                "Class-Path" to project.parent!!.configurations.runtimeClasspath.get().files.joinToString(" ") { it.name }
-//            )
-//        }
-//        // Inclure toutes les dépendances dans le JAR
-//        from(project.parent!!.configurations.compileClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
-//        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-//    }
+    withType<Jar> {
+        dependsOn(parent?.tasks?.jar)
+        manifest {
+            attributes["Main-Class"] = "app.workspace.Installer"
+            attributes["Class-Path"] = configurations
+                .runtimeClasspath.get()
+                .joinToString(" ") { it.name }
+        }
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        isZip64 = true
+        from(parent?.sourceSets?.main?.get()?.output)
+
+        from(configurations.runtimeClasspath.get()
+            .filter { it.name.endsWith("jar") }
+            .map { zipTree(it) }
+        ) {
+            // Exclure les fichiers de signature
+            exclude("META-INF/*.SF")
+            exclude("META-INF/*.DSA")
+            exclude("META-INF/*.RSA")
+            exclude("META-INF/*.EC")
+        }
+    }
 }
