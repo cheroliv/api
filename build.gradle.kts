@@ -287,4 +287,3 @@ tasks {
         delete("build${separator}resources")
     }
 }
-

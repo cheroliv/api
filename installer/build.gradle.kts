@@ -1,3 +1,4 @@
+import org.gradle.api.file.DuplicatesStrategy.EXCLUDE
 import kotlin.text.Charsets.UTF_8
 
 buildscript {
@@ -54,7 +55,7 @@ tasks {
                 .runtimeClasspath.get()
                 .joinToString(" ") { it.name }
         }
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        duplicatesStrategy = EXCLUDE
         isZip64 = true
         from(parent?.sourceSets?.main?.get()?.output)
 
