@@ -191,95 +191,100 @@ configurations {
     }
 }
 
-"node_modules"
-    .run(::listOf)
-    .toTypedArray()
-    .run(::files)
-    .run(idea.module.excludeDirs::plusAssign)
-
-tasks {
-    withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
-    withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
-    withType<Javadoc>().configureEach { options.encoding = UTF_8.name() }
-    withType<Test>().configureEach { defaultCharacterEncoding = UTF_8.name() }
-    withType<BootRun>().configureEach { defaultCharacterEncoding = UTF_8.name() }
-}
+//java {
+//    withSourcesJar()
+//    withJavadocJar()
+//}
 
 kotlin.compilerOptions
     .freeCompilerArgs
     .addAll("-Xjsr305=strict")
 
-tasks.withType<Test> {
-    useJUnitPlatform()
-    testLogging { events(FAILED, SKIPPED) }
-    reports {
-        html.required = true
-        ignoreFailures = true
+//"node_modules"
+//    .run(::listOf)
+//    .toTypedArray()
+//    .run(::files)
+//    .run(idea.module.excludeDirs::plusAssign)
+
+tasks {
+    test {
+        useJUnitPlatform()
+        testLogging { events(FAILED, SKIPPED) }
+        reports {
+            html.required = true
+            ignoreFailures = true
+        }
+        jvmArgs("-javaagent:${mockitoAgent.asPath}")
     }
-    jvmArgs("-javaagent:${mockitoAgent.asPath}")
+
+    jacocoTestReport {
+        executionData(files("${layout.buildDirectory}${separator}jacoco${separator}test.exec"))
+        reports.xml.required = true
+    }
+
+    withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
+    withType<Test>().configureEach { defaultCharacterEncoding = UTF_8.name() }
+    withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
+    withType<Javadoc>().configureEach { options.encoding = UTF_8.name() }
+    withType<BootRun>().configureEach { defaultCharacterEncoding = UTF_8.name() }
+
+    register<TestReport>("testReport") {
+        description = "Generates an HTML test report from the results of testReport task."
+        group = "report"
+        "${layout.buildDirectory}${separator}reports${separator}tests"
+            .run(::file)
+            .run(destinationDirectory::set)
+        "test".run(::get)
+            .outputs
+            .files
+            .run(testResults::setFrom)
+    }
+
+    register<BootRun>("localBootRun") {
+        group = "application"
+        description = "Run Server application with dev, ai, local active profiles"
+        SERVER.run(mainClass::set)
+        "main".run(sourceSets::get)
+            .runtimeClasspath
+            .run(::setClasspath)
+        systemProperty("spring.profiles.active", "local")
+    }
+
+    register<BootRun>("cli") {
+        group = "application"
+        description = "Run CLI application with cli,ai,local active profiles"
+        CLI.run(mainClass::set)
+        "main".run(sourceSets::get)
+            .runtimeClasspath
+            .run(::setClasspath)
+    }
+
+    register<Exec>("apiCheckFirefox") {
+        group = "verification"
+        description = "Check spring boot project then show report in firefox"
+        dependsOn("check")
+        commandLine(
+            "firefox",
+            "--new-tab",
+            "build${separator}reports${separator}tests${separator}test${separator}index.html"
+                .run(layout.projectDirectory.asFile.toPath()::resolve)
+                .toAbsolutePath(),
+        )
+    }
+
+    register<JavaExec>("displayCreateTestDbSchema") {
+        group = "application"
+        description = "Display SQL script who creates database tables into test schema."
+        SQL_SCHEMA.run(mainClass::set)
+        "main".run(sourceSets::get)
+            .runtimeClasspath
+            .run(::setClasspath)
+    }
+
+    register<Delete>("cleanResources") {
+        description = "Delete directory build/resources"
+        group = "build"
+        delete("build${separator}resources")
+    }
 }
 
-tasks.register<Delete>("cleanResources") {
-    description = "Delete directory build/resources"
-    group = "build"
-    delete("build${separator}resources")
-}
-
-tasks.jacocoTestReport {
-    executionData(files("${layout.buildDirectory}${separator}jacoco${separator}test.exec"))
-    reports.xml.required = true
-}
-
-tasks.register<TestReport>("testReport") {
-    description = "Generates an HTML test report from the results of testReport task."
-    group = "report"
-    "${layout.buildDirectory}${separator}reports${separator}tests"
-        .run(::file)
-        .run(destinationDirectory::set)
-    "test".run(tasks::get)
-        .outputs
-        .files
-        .run(testResults::setFrom)
-}
-
-tasks.register<BootRun>("localBootRun") {
-    group = "application"
-    description = "Run Server application with dev, ai, local active profiles"
-    SERVER.run(mainClass::set)
-    "main".run(sourceSets::get)
-        .runtimeClasspath
-        .run(::setClasspath)
-    systemProperty("spring.profiles.active", "local")
-}
-
-tasks.register<BootRun>("cli") {
-    group = "application"
-    description = "Run CLI application with cli,ai,local active profiles"
-    CLI.run(mainClass::set)
-    "main".run(sourceSets::get)
-        .runtimeClasspath
-        .run(::setClasspath)
-}
-
-
-tasks.register<Exec>("apiCheckFirefox") {
-    group = "verification"
-    description = "Check spring boot project then show report in firefox"
-    dependsOn("check")
-    commandLine(
-        "firefox",
-        "--new-tab",
-        "build${separator}reports${separator}tests${separator}test${separator}index.html"
-            .run(layout.projectDirectory.asFile.toPath()::resolve)
-            .toAbsolutePath(),
-    )
-}
-
-tasks.register<JavaExec>("displayCreateTestDbSchema") {
-    group = "application"
-    description = "Display SQL script who creates database tables into test schema."
-    SQL_SCHEMA.run(mainClass::set)
-    "main".run(sourceSets::get)
-        .runtimeClasspath
-        .run(::setClasspath)
-}
