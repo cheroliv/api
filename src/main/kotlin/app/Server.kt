@@ -11,6 +11,8 @@ import org.springframework.boot.runApplication
 class Server {
     companion object {
         @JvmStatic
-        fun main(args: Array<String>): Unit = runApplication<Server>(*args).startupLog()
+        fun main(args: Array<String>): Unit = runApplication<Server>(*args) {
+            setAdditionalProfiles("ai")
+        }.startupLog()
     }
 }
