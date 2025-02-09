@@ -191,20 +191,20 @@ configurations {
     }
 }
 
-//java {
-//    withSourcesJar()
-//    withJavadocJar()
-//}
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
 
 kotlin.compilerOptions
     .freeCompilerArgs
     .addAll("-Xjsr305=strict")
 
-//"node_modules"
-//    .run(::listOf)
-//    .toTypedArray()
-//    .run(::files)
-//    .run(idea.module.excludeDirs::plusAssign)
+"node_modules"
+    .run(::listOf)
+    .toTypedArray()
+    .run(::files)
+    .run(idea.module.excludeDirs::plusAssign)
 
 tasks {
     test {
