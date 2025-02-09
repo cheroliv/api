@@ -244,7 +244,7 @@ tasks.register<TestReport>("testReport") {
 
 tasks.register<BootRun>("localBootRun") {
     group = "application"
-    description = "Run bootRun task: ./gradlew cli with cli,ai,local active profiles"
+    description = "Run Server application with dev, ai, local active profiles"
     SERVER.run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath
@@ -252,9 +252,9 @@ tasks.register<BootRun>("localBootRun") {
     systemProperty("spring.profiles.active", "local")
 }
 
-tasks.register<JavaExec>("cli") {
+tasks.register<BootRun>("cli") {
     group = "application"
-    description = "Run CLI application: ./gradlew cli with cli,ai,local active profiles"
+    description = "Run CLI application with cli,ai,local active profiles"
     CLI.run(mainClass::set)
     "main".run(sourceSets::get)
         .runtimeClasspath

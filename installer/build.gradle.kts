@@ -51,11 +51,11 @@ tasks {
 //        manifest {
 //            attributes(
 //                "Main-Class" to "app.workspace.Installer",
-//                "Class-Path" to configurations.runtimeClasspath.get().files.joinToString(" ") { it.name }
+//                "Class-Path" to project.parent!!.configurations.runtimeClasspath.get().files.joinToString(" ") { it.name }
 //            )
 //        }
 //        // Inclure toutes les dépendances dans le JAR
-//        from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+//        from(project.parent!!.configurations.compileClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 //        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 //    }
 }
