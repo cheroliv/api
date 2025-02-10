@@ -82,20 +82,14 @@ allprojects {
     }
 }
 
-kotlin.compilerOptions
-    .freeCompilerArgs
-    .addAll(KOTLIN_COMPILER_OPTION_JSR305)
-
-
-SERVER.run(springBoot.mainClass::set)
-
-val mockitoAgent = configurations.create(MOCKITO_AGENT)
 
 dependencyManagement.imports {
     libs.versions.springboot.get()
         .run { "org.springframework.boot:spring-boot-dependencies:$this" }
         .run(::mavenBom)
 }
+
+val mockitoAgent = configurations.create(MOCKITO_AGENT)
 
 dependencies {
     implementation(libs.kotlin.reflect)
@@ -225,6 +219,12 @@ configurations {
         }
     }
 }
+
+SERVER.run(springBoot.mainClass::set)
+
+kotlin.compilerOptions
+    .freeCompilerArgs
+    .addAll(KOTLIN_COMPILER_OPTION_JSR305)
 
 java {
     withSourcesJar()

@@ -24,13 +24,14 @@ object Installer {
     const val INSTALLER = "app.workspace.Installer"
 }
 
-INSTALLER.run(application.mainClass::set)
-
 dependencyManagement.imports {
     libs.versions.springboot.get()
         .run { "org.springframework.boot:spring-boot-dependencies:$this" }
         .run(::mavenBom)
 }
+
+INSTALLER.run(application.mainClass::set)
+
 
 parent?.let { dependencies.implementation(it) }
 
