@@ -17,6 +17,7 @@ plugins {
     ).forEach { id(it.first.get().pluginId).version(it.second) }
 }
 
+
 object Installer {
     const val MAIN_CLASS_KEY = "Main-Class"
     const val CLASSPATH_KEY = "Class-Path"
@@ -30,9 +31,6 @@ dependencyManagement.imports {
         .run(::mavenBom)
 }
 
-INSTALLER.run(application.mainClass::set)
-
-
 parent?.let { dependencies.implementation(it) }
 
 configurations.compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
@@ -40,6 +38,8 @@ configurations.compileOnly { extendsFrom(configurations.annotationProcessor.get(
 kotlin.compilerOptions
     .freeCompilerArgs
     .addAll(KOTLIN_COMPILER_OPTION_JSR305)
+
+INSTALLER.run(application.mainClass::set)
 
 tasks {
     withType<Jar> {
@@ -53,7 +53,6 @@ tasks {
         duplicatesStrategy = EXCLUDE
         isZip64 = true
         from(parent?.sourceSets?.main?.get()?.output)
-
         from(configurations.runtimeClasspath.get().filter {
             it.name.endsWith("jar")
                     && !(it.name.contains("javadoc") ||

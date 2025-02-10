@@ -1,12 +1,3 @@
-@file:Suppress(
-    "PLATFORM_CLASS_MAPPED_TO_KOTLIN",
-    "RedundantUnitReturnType",
-    "NonAsciiCharacters",
-    "SqlResolve",
-    "unused",
-    "MemberVisibilityCanBePrivate"
-)
-
 package app
 
 import app.TestUtils.Data.DEFAULT_USER_JSON
@@ -1080,7 +1071,7 @@ class Tests {
                         mailService.sendEmailFromTemplate(
                             mapOf(User.objectName to copy(langKey = langKey)),
                             "mail/testEmail",
-                            "email.activation.title"
+                            "email.test.title"
                         )
                         verify(javaMailSender, atLeastOnce()).send(messageCaptor.capture())
                         val message = messageCaptor.value
@@ -1098,10 +1089,10 @@ class Tests {
                                 Charset.forName("UTF-8")
                             )
                         )
-                        val emailTitle = prop["email.activation.title"] as String
+                        val emailTitle = prop["email.test.title"] as String
                         assertThat(message.subject).isEqualTo(emailTitle)
-//                        assertThat(message.content.toString())
-//                            .isEqualToNormalizingNewlines("<html>$emailTitle, http://127.0.0.1:8080, john</html>")
+                        assertThat(message.content.toString())
+                            .isEqualToNormalizingNewlines("<html>$emailTitle, http://127.0.0.1:${context.environment["server.port"]}, john</html>")
                     }
                 }
             }

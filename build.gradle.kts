@@ -43,23 +43,22 @@ object Server {
     const val VERSION_KEY = "artifact.version"
 }
 
-allprojects {
-    buildscript {
-        repositories {
-            mavenLocal()
-            gradlePluginPortal()
-            google()
-            maven("https://plugins.gradle.org/m2/")
-        }
-        dependencies {
-            extra["kotlinVersion"] = "2.1.10"
-            classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${extra["kotlinVersion"]}")
-        }
+buildscript {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        google()
+        maven("https://plugins.gradle.org/m2/")
     }
+    dependencies {
+        extra["kotlinVersion"] = "2.1.10"
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${extra["kotlinVersion"]}")
+    }
+}
 
+allprojects {
     group = properties[GROUP_KEY].toString()
     version = properties[VERSION_KEY].toString()
-
     repositories {
         mavenCentral()
         setOf(
@@ -69,7 +68,6 @@ allprojects {
             "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/"
         ).forEach(::maven)
     }
-
     tasks {
         withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
         withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
@@ -81,7 +79,6 @@ allprojects {
         }
     }
 }
-
 
 dependencyManagement.imports {
     libs.versions.springboot.get()
