@@ -1,18 +1,8 @@
+import Build_gradle.Installer.CLASSPATH_KEY
+import Build_gradle.Installer.INSTALLER
+import Build_gradle.Installer.KOTLIN_COMPILER_OPTION_JSR305
+import Build_gradle.Installer.MAIN_CLASS_KEY
 import org.gradle.api.file.DuplicatesStrategy.EXCLUDE
-import kotlin.text.Charsets.UTF_8
-
-buildscript {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        google()
-        maven("https://plugins.gradle.org/m2/")
-    }
-    dependencies {
-        extra["kotlinVersion"] = "2.1.10"
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${extra["kotlinVersion"]}")
-    }
-}
 
 plugins {
     idea
@@ -27,7 +17,14 @@ plugins {
     ).forEach { id(it.first.get().pluginId).version(it.second) }
 }
 
-"app.workspace.Installer".run(application.mainClass::set)
+object Installer {
+    const val MAIN_CLASS_KEY = "Main-Class"
+    const val CLASSPATH_KEY = "Class-Path"
+    const val KOTLIN_COMPILER_OPTION_JSR305 = "-Xjsr305=strict"
+    const val INSTALLER = "app.workspace.Installer"
+}
+
+INSTALLER.run(application.mainClass::set)
 
 dependencyManagement.imports {
     libs.versions.springboot.get()
@@ -41,17 +38,14 @@ configurations.compileOnly { extendsFrom(configurations.annotationProcessor.get(
 
 kotlin.compilerOptions
     .freeCompilerArgs
-    .addAll("-Xjsr305=strict")
+    .addAll(KOTLIN_COMPILER_OPTION_JSR305)
 
 tasks {
-    withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
-    withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
-    withType<Javadoc>().configureEach { options.encoding = UTF_8.name() }
     withType<Jar> {
         dependsOn(parent?.tasks?.jar)
         manifest {
-            attributes["Main-Class"] = "app.workspace.Installer"
-            attributes["Class-Path"] = configurations
+            attributes[MAIN_CLASS_KEY] = INSTALLER
+            attributes[CLASSPATH_KEY] = configurations
                 .runtimeClasspath.get()
                 .joinToString(" ") { it.name }
         }
@@ -59,11 +53,13 @@ tasks {
         isZip64 = true
         from(parent?.sourceSets?.main?.get()?.output)
 
-        from(configurations.runtimeClasspath.get()
-            .filter { it.name.endsWith("jar") }
-            .map { zipTree(it) }
-        ) {
-            // Exclure les fichiers de signature
+        from(configurations.runtimeClasspath.get().filter {
+            it.name.endsWith("jar")
+                    && !(it.name.contains("javadoc") ||
+                    it.name.contains("plain") ||
+                    it.name.contains("sources"))
+        }.map { zipTree(it) }) {
+            // Exclude signed files
             exclude("META-INF/*.SF")
             exclude("META-INF/*.DSA")
             exclude("META-INF/*.RSA")
