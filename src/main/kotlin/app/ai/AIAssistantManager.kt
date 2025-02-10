@@ -58,18 +58,18 @@ class AIAssistantManager {
             fun chat(userMessage: String?): String?
         }
 
-        @AiService(chatModel = "huggingfaceChatModel", wiringMode = EXPLICIT)
+        @AiService(chatModel = "huggingFaceChatModel", wiringMode = EXPLICIT)
         interface HuggingfaceAssistant {
             @SystemMessage(FRENCH.SYSTEM_MSG)
             fun chat(userMessage: String?): String?
         }
 
-        @Bean(name = ["huggingfaceChatModel"])
+        @Bean(name = ["huggingFaceChatModel"])
         fun chatLanguageModel(): ChatLanguageModel = context.getBean<Properties>()
             .ai.huggingface.apiKey
             .run(HuggingFaceChatModel.builder()::accessToken)
             .modelId(TII_UAE_FALCON_7B_INSTRUCT)
-            .timeout(ofSeconds(15))
+            .timeout(ofSeconds(90))
             .temperature(0.7)
             .maxNewTokens(20)
             .waitForModel(true)
@@ -317,5 +317,4 @@ class AIAssistantManager {
             )
         )
     }
-
 }

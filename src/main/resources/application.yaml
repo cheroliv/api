@@ -58,15 +58,23 @@ logging:
 server:
   port: 8880
 
+
 langchain4j:
   ollama:
     chat-model:
       base-url: http://localhost:11434
       model-name: smollm:135m
+#      model-name: smollm2:360m-instruct-fp16
+    #      model-name: smollm2:135m
+    #      model-name: deepseek-r1:1.5b
+    #      model-name: llama3.2:3b
+      timeout: 90
+
     streaming-chat-model:
       base-url: http://localhost:11434
       model-name: smollm:135m
-
-      #  encrypter:
-      #    secret: RGPD
-      #    salt: 33a9ef2640cb9830
+#      model-name: smollm2:360m-instruct-fp16
+      #      model-name: smollm2:135m
+      #      model-name: deepseek-r1:1.5b
+ #     model-name: llama3.2:3b
+      timeout: 90
