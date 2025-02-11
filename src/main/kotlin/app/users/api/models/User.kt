@@ -28,6 +28,7 @@ import app.users.password.UserReset.Relations.Fields.ID_DATE_IDX_FIELD
 import app.users.password.UserReset.Relations.Fields.USER_ID_IDX_FIELD
 import app.users.password.UserReset.Relations.Fields.USER_RESET_SEQ_FIELD
 import app.users.signup.UserActivation
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
@@ -175,7 +176,7 @@ data class User(
             :$LOGIN_ATTR, :$EMAIL_ATTR, :$PASSWORD_ATTR,
             :$LANG_KEY_ATTR, :$VERSION_ATTR );
         """
-        const val UPDATE_PASSWORD_RESET="""
+        const val UPDATE_PASSWORD_RESET = """
         UPDATE "user"
         SET "password" = :password, "version" = "version" + 1
         WHERE "id" = :id;
