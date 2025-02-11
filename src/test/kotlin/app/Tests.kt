@@ -1,3 +1,5 @@
+@file:Suppress("RedundantUnitReturnType")
+
 package app
 
 import app.TestUtils.Data.DEFAULT_USER_JSON
@@ -7,6 +9,7 @@ import app.TestUtils.Data.signup
 import app.TestUtils.Data.user
 import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USERACTIVATION
+import app.TestUtils.FIND_ALL_USERS_WITH_ACTIVATION_KEY
 import app.TestUtils.FIND_ALL_USER_RESETS
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
 import app.TestUtils.FIND_USER_BY_LOGIN
@@ -222,11 +225,13 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.SecureRandom
 import java.time.Duration.ofSeconds
+import java.time.Instant
 import java.time.Instant.now
 import java.time.LocalDateTime
 import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime.ofInstant
+import java.time.format.DateTimeParseException
 import java.util.Locale.ENGLISH
 import java.util.Locale.FRANCE
 import java.util.Locale.FRENCH
@@ -2850,98 +2855,143 @@ class Tests {
                     assertThat(context.countUserActivation()).isEqualTo(third + 1)
                     // Let's continue with activation key retrieved from database,
                     // in order to activate userTest
-                    //                        // here begin change password
-                    //                        FIND_ALL_USERS
-                    //                            .trimIndent()
-                    //                            .run(context.getBean<DatabaseClient>()::sql)
-                    //                            .fetch().awaitSingle().run {
-                    //                                @Suppress("RemoveRedundantQualifierName")
-                    //                                (this[User.Relations.Fields.ID_FIELD].toString().run(::fromString)
-                    //                                        to this[PASSWORD_FIELD].toString())
-                    //                            }.run {
-                    //                                "user.id retrieved before update password: $first".apply(::i)
-                    ////                                assertEquals(uuid, first, "user.id should be the same")
-                    //                                assertNotEquals(
-                    //                                    password,
-                    //                                    second,
-                    //                                    "password should be encoded and not the same"
-                    //                                )
-                    //
-                    //                                val resetKey: String = context.apply {
-                    //                                    // Given a user well signed up
-                    //                                    assertThat(countUserResets()).isEqualTo(0)
-                    //                                }.getBean<PasswordService>()
-                    //                                    .reset(email)
-                    //                                    .mapLeft { "reset().left: $it".run(::i) }
-                    //                                    .getOrNull()!!.apply {
-                    //                                        assertThat(context.countUserResets()).isEqualTo(1)
-                    //                                        "reset key : $this".run(::i)
-                    //                                    }
-                    //
-                    //                                FIND_ALL_USER_RESETS
-                    //                                    .trimIndent()
-                    //                                    .run(context.getBean<DatabaseClient>()::sql)
-                    //                                    .fetch()
-                    //                                    .awaitSingle().run {
-                    //                                        get(IS_ACTIVE_FIELD).toString()
-                    //                                            .apply(Boolean::parseBoolean)
-                    //                                            .run(::assertThat).asBoolean().isTrue
-                    //                                        get(RESET_KEY_FIELD).toString()
-                    //                                            .run(::assertThat).asString()
-                    //                                            .isEqualTo(resetKey)
-                    //                                    }
-                    //
-                    //                                // finish reset password
-                    //                                "$password&".run {
-                    //                                    client.post().uri(
-                    //                                        API_RESET_PASSWORD_FINISH_PATH.apply {
-                    //                                            "uri : $this".run(::i)
-                    //                                        }).contentType(APPLICATION_PROBLEM_JSON)
-                    //                                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
-                    //                                            "resetKey on select: $this".run(::i)
-                    //                                        }, newPassword = this))
-                    //                                        .exchange()
-                    //                                        .expectStatus()
-                    //                                        .isOk
-                    //                                        .returnResult<ProblemDetail>()
-                    //                                        .responseBodyContent!!
-                    //                                        .apply { logBody() }
-                    //                                        .apply(::assertThat)
-                    //                                        .isEmpty()
-                    //
-                    //                                    context.countUserResets().run(::assertThat).isEqualTo(1)
-                    //
-                    //                                    FIND_ALL_USER_RESETS
-                    //                                        .trimIndent()
-                    //                                        .run(context.getBean<DatabaseClient>()::sql)
-                    //                                        .fetch()
-                    //                                        .awaitSingleOrNull()!!.run {
-                    //                                            IS_ACTIVE_FIELD.run(::get).toString()
-                    //                                                .apply(Boolean::parseBoolean)
-                    //                                                .run(::assertThat).asBoolean().isFalse
-                    //
-                    //                                            CHANGE_DATE_FIELD.run(::get).toString()
-                    //                                                .run(::assertThat).asString()
-                    //                                                .containsAnyOf(
-                    //                                                    ofInstant(
-                    //                                                        now(),
-                    //                                                        systemDefault()
-                    //                                                    ).year.toString(),
-                    //                                                    ofInstant(
-                    //                                                        now(),
-                    //                                                        systemDefault()
-                    //                                                    ).month.toString(),
-                    //                                                    ofInstant(
-                    //                                                        now(),
-                    //                                                        systemDefault()
-                    //                                                    ).dayOfMonth.toString(),
-                    //                                                    ofInstant(
-                    //                                                        now(),
-                    //                                                        systemDefault()
-                    //                                                    ).hour.toString(),
-                    //                                                )
-                    //                                        }
-                    //                    }
+                    // here begin change password
+
+
+                    FIND_ALL_USERS_WITH_ACTIVATION_KEY
+                        .trimIndent()
+                        .run(context.getBean<DatabaseClient>()::sql)
+                        .fetch().awaitSingleOrNull()!!.run {
+                            // first is the uuid
+                            // get(1) is the encoded password
+                            // get(2) is the activation key
+                            // last is the ACTIVATION_DATE_FIELD
+                            @Suppress("RemoveRedundantQualifierName")
+                            listOf(
+                                this[User.Relations.Fields.ID_FIELD]
+                                    .toString()
+                                    .run(::fromString),
+                                this[PASSWORD_FIELD].toString(),
+                                this[ACTIVATION_KEY_FIELD].toString(),
+                                this[ACTIVATION_DATE_FIELD].toString(),
+                            )
+                        }.run {
+                            val uuid = first() as UUID
+                            val encodedPassword = get(1) as String
+                            val activationKey = get(2) as String
+                            val strActivationDateBeforeActivation = last().toString()
+                            assertThrows<DateTimeParseException> {
+                                Instant.parse(strActivationDateBeforeActivation)
+                            }
+                            "user.id retrieved: $uuid".apply(::i)
+                            assertNotEquals(
+                                signupTest.password,
+                                encodedPassword,
+                                "password should be encoded and not the same"
+                            )
+
+                            activationKey
+                                .apply { "userActivation.activationKey retrieved: $this".run(::i) }
+                                .run(::assertThat)
+                                .asString()
+                                .hasSameSizeAs(generateActivationKey)
+
+                            strActivationDateBeforeActivation.apply {
+                                "userActivation.activationDate before activation: $this".run(::i)
+                            }.run(::assertThat)
+                                .asString()
+                                .isEqualTo("null")
+
+                            (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to activationKey).run UrlKeyPair@{
+                                client.get()
+                                    .uri(first, second)
+                                    .exchange()
+                                    .expectStatus().isOk
+                                    .expectBody().isEmpty
+
+                                context
+                                    .findUserActivationByKey(activationKey)
+                                    .getOrNull()!!.apply {
+                                        activationDate!!
+                                            .isAfter(createdDate)
+                                            .run(::assertThat).isTrue()
+                                    }
+                            }
+//                            val resetKey: String = context.apply {
+//                                // Given a user well signed up not activated
+//                                assertThat(countUserResets()).isEqualTo(0)
+//                            }.getBean<PasswordService>()
+//                                .reset(signupTest.email)
+//                                .mapLeft { "reset().left: $it".run(::i) }
+//                                .getOrNull()!!.apply {
+//                                    assertThat(context.countUserResets()).isEqualTo(1)
+//                                    "reset key : $this".run(::i)
+//                                }
+                            //
+                            //                                FIND_ALL_USER_RESETS
+                            //                                    .trimIndent()
+                            //                                    .run(context.getBean<DatabaseClient>()::sql)
+                            //                                    .fetch()
+                            //                                    .awaitSingle().run {
+                            //                                        get(IS_ACTIVE_FIELD).toString()
+                            //                                            .apply(Boolean::parseBoolean)
+                            //                                            .run(::assertThat).asBoolean().isTrue
+                            //                                        get(RESET_KEY_FIELD).toString()
+                            //                                            .run(::assertThat).asString()
+                            //                                            .isEqualTo(resetKey)
+                            //                                    }
+                            //
+                            //                                // finish reset password
+                            //                                "$password&".run {
+                            //                                    client.post().uri(
+                            //                                        API_RESET_PASSWORD_FINISH_PATH.apply {
+                            //                                            "uri : $this".run(::i)
+                            //                                        }).contentType(APPLICATION_PROBLEM_JSON)
+                            //                                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+                            //                                            "resetKey on select: $this".run(::i)
+                            //                                        }, newPassword = this))
+                            //                                        .exchange()
+                            //                                        .expectStatus()
+                            //                                        .isOk
+                            //                                        .returnResult<ProblemDetail>()
+                            //                                        .responseBodyContent!!
+                            //                                        .apply { logBody() }
+                            //                                        .apply(::assertThat)
+                            //                                        .isEmpty()
+                            //
+                            //                                    context.countUserResets().run(::assertThat).isEqualTo(1)
+                            //
+                            //                                    FIND_ALL_USER_RESETS
+                            //                                        .trimIndent()
+                            //                                        .run(context.getBean<DatabaseClient>()::sql)
+                            //                                        .fetch()
+                            //                                        .awaitSingleOrNull()!!.run {
+                            //                                            IS_ACTIVE_FIELD.run(::get).toString()
+                            //                                                .apply(Boolean::parseBoolean)
+                            //                                                .run(::assertThat).asBoolean().isFalse
+                            //
+                            //                                            CHANGE_DATE_FIELD.run(::get).toString()
+                            //                                                .run(::assertThat).asString()
+                            //                                                .containsAnyOf(
+                            //                                                    ofInstant(
+                            //                                                        now(),
+                            //                                                        systemDefault()
+                            //                                                    ).year.toString(),
+                            //                                                    ofInstant(
+                            //                                                        now(),
+                            //                                                        systemDefault()
+                            //                                                    ).month.toString(),
+                            //                                                    ofInstant(
+                            //                                                        now(),
+                            //                                                        systemDefault()
+                            //                                                    ).dayOfMonth.toString(),
+                            //                                                    ofInstant(
+                            //                                                        now(),
+                            //                                                        systemDefault()
+                            //                                                    ).hour.toString(),
+                            //                                                )
+//                            }
+                        }
                 }
             }
 
@@ -3195,18 +3245,19 @@ class Tests {
             }
 
             @Test
-            fun `test signup validator with an invalid login`(): Unit = mock<ServerWebExchange>()
-                .validator
-                .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
-                .run {
-                    assertTrue(isNotEmpty())
-                    first().run {
-                        assertEquals(
-                            "{${Pattern::class.java.name}.message}",
-                            messageTemplate
-                        )
+            fun `test signup validator with an invalid login`(): Unit =
+                mock<ServerWebExchange>()
+                    .validator
+                    .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_ATTR)
+                    .run {
+                        assertTrue(isNotEmpty())
+                        first().run {
+                            assertEquals(
+                                "{${Pattern::class.java.name}.message}",
+                                messageTemplate
+                            )
+                        }
                     }
-                }
 
             @Test
             fun `test signup validator with an invalid password`(): Unit {
@@ -3514,7 +3565,8 @@ class Tests {
                                 first,
                                 context.findUserActivationByKey(second).getOrNull()!!.id
                             )
-                            context.findUserActivationByKey(second).getOrNull().toString().run(::i)
+                            context.findUserActivationByKey(second).getOrNull().toString()
+                                .run(::i)
                             // BabyStepping to find an implementation and debugging
                             assertDoesNotThrow {
                                 first.toString().run(::i)
@@ -3721,7 +3773,9 @@ class Tests {
                                 .reduce { request, s ->
                                     request + buildString {
                                         append(s)
-                                        if (s == VIRGULE && request.last().isDigit()) append("\n\t")
+                                        if (s == VIRGULE && request.last()
+                                                .isDigit()
+                                        ) append("\n\t")
                                     }
                                 }.replace("{\"", "\n{\n\t\"")
                                 .replace("\"}", "\"\n}")
