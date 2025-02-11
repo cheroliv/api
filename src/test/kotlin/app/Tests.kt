@@ -729,12 +729,12 @@ class Tests {
                     val resultRoles = mutableSetOf<String>()
                     (user to context).signup()
                     """
-            SELECT ua."role" 
-            FROM "user" u 
-            JOIN user_authority ua 
-            ON u.id = ua.user_id 
-            WHERE u."email" = :email;"""
-                        .trimIndent()
+                    SELECT ua."role" 
+                    FROM "user" u 
+                    JOIN user_authority ua 
+                    ON u.id = ua.user_id 
+                    WHERE u."email" = :email;
+                    """.trimIndent()
                         .run(context.getBean<DatabaseClient>()::sql)
                         .bind("email", user.email)
                         .fetch()
@@ -2914,7 +2914,8 @@ class Tests {
                                     .getOrNull()!!.apply {
                                         activationDate!!
                                             .isAfter(createdDate)
-                                            .run(::assertThat).isTrue()
+                                            .run(::assertThat)
+                                            .isTrue()
                                     }
                             }
 //                            val resetKey: String = context.apply {
