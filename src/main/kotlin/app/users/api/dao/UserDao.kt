@@ -1,7 +1,6 @@
 package app.users.api.dao
 
 import app.users.api.Constants.ROLE_USER
-import app.users.api.Loggers.i
 import app.users.api.dao.UserRoleDao.signup
 import app.users.api.models.EntityModel
 import app.users.api.models.Role
@@ -143,9 +142,7 @@ object UserDao {
                         (UserRole(userId = it.id, role = ROLE_USER) to second).signup()
                         UserActivation(id = it.id).run {
                             (this to second).save().run {
-                                return (id to activationKey)
-                                    .apply { i("UserId and activation key pair: $this") }
-                                    .right()
+                                return (id to activationKey).right()
                             }
                         }
                     }
