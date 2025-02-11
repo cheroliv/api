@@ -56,22 +56,24 @@ object RestAPI {
     const val NODE_MODULES = "node_modules"
 }
 
-group = properties[GROUP_KEY].toString()
-version = properties[VERSION_KEY].toString()
+allprojects {
+    group = properties[GROUP_KEY].toString()
+    version = properties[VERSION_KEY].toString()
+    repositories {
+        mavenCentral()
+        setOf(
+            "https://maven.repository.redhat.com/ga/",
+            "https://repo.spring.io/milestone",
+            "https://repo.spring.io/snapshot",
+            "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/"
+        ).forEach(::maven)
+    }
+}
 
 SERVER.run(springBoot.mainClass::set)
 
 val mockitoAgent = configurations.create(MOCKITO_AGENT)
 
-repositories {
-    mavenCentral()
-    setOf(
-        "https://maven.repository.redhat.com/ga/",
-        "https://repo.spring.io/milestone",
-        "https://repo.spring.io/snapshot",
-        "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/"
-    ).forEach(::maven)
-}
 
 dependencyManagement.imports {
     libs.versions.springboot.get()

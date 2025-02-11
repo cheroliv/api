@@ -51,7 +51,6 @@ import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Companion.USERACTIVATIONCLASS
-import app.users.signup.UserActivation.Relations.Fields
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
@@ -541,6 +540,7 @@ object TestUtils {
                 WHERE "login" LIKE 'user%'
             );"""
     }
+
     @Suppress("RemoveRedundantQualifierName")
     const val FIND_ALL_USERS_WITH_ACTIVATION_KEY = """
         SELECT u."${User.Relations.Fields.ID_FIELD}",

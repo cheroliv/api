@@ -1,9 +1,7 @@
 import Build_gradle.Installer.CLASSPATH_KEY
-import Build_gradle.Installer.GROUP_KEY
 import Build_gradle.Installer.INSTALLER
 import Build_gradle.Installer.KOTLIN_COMPILER_OPTION_JSR305
 import Build_gradle.Installer.MAIN_CLASS_KEY
-import Build_gradle.Installer.VERSION_KEY
 import org.gradle.api.file.DuplicatesStrategy.EXCLUDE
 import kotlin.text.Charsets.UTF_8
 
@@ -27,10 +25,6 @@ object Installer {
     const val GROUP_KEY = "artifact.group"
     const val VERSION_KEY = "artifact.version"
 }
-
-group = properties[GROUP_KEY].toString()
-version = properties[VERSION_KEY].toString()
-
 
 dependencyManagement.imports {
     libs.versions.springboot.get()
