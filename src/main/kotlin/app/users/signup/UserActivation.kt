@@ -3,15 +3,16 @@
 package app.users.signup
 
 import app.users.api.models.User
+import app.users.api.models.User.Relations.Fields.PASSWORD_FIELD
 import app.users.signup.UserActivation.Attributes.ACTIVATION_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
 import app.users.signup.UserActivation.Attributes.CREATED_DATE_ATTR
 import app.users.signup.UserActivation.Attributes.ID_ATTR
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_FIELD
+import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_IDX_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_IDX_FIELD
-import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_DATE_IDX_FIELD
 import app.users.signup.UserActivation.Relations.Fields.ID_FIELD
 import app.users.signup.UserActivation.Relations.Fields.TABLE_NAME
 import jakarta.validation.constraints.Size
@@ -66,8 +67,7 @@ data class UserActivation(
             const val CREATED_DATE_IDX_FIELD = "idx_user_activation_creation_date"
         }
 
-        const val SQL_SCRIPT = """
-        
+        const val SQL_SCRIPT = """        
         CREATE TABLE IF NOT EXISTS "$TABLE_NAME" (
             "$ID_FIELD" UUID PRIMARY KEY,
             "$ACTIVATION_KEY_FIELD" VARCHAR NOT NULL,
@@ -82,7 +82,6 @@ data class UserActivation(
         ON "$TABLE_NAME" ("$ACTIVATION_DATE_FIELD");
         CREATE INDEX IF NOT EXISTS "$CREATED_DATE_IDX_FIELD"
         ON "$TABLE_NAME" ("$CREATED_DATE_FIELD");
-        
         """
 
         const val INSERT = """
