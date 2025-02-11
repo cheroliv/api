@@ -2837,7 +2837,7 @@ class Tests {
                         login = name,
                         email = from,
                         password = password,
-                        repassword = password
+                        repassword = password,
                     )
                 }
 
@@ -2856,8 +2856,6 @@ class Tests {
                     // Let's continue with activation key retrieved from database,
                     // in order to activate userTest
                     // here begin change password
-
-
                     FIND_ALL_USERS_WITH_ACTIVATION_KEY
                         .trimIndent()
                         .run(context.getBean<DatabaseClient>()::sql)
@@ -2918,8 +2916,60 @@ class Tests {
                                             .isTrue()
                                     }
                             }
-//                            val resetKey: String = context.apply {
-//                                // Given a user well signed up not activated
+                            // Given a well signed up user
+                            assertThat(context.countUserResets()).isEqualTo(0)
+                            client.post()
+                                .uri(API_RESET_PASSWORD_INIT_PATH)
+                                .contentType(APPLICATION_PROBLEM_JSON)
+                                .bodyValue(signupTest.email)
+                                .exchange()
+                                .expectStatus()
+                                .isOk
+                                .returnResult<ProblemDetail>()
+                                .responseBodyContent!!
+                                .apply(::assertThat)
+                                .isEmpty()
+
+                            assertThat(context.countUserResets()).isEqualTo(1)
+
+                            FIND_ALL_USER_RESETS
+                                .trimIndent()
+                                .run(context.getBean<DatabaseClient>()::sql)
+                                .fetch()
+                                .awaitSingleOrNull()!!.run {
+                                    IS_ACTIVE_FIELD
+                                        .run(::get)
+                                        .toString()
+                                        .apply(Boolean::parseBoolean)
+                                        .run(::assertThat)
+                                        .asBoolean()
+                                        .isTrue
+
+                                    val resetKey = RESET_KEY_FIELD
+                                        .run(::get)
+                                        .toString()
+                                        .apply {
+                                            run(::assertThat)
+                                                .isNotBlank()
+                                        }
+                                //TODO: finish reset password
+                                }
+                        }
+                }
+            }
+//                            FIND_ALL_USER_RESETS
+//                                .trimIndent()
+//                                .run(context.getBean<DatabaseClient>()::sql)
+//                                .fetch()
+//                                .all()
+//                                .collect { it.toString().run(::i) }
+//                            context.countUserResets().toString().run(::i)
+//                                .awaitSingleOrNull()!!
+//                                .toString()
+//                                .run(::i)
+//                            val resetKey: String =
+//                                context.apply {
+//                                // Given a user well signed up and activated
 //                                assertThat(countUserResets()).isEqualTo(0)
 //                            }.getBean<PasswordService>()
 //                                .reset(signupTest.email)
@@ -2928,73 +2978,71 @@ class Tests {
 //                                    assertThat(context.countUserResets()).isEqualTo(1)
 //                                    "reset key : $this".run(::i)
 //                                }
-                            //
-                            //                                FIND_ALL_USER_RESETS
-                            //                                    .trimIndent()
-                            //                                    .run(context.getBean<DatabaseClient>()::sql)
-                            //                                    .fetch()
-                            //                                    .awaitSingle().run {
-                            //                                        get(IS_ACTIVE_FIELD).toString()
-                            //                                            .apply(Boolean::parseBoolean)
-                            //                                            .run(::assertThat).asBoolean().isTrue
-                            //                                        get(RESET_KEY_FIELD).toString()
-                            //                                            .run(::assertThat).asString()
-                            //                                            .isEqualTo(resetKey)
-                            //                                    }
-                            //
-                            //                                // finish reset password
-                            //                                "$password&".run {
-                            //                                    client.post().uri(
-                            //                                        API_RESET_PASSWORD_FINISH_PATH.apply {
-                            //                                            "uri : $this".run(::i)
-                            //                                        }).contentType(APPLICATION_PROBLEM_JSON)
-                            //                                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
-                            //                                            "resetKey on select: $this".run(::i)
-                            //                                        }, newPassword = this))
-                            //                                        .exchange()
-                            //                                        .expectStatus()
-                            //                                        .isOk
-                            //                                        .returnResult<ProblemDetail>()
-                            //                                        .responseBodyContent!!
-                            //                                        .apply { logBody() }
-                            //                                        .apply(::assertThat)
-                            //                                        .isEmpty()
-                            //
-                            //                                    context.countUserResets().run(::assertThat).isEqualTo(1)
-                            //
-                            //                                    FIND_ALL_USER_RESETS
-                            //                                        .trimIndent()
-                            //                                        .run(context.getBean<DatabaseClient>()::sql)
-                            //                                        .fetch()
-                            //                                        .awaitSingleOrNull()!!.run {
-                            //                                            IS_ACTIVE_FIELD.run(::get).toString()
-                            //                                                .apply(Boolean::parseBoolean)
-                            //                                                .run(::assertThat).asBoolean().isFalse
-                            //
-                            //                                            CHANGE_DATE_FIELD.run(::get).toString()
-                            //                                                .run(::assertThat).asString()
-                            //                                                .containsAnyOf(
-                            //                                                    ofInstant(
-                            //                                                        now(),
-                            //                                                        systemDefault()
-                            //                                                    ).year.toString(),
-                            //                                                    ofInstant(
-                            //                                                        now(),
-                            //                                                        systemDefault()
-                            //                                                    ).month.toString(),
-                            //                                                    ofInstant(
-                            //                                                        now(),
-                            //                                                        systemDefault()
-                            //                                                    ).dayOfMonth.toString(),
-                            //                                                    ofInstant(
-                            //                                                        now(),
-                            //                                                        systemDefault()
-                            //                                                    ).hour.toString(),
-                            //                                                )
+            //
+            //                                FIND_ALL_USER_RESETS
+            //                                    .trimIndent()
+            //                                    .run(context.getBean<DatabaseClient>()::sql)
+            //                                    .fetch()
+            //                                    .awaitSingle().run {
+            //                                        get(IS_ACTIVE_FIELD).toString()
+            //                                            .apply(Boolean::parseBoolean)
+            //                                            .run(::assertThat).asBoolean().isTrue
+            //                                        get(RESET_KEY_FIELD).toString()
+            //                                            .run(::assertThat).asString()
+            //                                            .isEqualTo(resetKey)
+            //                                    }
+            //
+            //                                // finish reset password
+            //                                "$password&".run {
+            //                                    client.post().uri(
+            //                                        API_RESET_PASSWORD_FINISH_PATH.apply {
+            //                                            "uri : $this".run(::i)
+            //                                        }).contentType(APPLICATION_PROBLEM_JSON)
+            //                                        .bodyValue(ResetPassword(key = resetKey.trimIndent().apply {
+            //                                            "resetKey on select: $this".run(::i)
+            //                                        }, newPassword = this))
+            //                                        .exchange()
+            //                                        .expectStatus()
+            //                                        .isOk
+            //                                        .returnResult<ProblemDetail>()
+            //                                        .responseBodyContent!!
+            //                                        .apply { logBody() }
+            //                                        .apply(::assertThat)
+            //                                        .isEmpty()
+            //
+            //                                    context.countUserResets().run(::assertThat).isEqualTo(1)
+            //
+            //                                    FIND_ALL_USER_RESETS
+            //                                        .trimIndent()
+            //                                        .run(context.getBean<DatabaseClient>()::sql)
+            //                                        .fetch()
+            //                                        .awaitSingleOrNull()!!.run {
+            //                                            IS_ACTIVE_FIELD.run(::get).toString()
+            //                                                .apply(Boolean::parseBoolean)
+            //                                                .run(::assertThat).asBoolean().isFalse
+            //
+            //                                            CHANGE_DATE_FIELD.run(::get).toString()
+            //                                                .run(::assertThat).asString()
+            //                                                .containsAnyOf(
+            //                                                    ofInstant(
+            //                                                        now(),
+            //                                                        systemDefault()
+            //                                                    ).year.toString(),
+            //                                                    ofInstant(
+            //                                                        now(),
+            //                                                        systemDefault()
+            //                                                    ).month.toString(),
+            //                                                    ofInstant(
+            //                                                        now(),
+            //                                                        systemDefault()
+            //                                                    ).dayOfMonth.toString(),
+            //                                                    ofInstant(
+            //                                                        now(),
+            //                                                        systemDefault()
+            //                                                    ).hour.toString(),
+            //                                                )
 //                            }
-                        }
-                }
-            }
+
 
             /**send mail*/
             @Test
