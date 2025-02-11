@@ -1,18 +1,31 @@
-import Build_gradle.Server.CLI
-import Build_gradle.Server.GROUP_KEY
-import Build_gradle.Server.KOTLIN_COMPILER_OPTION_JSR305
-import Build_gradle.Server.MAIN_FUNCTION
-import Build_gradle.Server.MOCKITO_AGENT
-import Build_gradle.Server.NODE_MODULES
-import Build_gradle.Server.SERVER
-import Build_gradle.Server.SPRING_PROFILE_KEY
-import Build_gradle.Server.SQL_SCHEMA
-import Build_gradle.Server.VERSION_KEY
+import Build_gradle.RestAPI.CLI
+import Build_gradle.RestAPI.GROUP_KEY
+import Build_gradle.RestAPI.KOTLIN_COMPILER_OPTION_JSR305
+import Build_gradle.RestAPI.MAIN_FUNCTION
+import Build_gradle.RestAPI.MOCKITO_AGENT
+import Build_gradle.RestAPI.NODE_MODULES
+import Build_gradle.RestAPI.SERVER
+import Build_gradle.RestAPI.SPRING_PROFILE_KEY
+import Build_gradle.RestAPI.SQL_SCHEMA
+import Build_gradle.RestAPI.VERSION_KEY
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.springframework.boot.gradle.tasks.run.BootRun
 import java.io.File.separator
 import kotlin.text.Charsets.UTF_8
+
+buildscript {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        google()
+        maven("https://plugins.gradle.org/m2/")
+    }
+    dependencies {
+        extra["kotlinVersion"] = "2.1.10"
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${extra["kotlinVersion"]}")
+    }
+}
 
 plugins {
     idea
@@ -30,54 +43,34 @@ plugins {
     ).forEach { id(it.first.get().pluginId).version(it.second) }
 }
 
-object Server {
+object RestAPI {
+    const val GROUP_KEY = "artifact.group"
+    const val VERSION_KEY = "artifact.version"
     const val SERVER = "app.Server"
     const val CLI = "app.CommandLine"
     const val SQL_SCHEMA = "app.users.api.dao.DatabaseConfiguration"
-    const val MAIN_FUNCTION = "main"
+    const val SPRING_PROFILE_KEY = "spring.profiles.active"
     const val MOCKITO_AGENT = "mockito-agent"
     const val KOTLIN_COMPILER_OPTION_JSR305 = "-Xjsr305=strict"
+    const val MAIN_FUNCTION = "main"
     const val NODE_MODULES = "node_modules"
-    const val SPRING_PROFILE_KEY = "spring.profiles.active"
-    const val GROUP_KEY = "artifact.group"
-    const val VERSION_KEY = "artifact.version"
 }
 
-buildscript {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        google()
-        maven("https://plugins.gradle.org/m2/")
-    }
-    dependencies {
-        extra["kotlinVersion"] = "2.1.10"
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${extra["kotlinVersion"]}")
-    }
-}
+group = properties[GROUP_KEY].toString()
+version = properties[VERSION_KEY].toString()
 
-allprojects {
-    group = properties[GROUP_KEY].toString()
-    version = properties[VERSION_KEY].toString()
-    repositories {
-        mavenCentral()
-        setOf(
-            "https://maven.repository.redhat.com/ga/",
-            "https://repo.spring.io/milestone",
-            "https://repo.spring.io/snapshot",
-            "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/"
-        ).forEach(::maven)
-    }
-    tasks {
-        withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
-        withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
-        withType<Javadoc>().configureEach { options.encoding = UTF_8.name() }
-        register<Delete>("cleanResources") {
-            description = "Delete directory build/resources"
-            group = "build"
-            delete("build${separator}resources")
-        }
-    }
+SERVER.run(springBoot.mainClass::set)
+
+val mockitoAgent = configurations.create(MOCKITO_AGENT)
+
+repositories {
+    mavenCentral()
+    setOf(
+        "https://maven.repository.redhat.com/ga/",
+        "https://repo.spring.io/milestone",
+        "https://repo.spring.io/snapshot",
+        "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap/"
+    ).forEach(::maven)
 }
 
 dependencyManagement.imports {
@@ -85,8 +78,6 @@ dependencyManagement.imports {
         .run { "org.springframework.boot:spring-boot-dependencies:$this" }
         .run(::mavenBom)
 }
-
-val mockitoAgent = configurations.create(MOCKITO_AGENT)
 
 dependencies {
     implementation(libs.kotlin.reflect)
@@ -217,16 +208,14 @@ configurations {
     }
 }
 
-SERVER.run(springBoot.mainClass::set)
-
-kotlin.compilerOptions
-    .freeCompilerArgs
-    .addAll(KOTLIN_COMPILER_OPTION_JSR305)
-
 java {
     withSourcesJar()
     withJavadocJar()
 }
+
+kotlin.compilerOptions
+    .freeCompilerArgs
+    .addAll(KOTLIN_COMPILER_OPTION_JSR305)
 
 NODE_MODULES
     .run(::listOf)
@@ -249,9 +238,6 @@ tasks {
         executionData(files("${layout.buildDirectory}${separator}jacoco${separator}test.exec"))
         reports.xml.required = true
     }
-
-    withType<Test>().configureEach { defaultCharacterEncoding = UTF_8.name() }
-    withType<BootRun>().configureEach { defaultCharacterEncoding = UTF_8.name() }
 
     register<TestReport>("testReport") {
         description = "Generates an HTML test report from the results of testReport task."
@@ -305,4 +291,16 @@ tasks {
             .runtimeClasspath
             .run(::setClasspath)
     }
+
+    register<Delete>("cleanResources") {
+        description = "Delete directory build/resources"
+        group = "build"
+        delete("build${separator}resources")
+    }
+
+    withType<JavaCompile>().configureEach { options.encoding = UTF_8.name() }
+    withType<Test>().configureEach { defaultCharacterEncoding = UTF_8.name() }
+    withType<JavaExec>().configureEach { defaultCharacterEncoding = UTF_8.name() }
+    withType<Javadoc>().configureEach { options.encoding = UTF_8.name() }
+    withType<BootRun>().configureEach { defaultCharacterEncoding = UTF_8.name() }
 }
