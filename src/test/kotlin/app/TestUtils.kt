@@ -7,10 +7,6 @@ package app
 
 import app.TestUtils.Data.displayInsertUserScript
 import app.TestUtils.WithUnauthenticatedMockUser.Factory
-import app.TestUtils.countUserActivation
-import app.TestUtils.countUserAuthority
-import app.TestUtils.countUsers
-import app.TestUtils.findUserActivationByKey
 import app.users.api.Constants
 import app.users.api.Constants.ADMIN
 import app.users.api.Constants.AT_SYMBOLE
@@ -49,8 +45,14 @@ import app.users.api.models.UserRole.Attributes.USER_ID_ATTR
 import app.users.api.models.UserRole.Relations.Fields.ROLE_FIELD
 import app.users.api.models.UserRole.Relations.Fields.USER_ID_FIELD
 import app.users.api.security.SecurityUtils.generateActivationKey
+import app.users.api.security.SecurityUtils.generateResetKey
+import app.users.password.ResetPassword
 import app.users.password.UserReset
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
+import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
+import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
+import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
+import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.signup.Signup
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_PARAM
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
@@ -88,21 +90,26 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
 import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON
+import org.springframework.http.ProblemDetail
 import org.springframework.r2dbc.core.*
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.test.context.support.WithSecurityContext
 import org.springframework.security.test.context.support.WithSecurityContextFactory
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.returnResult
 import java.io.IOException
+import java.lang.Boolean.parseBoolean
 import java.lang.Byte
 import java.lang.System.getProperties
 import java.time.Instant
+import java.time.Instant.now
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime
+import java.time.ZonedDateTime.ofInstant
 import java.time.format.DateTimeParseException
 import java.util.*
 import java.util.Arrays.copyOfRange
@@ -192,6 +199,7 @@ object TestUtils {
                 }
         }
     }
+
     suspend fun Pair<ApplicationContext, WebTestClient>.activateScenario(signedUp: List<Any>): Instant {
         signedUp.run {
             val uuid = first() as UUID
@@ -210,7 +218,7 @@ object TestUtils {
 
             strActivationDateBeforeActivation
                 .apply { i("userActivation.activationDate before activation: $this") }
-                .run(_root_ide_package_.org.assertj.core.api.Assertions::assertThat)
+                .run(::assertThat)
                 .asString()
                 .isEqualTo("null")
 
@@ -226,18 +234,124 @@ object TestUtils {
                     .getOrNull()!!.apply {
                         activationDate!!
                             .isAfter(createdDate)
-                            .run(_root_ide_package_.org.assertj.core.api.Assertions::assertThat)
+                            .run(::assertThat)
                             .isTrue()
                     }.activationDate!!
             }
         }
     }
+
     suspend fun Pair<ApplicationContext, WebTestClient>.signupActivationScenario(signup: Signup)
             : Instant = signupScenario(signup).run {
         activateScenario(this).apply {
             assertThat(atZone(systemDefault()).dayOfYear)
                 .isEqualTo(LocalDateTime.now().atZone(systemDefault()).dayOfYear)
         }
+    }
+
+    suspend fun Pair<ApplicationContext, WebTestClient>.resetPasswordScenario(
+        email: String,
+        newPassword: String
+    ) {
+        // Given a well signed up user
+        assertThat(first.countUserResets()).isEqualTo(0)
+        second.post()
+            .uri(API_RESET_PASSWORD_INIT_PATH)
+            .contentType(APPLICATION_PROBLEM_JSON)
+            .bodyValue(email)
+            .exchange()
+            .expectStatus()
+            .isOk
+            .returnResult<ProblemDetail>()
+            .responseBodyContent!!
+            .apply(::assertThat)
+            .isEmpty()
+
+        assertThat(first.countUserResets()).isEqualTo(1)
+
+        FIND_ALL_USER_RESETS
+            .trimIndent()
+            .run(first.getBean<DatabaseClient>()::sql)
+            .fetch()
+            .awaitSingleOrNull()!!.run {
+                IS_ACTIVE_FIELD
+                    .run(::get)
+                    .toString()
+                    .apply(::parseBoolean)
+                    .run(::assertThat)
+                    .asBoolean()
+                    .isTrue
+
+                val resetKey = RESET_KEY_FIELD
+                    .run(::get)
+                    .toString()
+                    .apply {
+                        run(::assertThat)
+                            .asString()
+                            .hasSameSizeAs(generateResetKey)
+                        run(::i)
+                    }
+
+                // finish reset password
+                newPassword.run newPassword@{
+                    second.post().uri(
+                        API_RESET_PASSWORD_FINISH_PATH.apply path@{
+                            "uri : ${this@path}".run(::i)
+                        }).contentType(APPLICATION_PROBLEM_JSON)
+                        .bodyValue(
+                            ResetPassword(
+                                key = resetKey.apply {
+                                    "resetKey on select: $this".run(::i)
+                                }, newPassword = this@newPassword
+                            )
+                        ).exchange()
+                        .expectStatus()
+                        .isOk
+                        .returnResult<ProblemDetail>()
+                        .responseBodyContent!!
+                        .apply { logBody() }
+                        .apply(::assertThat)
+                        .isEmpty()
+
+                    first.countUserResets()
+                        .run(::assertThat)
+                        .isEqualTo(1)
+
+                    FIND_ALL_USER_RESETS
+                        .trimIndent()
+                        .run(first.getBean<DatabaseClient>()::sql)
+                        .fetch()
+                        .awaitSingleOrNull()!!.run {
+                            IS_ACTIVE_FIELD.run(::get).toString()
+                                .apply(::parseBoolean)
+                                .run(::assertThat)
+                                .asBoolean().isFalse
+
+                            CHANGE_DATE_FIELD.run(::get).toString()
+                                .run(::assertThat)
+                                .asString()
+                                .containsAnyOf(
+                                    ofInstant(
+                                        now(),
+                                        systemDefault()
+                                    ).year.toString(),
+                                    ofInstant(
+                                        now(),
+                                        systemDefault()
+                                    ).month.toString(),
+                                    ofInstant(
+                                        now(),
+                                        systemDefault()
+                                    ).dayOfMonth.toString(),
+                                    ofInstant(
+                                        now(),
+                                        systemDefault()
+                                    ).hour.toString(),
+                                )
+                        }
+                }
+            }
+
     }
 
     fun Triple<String, String, String>.getEstablishConnection(): Store =
