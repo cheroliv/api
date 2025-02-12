@@ -23,6 +23,7 @@ import app.TestUtils.findOne
 import app.TestUtils.findUserActivationByKey
 import app.TestUtils.findUserById
 import app.TestUtils.logBody
+import app.TestUtils.resetPasswordScenario
 import app.TestUtils.responseToString
 import app.TestUtils.signupActivationScenario
 import app.TestUtils.tripleCounts
@@ -61,7 +62,6 @@ import app.users.api.models.User.Relations.Fields.VERSION_FIELD
 import app.users.api.models.UserRole
 import app.users.api.security.SecurityUtils
 import app.users.api.security.SecurityUtils.generateActivationKey
-import app.users.api.security.SecurityUtils.generateResetKey
 import app.users.api.security.SecurityUtils.getCurrentUserLogin
 import app.users.api.web.HttpUtils.validator
 import app.users.password.InvalidPasswordException
@@ -69,9 +69,7 @@ import app.users.password.PasswordChange
 import app.users.password.PasswordService
 import app.users.password.ResetPassword
 import app.users.password.UserReset
-import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
-import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
 import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
 import app.users.password.UserReset.Relations.Fields.RESET_KEY_FIELD
 import app.users.signup.Signup
@@ -3965,101 +3963,10 @@ class Tests {
                 }
                 (context to client).signupActivationScenario(signupTest)
                 // Given a well signed up user
-                assertThat(context.countUserResets()).isEqualTo(0)
-                client.post()
-                    .uri(API_RESET_PASSWORD_INIT_PATH)
-                    .contentType(APPLICATION_PROBLEM_JSON)
-                    .bodyValue(signupTest.email)
-                    .exchange()
-                    .expectStatus()
-                    .isOk
-                    .returnResult<ProblemDetail>()
-                    .responseBodyContent!!
-                    .apply(::assertThat)
-                    .isEmpty()
-
-                assertThat(context.countUserResets()).isEqualTo(1)
-
-                FIND_ALL_USER_RESETS
-                    .trimIndent()
-                    .run(context.getBean<DatabaseClient>()::sql)
-                    .fetch()
-                    .awaitSingleOrNull()!!.run {
-                        IS_ACTIVE_FIELD
-                            .run(::get)
-                            .toString()
-                            .apply(::parseBoolean)
-                            .run(::assertThat)
-                            .asBoolean()
-                            .isTrue
-
-                        val resetKey = RESET_KEY_FIELD
-                            .run(::get)
-                            .toString()
-                            .apply {
-                                run(::assertThat)
-                                    .asString()
-                                    .hasSameSizeAs(generateResetKey)
-                                run(::i)
-                            }
-
-                        // finish reset password
-                        "$${signupTest.password}&".run newPassword@{
-                            client.post().uri(
-                                API_RESET_PASSWORD_FINISH_PATH.apply path@{
-                                    "uri : ${this@path}".run(::i)
-                                }).contentType(APPLICATION_PROBLEM_JSON)
-                                .bodyValue(
-                                    ResetPassword(
-                                        key = resetKey.apply {
-                                            "resetKey on select: $this".run(::i)
-                                        }, newPassword = this@newPassword
-                                    )
-                                )
-                                .exchange()
-                                .expectStatus()
-                                .isOk
-                                .returnResult<ProblemDetail>()
-                                .responseBodyContent!!
-                                .apply { logBody() }
-                                .apply(::assertThat)
-                                .isEmpty()
-
-                            context.countUserResets()
-                                .run(::assertThat).isEqualTo(1)
-
-                            FIND_ALL_USER_RESETS
-                                .trimIndent()
-                                .run(context.getBean<DatabaseClient>()::sql)
-                                .fetch()
-                                .awaitSingleOrNull()!!.run {
-                                    IS_ACTIVE_FIELD.run(::get).toString()
-                                        .apply(::parseBoolean)
-                                        .run(::assertThat).asBoolean().isFalse
-
-                                    CHANGE_DATE_FIELD.run(::get).toString()
-                                        .run(::assertThat).asString()
-                                        .containsAnyOf(
-                                            ofInstant(
-                                                now(),
-                                                systemDefault()
-                                            ).year.toString(),
-                                            ofInstant(
-                                                now(),
-                                                systemDefault()
-                                            ).month.toString(),
-                                            ofInstant(
-                                                now(),
-                                                systemDefault()
-                                            ).dayOfMonth.toString(),
-                                            ofInstant(
-                                                now(),
-                                                systemDefault()
-                                            ).hour.toString(),
-                                        )
-                                }
-                        }
-                    }
+                (context to client).resetPasswordScenario(
+                    signupTest.email,
+                    "$${signupTest.password}&"
+                )
             }
         }
     }
