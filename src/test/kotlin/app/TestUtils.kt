@@ -46,8 +46,10 @@ import app.users.api.models.UserRole.Relations.Fields.ROLE_FIELD
 import app.users.api.models.UserRole.Relations.Fields.USER_ID_FIELD
 import app.users.api.security.SecurityUtils.generateActivationKey
 import app.users.api.security.SecurityUtils.generateResetKey
+import app.users.password.PasswordChange
 import app.users.password.ResetPassword
 import app.users.password.UserReset
+import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.password.UserReset.Relations.Fields.CHANGE_DATE_FIELD
@@ -145,6 +147,7 @@ import kotlin.reflect.full.createInstance
 import kotlin.repeat
 import kotlin.run
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.to
 import kotlin.toString
 
@@ -353,6 +356,28 @@ object TestUtils {
             }
 
     }
+
+    suspend fun Pair<ApplicationContext, WebTestClient>.changePasswordScenario(passwordChange: PasswordChange) {
+        // Given a well signed up user, let's change current user password
+        passwordChange.newPassword.run newPassword@{
+            second.post()
+                .uri(API_CHANGE_PASSWORD_PATH.apply path@{
+                    "uri : ${this@path}".run(::i)
+                }).contentType(APPLICATION_PROBLEM_JSON)
+                .bodyValue(passwordChange)
+                .exchange()
+                .expectStatus()
+                .isOk
+                .returnResult<ProblemDetail>()
+                .responseBodyContent!!
+                .isEmpty()
+                .run(::assertTrue)
+            first.countUserResets()
+                .run(::assertThat)
+                .isEqualTo(1)
+        }
+    }
+
 
     fun Triple<String, String, String>.getEstablishConnection(): Store =
         IMAPS_MAIL_STORE_PROTOCOL.run(
