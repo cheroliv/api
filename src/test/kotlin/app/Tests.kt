@@ -7,8 +7,10 @@ import app.TestUtils.Data.OFFICIAL_SITE
 import app.TestUtils.Data.signup
 import app.TestUtils.Data.user
 import app.TestUtils.Data.users
+import app.TestUtils.FIND_ALL_USERACTIVATION
 import app.TestUtils.FIND_ALL_USER_RESETS
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
+import app.TestUtils.changePasswordScenario
 import app.TestUtils.countRoles
 import app.TestUtils.countUserActivation
 import app.TestUtils.countUserAuthority
@@ -54,6 +56,7 @@ import app.users.api.models.EntityModel.Members.withId
 import app.users.api.models.Role
 import app.users.api.models.User
 import app.users.api.models.User.Attributes.EMAIL_ATTR
+import app.users.api.models.User.Attributes.LOGIN_ATTR
 import app.users.api.models.User.Relations.FIND_ALL_USERS
 import app.users.api.models.User.Relations.Fields.EMAIL_FIELD
 import app.users.api.models.User.Relations.Fields.LANG_KEY_FIELD
@@ -130,7 +133,6 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.context.MessageSource
@@ -186,6 +188,7 @@ import javax.inject.Inject
 import kotlin.io.path.pathString
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -1074,7 +1077,7 @@ class Tests {
                 assertDoesNotThrow {
                     TestUtils.FIND_USER_BY_LOGIN
                         .run(db::sql)
-                        .bind(User.Attributes.LOGIN_ATTR, user.login.lowercase())
+                        .bind(LOGIN_ATTR, user.login.lowercase())
                         .fetch()
                         .one()
                         .awaitSingle()[User.Attributes.ID_ATTR]
@@ -1749,7 +1752,7 @@ class Tests {
 
                 validator.validateProperty(
                     userTest.copy(login = testLogin),
-                    User.Attributes.LOGIN_ATTR
+                    LOGIN_ATTR
                 ).run(::assertThat).isEmpty()
 
                 validator.validateProperty(
@@ -1864,7 +1867,7 @@ class Tests {
                 assertThat(userTest.id).isNull()
 
                 validator
-                    .validateProperty(userTest.copy(login = testLogin), User.Attributes.LOGIN_ATTR)
+                    .validateProperty(userTest.copy(login = testLogin), LOGIN_ATTR)
                     .run(::assertThat)
                     .isEmpty()
                 validator.validateProperty(
@@ -1988,7 +1991,7 @@ class Tests {
                 assertThat(userTest.id).isNull()
 
                 validator
-                    .validateProperty(userTest.copy(login = testLogin), User.Attributes.LOGIN_ATTR)
+                    .validateProperty(userTest.copy(login = testLogin), LOGIN_ATTR)
                     .run(::assertThat)
                     .isEmpty()
                 validator.validateProperty(
@@ -2115,7 +2118,7 @@ class Tests {
 
 
                 validator
-                    .validateProperty(userTest.copy(login = testLogin), User.Attributes.LOGIN_ATTR)
+                    .validateProperty(userTest.copy(login = testLogin), LOGIN_ATTR)
                     .run(::assertThat)
                     .isEmpty()
 
@@ -2567,8 +2570,7 @@ class Tests {
 
                                 // Given a user well signed up user
                                 assertThat(context.countUserResets()).isEqualTo(0)
-                                val resetKey: String = context
-                                    .getBean<PasswordService>()
+                                val resetKey: String = passwordService
                                     .reset(userTest.email).getOrNull()!!
                                 resetKey.apply { i("After request reset password - resetKey: $this") }
                                 assertThat(context.countUserResets()).isEqualTo(1)
@@ -2708,11 +2710,11 @@ class Tests {
                                 ).apply { "passwords matches : ${toString()}".run(::i) },
                                 message = "password should be encoded"
                             )
-
-                            val resetKey: String = context.apply {
+                            context.apply {
                                 // Given a user well signed up
                                 assertThat(countUserResets()).isEqualTo(0)
-                            }.getBean<PasswordService>()
+                            }
+                            val resetKey: String = passwordService
                                 .reset(userTest.email)
                                 .getOrNull()!!.apply {
                                     "reset key : $this".run(::i)
@@ -2860,11 +2862,11 @@ class Tests {
                                 ).apply { "passwords matches : ${toString()}".run(::i) },
                                 message = "password should be encoded"
                             )
-
-                            val resetKey: String = context.apply {
+                            context.apply {
                                 // Given a user well signed up
                                 assertThat(countUserResets()).isEqualTo(0)
-                            }.getBean<PasswordService>()
+                            }
+                            val resetKey: String = passwordService
                                 .reset(userTest.email)
                                 .getOrNull()!!.apply {
                                     "reset key : $this".run(::i)
@@ -3021,11 +3023,11 @@ class Tests {
                                 ).apply { "passwords matches : ${toString()}".run(::i) },
                                 message = "password should be encoded"
                             )
-
-                            val resetKey: String = context.apply {
+                            context.apply {
                                 // Given a user well signed up
                                 assertThat(countUserResets()).isEqualTo(0)
-                            }.getBean<PasswordService>()
+                            }
+                            val resetKey: String = passwordService
                                 .reset(userTest.email)
                                 .getOrNull()!!.apply {
                                     "reset key : $this".run(::i)
@@ -3192,7 +3194,7 @@ class Tests {
                     (userTest to context).save()
                     assertThat(context.countUsers()).isEqualTo(countUserBefore + 1)
                     val userId = db.sql(TestUtils.FIND_USER_BY_LOGIN)
-                        .bind(User.Attributes.LOGIN_ATTR, userTest.login.lowercase())
+                        .bind(LOGIN_ATTR, userTest.login.lowercase())
                         .fetch()
                         .one()
                         .awaitSingle()[User.Attributes.ID_ATTR]
@@ -3360,7 +3362,7 @@ class Tests {
                 setOf(
                     User.Attributes.PASSWORD_ATTR,
                     EMAIL_ATTR,
-                    User.Attributes.LOGIN_ATTR
+                    LOGIN_ATTR
                 )
                     .map { it to validator.validateProperty(signupTest, it) }
                     .flatMap { (first, second) ->
@@ -3381,7 +3383,7 @@ class Tests {
                     .validator
                     .validateProperty(
                         signup.copy(login = "funky-log(n"),
-                        User.Attributes.LOGIN_ATTR
+                        LOGIN_ATTR
                     )
                     .run {
                         assertTrue(isNotEmpty())
@@ -3768,7 +3770,7 @@ class Tests {
                     (userTest to context).signup().getOrNull()!!.run {
                         assertEquals(
                             "null",
-                            TestUtils.FIND_ALL_USERACTIVATION
+                            FIND_ALL_USERACTIVATION
                                 .trimIndent()
                                 .run(db::sql)
                                 .fetch()
@@ -3790,7 +3792,7 @@ class Tests {
                         assertEquals(third + 1, context.countUserActivation())
                         assertNotEquals(
                             "null",
-                            TestUtils.FIND_ALL_USERACTIVATION
+                            FIND_ALL_USERACTIVATION
                                 .trimIndent()
                                 .run(db::sql)
                                 .fetch()
@@ -3863,7 +3865,7 @@ class Tests {
                     (userTest to context).signup().getOrNull()!!.run {
                         assertEquals(
                             "null",
-                            TestUtils.FIND_ALL_USERACTIVATION
+                            FIND_ALL_USERACTIVATION
                                 .trimIndent()
                                 .run(db::sql)
                                 .fetch()
@@ -3885,7 +3887,7 @@ class Tests {
                         assertEquals(third + 1, context.countUserActivation())
                         assertNotEquals(
                             "null",
-                            TestUtils.FIND_ALL_USERACTIVATION
+                            FIND_ALL_USERACTIVATION
                                 .trimIndent()
                                 .run(db::sql)
                                 .fetch()
@@ -3944,7 +3946,7 @@ class Tests {
                     (userTest to context).signup().getOrNull()!!.run {
                         assertEquals(
                             "null",
-                            TestUtils.FIND_ALL_USERACTIVATION
+                            FIND_ALL_USERACTIVATION
                                 .trimIndent()
                                 .run(db::sql)
                                 .fetch()
@@ -3995,6 +3997,19 @@ class Tests {
                 (context to client).resetPasswordScenario(
                     signupTest.email,
                     "$${signupTest.password}&"
+                )
+            }
+
+            @Ignore
+            @Test
+            @WithMockUser(USER)
+            fun `functional test signup and change password scenario`(): Unit = runBlocking {
+                val signupTest = properties.mailbox.noReply.run {
+                    Signup(login = USER, email = from, password = USER, repassword = USER)
+                }
+                (context to client).signupActivationScenario(signupTest)
+                (context to client).changePasswordScenario(
+                    PasswordChange(signupTest.password, "$${signupTest.password}&")
                 )
             }
         }
