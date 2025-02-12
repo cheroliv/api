@@ -100,6 +100,7 @@ import java.lang.System.getProperties
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
+import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime
 import java.time.format.DateTimeParseException
@@ -229,6 +230,13 @@ object TestUtils {
                             .isTrue()
                     }.activationDate!!
             }
+        }
+    }
+    suspend fun Pair<ApplicationContext, WebTestClient>.signupActivationScenario(signup: Signup)
+            : Instant = signupScenario(signup).run {
+        activateScenario(this).apply {
+            assertThat(atZone(systemDefault()).dayOfYear)
+                .isEqualTo(LocalDateTime.now().atZone(systemDefault()).dayOfYear)
         }
     }
 
