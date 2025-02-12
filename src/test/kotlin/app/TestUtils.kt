@@ -7,6 +7,10 @@ package app
 
 import app.TestUtils.Data.displayInsertUserScript
 import app.TestUtils.WithUnauthenticatedMockUser.Factory
+import app.TestUtils.countUserActivation
+import app.TestUtils.countUserAuthority
+import app.TestUtils.countUsers
+import app.TestUtils.findUserActivationByKey
 import app.users.api.Constants
 import app.users.api.Constants.ADMIN
 import app.users.api.Constants.AT_SYMBOLE
@@ -44,9 +48,11 @@ import app.users.api.models.UserRole
 import app.users.api.models.UserRole.Attributes.USER_ID_ATTR
 import app.users.api.models.UserRole.Relations.Fields.ROLE_FIELD
 import app.users.api.models.UserRole.Relations.Fields.USER_ID_FIELD
+import app.users.api.security.SecurityUtils.generateActivationKey
 import app.users.password.UserReset
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
 import app.users.signup.Signup
+import app.users.signup.Signup.EndPoint.API_ACTIVATE_PARAM
 import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
 import app.users.signup.UserActivation
 import app.users.signup.UserActivation.Attributes.ACTIVATION_KEY_ATTR
@@ -74,20 +80,24 @@ import kotlinx.coroutines.reactive.collect
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Description
 import org.hamcrest.TypeSafeDiagnosingMatcher
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.runApplication
 import org.springframework.boot.web.reactive.context.StandardReactiveWebEnvironment
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.dao.EmptyResultDataAccessException
+import org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON
 import org.springframework.r2dbc.core.*
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.test.context.support.WithSecurityContext
 import org.springframework.security.test.context.support.WithSecurityContextFactory
+import org.springframework.test.web.reactive.server.WebTestClient
 import java.io.IOException
 import java.lang.Byte
 import java.lang.System.getProperties
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalDateTime.parse
 import java.time.ZoneOffset.UTC
@@ -144,6 +154,82 @@ object TestUtils {
             clientSecret = "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t",
             redirectUris = listOf("$BASE_URL_DEV/oauth2/callback/google")
         )
+    }
+
+    suspend fun Pair<ApplicationContext, WebTestClient>.signupScenario(signup: Signup): List<Any> {
+        first.tripleCounts().let {
+            second.post()
+                .uri(Signup.EndPoint.API_SIGNUP_PATH)
+                .contentType(APPLICATION_PROBLEM_JSON)
+                .bodyValue(signup)
+                .exchange()
+                .expectStatus().isCreated
+                .expectBody().isEmpty
+
+            assertThat(first.countUsers()).isEqualTo(it.first + 1)
+            assertThat(first.countUserAuthority()).isEqualTo(it.second + 1)
+            assertThat(first.countUserActivation()).isEqualTo(it.third + 1)
+            // Let's continue with activation key retrieved from database,
+            // in order to activate userTest
+            // here begin change password
+            FIND_ALL_USERS_WITH_ACTIVATION_KEY
+                .trimIndent()
+                .run(first.getBean<DatabaseClient>()::sql)
+                .fetch().awaitSingleOrNull()!!.run {
+                    // first is the uuid
+                    // get(1) is the encoded password
+                    // get(2) is the activation key
+                    // last is the ACTIVATION_DATE_FIELD
+                    return listOf(
+                        get(User.Relations.Fields.ID_FIELD)
+                            .toString()
+                            .run(UUID::fromString),
+                        get(PASSWORD_FIELD).toString(),
+                        get(ACTIVATION_KEY_FIELD).toString(),
+                        get(ACTIVATION_DATE_FIELD).toString(),
+                    )
+                }
+        }
+    }
+    suspend fun Pair<ApplicationContext, WebTestClient>.activateScenario(signedUp: List<Any>): Instant {
+        signedUp.run {
+            val uuid = first() as UUID
+            val encodedPassword = get(1) as String
+            val activationKey = get(2) as String
+            val strActivationDateBeforeActivation = last().toString()
+            assertThrows<DateTimeParseException> {
+                Instant.parse(strActivationDateBeforeActivation)
+            }
+            "user.id retrieved: $uuid".apply(::i)
+            activationKey
+                .apply { "userActivation.activationKey retrieved: $this".run(::i) }
+                .run(::assertThat)
+                .asString()
+                .hasSameSizeAs(generateActivationKey)
+
+            strActivationDateBeforeActivation
+                .apply { i("userActivation.activationDate before activation: $this") }
+                .run(_root_ide_package_.org.assertj.core.api.Assertions::assertThat)
+                .asString()
+                .isEqualTo("null")
+
+            (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to activationKey).run UrlKeyPair@{
+                this@activateScenario.second.get()
+                    .uri(first, second)
+                    .exchange()
+                    .expectStatus().isOk
+                    .expectBody().isEmpty
+
+                return this@activateScenario.first
+                    .findUserActivationByKey(activationKey)
+                    .getOrNull()!!.apply {
+                        activationDate!!
+                            .isAfter(createdDate)
+                            .run(_root_ide_package_.org.assertj.core.api.Assertions::assertThat)
+                            .isTrue()
+                    }.activationDate!!
+            }
+        }
     }
 
     fun Triple<String, String, String>.getEstablishConnection(): Store =
