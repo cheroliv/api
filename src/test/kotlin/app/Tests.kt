@@ -2,6 +2,11 @@
 
 package app
 
+import app.TestUtils.Data.DEFAULT_USER_JSON
+import app.TestUtils.Data.OFFICIAL_SITE
+import app.TestUtils.Data.signup
+import app.TestUtils.Data.user
+import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USER_RESETS
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
 import app.TestUtils.countRoles
@@ -23,6 +28,11 @@ import app.TestUtils.tripleCounts
 import app.ai.AIAssistantManager
 import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.ollamaList
 import app.users.api.Constants
+import app.users.api.Constants.DEVELOPMENT
+import app.users.api.Constants.EMPTY_STRING
+import app.users.api.Constants.PRODUCTION
+import app.users.api.Constants.ROLE_USER
+import app.users.api.Constants.STARTUP_LOG_MSG_KEY
 import app.users.api.Loggers.i
 import app.users.api.Properties
 import app.users.api.Utils.lsWorkingDir
@@ -40,7 +50,11 @@ import app.users.api.models.EntityModel
 import app.users.api.models.EntityModel.Members.withId
 import app.users.api.models.Role
 import app.users.api.models.User
+import app.users.api.models.User.Relations.Fields.EMAIL_FIELD
+import app.users.api.models.User.Relations.Fields.LANG_KEY_FIELD
+import app.users.api.models.User.Relations.Fields.LOGIN_FIELD
 import app.users.api.models.User.Relations.Fields.PASSWORD_FIELD
+import app.users.api.models.User.Relations.Fields.VERSION_FIELD
 import app.users.api.models.UserRole
 import app.users.api.security.SecurityUtils
 import app.users.api.security.SecurityUtils.generateActivationKey
@@ -126,8 +140,8 @@ import org.springframework.mail.javamail.JavaMailSenderImpl
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitSingle
 import org.springframework.r2dbc.core.awaitSingleOrNull
-import org.springframework.security.crypto.encrypt.Encryptors
-import org.springframework.security.crypto.keygen.KeyGenerators
+import org.springframework.security.crypto.encrypt.Encryptors.text
+import org.springframework.security.crypto.keygen.KeyGenerators.string
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -156,6 +170,13 @@ import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime.ofInstant
 import java.time.format.DateTimeParseException
 import java.util.Locale
+import java.util.Locale.ENGLISH
+import java.util.Locale.FRANCE
+import java.util.Locale.FRENCH
+import java.util.Locale.ITALY
+import java.util.Locale.LanguageRange
+import java.util.Locale.US
+import java.util.Locale.filter
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.io.path.pathString
@@ -487,7 +508,7 @@ class Tests {
                 context.getBean<Properties>().mailbox.noReply.from.apply {
                     context.getBean<Validator>()
                         .validateProperty(
-                            TestUtils.Data.user.copy(email = this),
+                            user.copy(email = this),
                             User.Attributes.EMAIL_ATTR
                         )
                         .run(::assertThat)
@@ -498,14 +519,14 @@ class Tests {
             @Test
             fun `test symmetric encryption and decryption`(): Unit = assertDoesNotThrow {
                 val salt =
-                    KeyGenerators.string().generateKey().apply { "salt: $this".run(::i) }
-                val encryptor = Encryptors.text("RGPD", salt)
-                encryptor.encrypt(TestUtils.Data.user.email.lowercase()).apply(::i).run {
+                    string().generateKey().apply { "salt: $this".run(::i) }
+                val encryptor = text("RGPD", salt)
+                encryptor.encrypt(user.email.lowercase()).apply(::i).run {
                     encryptor.decrypt(this)
                         .apply(::i)
                         .run(::assertThat)
                         .asString()
-                        .isEqualTo(TestUtils.Data.user.email.lowercase())
+                        .isEqualTo(user.email.lowercase())
                 }
             }
 
@@ -523,10 +544,10 @@ class Tests {
             @Test
             fun `DataTestsChecks - display some json`(): Unit = assertDoesNotThrow {
                 context.getBean<ObjectMapper>().run {
-                    writeValueAsString(TestUtils.Data.users).run(::i)
-                    writeValueAsString(TestUtils.Data.user).run(::i)
+                    writeValueAsString(users).run(::i)
+                    writeValueAsString(user).run(::i)
                 }
-                TestUtils.Data.DEFAULT_USER_JSON.run(::i)
+                DEFAULT_USER_JSON.run(::i)
             }
 
 
@@ -536,8 +557,7 @@ class Tests {
                     assertThat("Cher $this").isEqualTo(
                         context.getBean<MessageSource>().getMessage(
                             "email.activation.greeting",
-                            arrayOf(this),
-                            Locale.FRENCH
+                            arrayOf(this), FRENCH
                         )
                     )
                 }
@@ -547,12 +567,12 @@ class Tests {
             fun `ConfigurationsTests - MessageSource test message startupLog`(): Unit {
                 assertThat(buildString {
                     append("You have misconfigured your application!\n")
-                    append("It should not run with both the ${Constants.DEVELOPMENT}\n")
-                    append("and ${Constants.PRODUCTION} profiles at the same time.")
+                    append("It should not run with both the $DEVELOPMENT\n")
+                    append("and $PRODUCTION profiles at the same time.")
                 }).asString().isEqualTo(
                     context.getBean<MessageSource>().getMessage(
-                        Constants.STARTUP_LOG_MSG_KEY,
-                        arrayOf(Constants.DEVELOPMENT, Constants.PRODUCTION),
+                        STARTUP_LOG_MSG_KEY,
+                        arrayOf(DEVELOPMENT, PRODUCTION),
                         Locale.getDefault()
                     ).apply { i(this) })
             }
@@ -561,7 +581,7 @@ class Tests {
             fun `ConfigurationsTests - test go visit message`(): Unit {
                 assertThat(context.getBean<Properties>().goVisitMessage)
                     .asString()
-                    .isEqualTo(TestUtils.Data.OFFICIAL_SITE)
+                    .isEqualTo(OFFICIAL_SITE)
             }
 
             @Test
@@ -584,12 +604,12 @@ class Tests {
 
             @Test
             fun `display user formatted in JSON`(): Unit = assertDoesNotThrow {
-                (TestUtils.Data.user to context).toJson.let(::i)
+                (user to context).toJson.let(::i)
             }
 
             @Test
             fun `check toJson build a valid json format`(): Unit = assertDoesNotThrow {
-                (TestUtils.Data.user to context)
+                (user to context)
                     .toJson
                     .let(context.getBean<ObjectMapper>()::readTree)
             }
@@ -598,29 +618,24 @@ class Tests {
             fun `Verifies the internationalization of validations by validator factory with a bad login in Italian`(): Unit {
                 Validation.byProvider(HibernateValidator::class.java)
                     .configure()
-                    .defaultLocale(Locale.ENGLISH)
-                    .locales(Locale.FRANCE, Locale.ITALY, Locale.US)
+                    .defaultLocale(ENGLISH)
+                    .locales(FRANCE, ITALY, US)
                     .localeResolver {
                         // get the locales supported by the client from the Accept-Language header
                         val acceptLanguageHeader = "it-IT;q=0.9,en-US;q=0.7"
-                        val acceptedLanguages = Locale.LanguageRange.parse(acceptLanguageHeader)
-                        val resolvedLocales = Locale.filter(acceptedLanguages, it.supportedLocales)
+                        val acceptedLanguages = LanguageRange.parse(acceptLanguageHeader)
+                        val resolvedLocales = filter(acceptedLanguages, it.supportedLocales)
                         if (resolvedLocales.size > 0) resolvedLocales[0]
                         else it.defaultLocale
                     }
                     .buildValidatorFactory()
                     .validator
-                    .validateProperty(
-                        TestUtils.Data.signup.copy(login = "funky-log(n"),
-                        User.Relations.Fields.LOGIN_FIELD
-                    )
-                    .run viol@{
+                    .validateProperty(signup.copy(login = "funky-log(n"), LOGIN_FIELD).run viol@{
                         assertThat(isNotEmpty()).isTrue
                         first().run {
-                            assertEquals(
-                                "{${Pattern::class.java.name}.message}",
-                                messageTemplate
-                            )
+                            assertThat("{${Pattern::class.java.name}.message}")
+                                .asString()
+                                .isEqualTo(messageTemplate)
                             assertThat(message)
                                 .contains("deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"")
                                 .doesNotContain("doit correspondre à")
@@ -632,34 +647,32 @@ class Tests {
             fun `Verify the internationalization of validations by validator factory with a bad login in Italian`(): Unit {
                 Validation.byProvider(HibernateValidator::class.java)
                     .configure()
-                    .defaultLocale(Locale.ENGLISH)
-                    .locales(Locale.FRANCE, Locale.ITALY, Locale.US)
+                    .defaultLocale(ENGLISH)
+                    .locales(FRANCE, ITALY, US)
                     .localeResolver {
                         // get the locales supported by the client from the Accept-Language header
                         val acceptLanguageHeader = "it-IT;q=0.9,en-US;q=0.7"
-                        val acceptedLanguages = Locale.LanguageRange.parse(acceptLanguageHeader)
-                        val resolvedLocales = Locale.filter(acceptedLanguages, it.supportedLocales)
+                        val acceptedLanguages = LanguageRange.parse(acceptLanguageHeader)
+                        val resolvedLocales = filter(acceptedLanguages, it.supportedLocales)
                         if (resolvedLocales.size > 0) resolvedLocales[0]
                         else it.defaultLocale
                     }
                     .buildValidatorFactory()
                     .validator
                     .validateProperty(
-                        TestUtils.Data.signup.copy(login = "funky-log(n"),
-                        User.Relations.Fields.LOGIN_FIELD
+                        signup.copy(login = "funky-log(n"),
+                        LOGIN_FIELD
                     )
                     .run viol@{
                         assertTrue(isNotEmpty())
                         first().run {
-                            assertEquals(
-                                "{${Pattern::class.java.name}.message}",
-                                messageTemplate
-                            )
-                            assertEquals(false, message.contains("doit correspondre à"))
-                            assertContains(
-                                "deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"",
-                                message
-                            )
+                            assertThat("{${Pattern::class.java.name}.message}")
+                                .asString()
+                                .isEqualTo(messageTemplate)
+                            assertThat(message)
+                                .asString()
+                                .doesNotContain("doit correspondre à")
+                                .contains("deve corrispondere a \"^(?>[a-zA-Z0-9!\$&*+=?^_`{|}~.-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)|(?>[_.@A-Za-z0-9-]+)\$\"")
                         }
                     }
             }
@@ -672,13 +685,13 @@ class Tests {
             @Test
             fun `test findOne`(): Unit = runBlocking {
                 assertThat(context.countUsers()).isEqualTo(0)
-                (TestUtils.Data.user to context).save()
+                (user to context).save()
                 assertThat(context.countUsers()).isEqualTo(1)
                 val findOneEmailResult: Either<Throwable, User> =
-                    context.findOne<User>(TestUtils.Data.user.email)
+                    context.findOne<User>(user.email)
                 findOneEmailResult.map { assertDoesNotThrow { UUID.fromString(it.id.toString()) } }
                 i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
-                context.findOne<User>(TestUtils.Data.user.login).map {
+                context.findOne<User>(user.login).map {
                     assertDoesNotThrow { UUID.fromString(it.id.toString()) }
                 }
             }
@@ -687,58 +700,58 @@ class Tests {
             fun `test r2dbc-sql to find user and roles using one query`(): Unit = runBlocking {
                 context.tripleCounts().run {
                     run(::assertThat).isEqualTo(Triple(0, 0, 0))
-                    (TestUtils.Data.user to context).signup()
+                    (user to context).signup()
                     i(context.countUsers().toString())
                     assertThat(context.countUsers()).isEqualTo(first + 1)
                     assertThat(context.countUserAuthority()).isEqualTo(second + 1)
                     assertThat(context.countUserActivation()).isEqualTo(third + 1)
                 }
                 """
-        SELECT
-           u."id",
-           u."email",
-           u."login",
-           u."password",
-           u."lang_key",
-           u."version",
-           STRING_AGG(DISTINCT a."role", ',') AS roles
-        FROM "user" AS u
-        LEFT JOIN
-           user_authority ua ON u."id" = ua."user_id"
-        LEFT JOIN
-           authority AS a ON ua."role" = a."role"
-        WHERE
-           LOWER(u."email") = LOWER(:emailOrLogin)
-           OR
-           LOWER(u."login") = LOWER(:emailOrLogin)
-        GROUP BY
-           u."id", u."email", u."login";"""
-                    .trimIndent()
+                SELECT
+                   u."id",
+                   u."email",
+                   u."login",
+                   u."password",
+                   u."lang_key",
+                   u."version",
+                   STRING_AGG(DISTINCT a."role", ',') AS roles
+                FROM "user" AS u
+                LEFT JOIN
+                   user_authority ua ON u."id" = ua."user_id"
+                LEFT JOIN
+                   authority AS a ON ua."role" = a."role"
+                WHERE
+                   LOWER(u."email") = LOWER(:emailOrLogin)
+                   OR
+                   LOWER(u."login") = LOWER(:emailOrLogin)
+                GROUP BY
+                   u."id", u."email", u."login";
+                """.trimIndent()
                     .apply(::i)
                     .run(context.getBean<DatabaseClient>()::sql)
-                    .bind("emailOrLogin", TestUtils.Data.user.email)
+                    .bind("emailOrLogin", user.email)
                     .fetch()
                     .awaitSingleOrNull()?.run {
                         toString().run(::i)
                         val expectedUserResult = User(
                             id = UUID.fromString(get(User.Relations.Fields.ID_FIELD).toString()),
-                            email = get(User.Relations.Fields.EMAIL_FIELD).toString(),
-                            login = get(User.Relations.Fields.LOGIN_FIELD).toString(),
+                            email = get(EMAIL_FIELD).toString(),
+                            login = get(LOGIN_FIELD).toString(),
                             roles = get(User.Members.ROLES_MEMBER)
                                 .toString()
                                 .split(",")
                                 .map { Role(it) }
                                 .toSet(),
                             password = get(PASSWORD_FIELD).toString(),
-                            langKey = get(User.Relations.Fields.LANG_KEY_FIELD).toString(),
-                            version = get(User.Relations.Fields.VERSION_FIELD).toString().toLong(),
+                            langKey = get(LANG_KEY_FIELD).toString(),
+                            version = get(VERSION_FIELD).toString().toLong(),
                         )
                         val userResult = context
-                            .findOne<User>(TestUtils.Data.user.login)
+                            .findOne<User>(user.login)
                             .getOrNull()!!
                         assertNotNull(expectedUserResult)
                         assertNotNull(expectedUserResult.id)
-                        assertEquals(expectedUserResult.roles.first().id, Constants.ROLE_USER)
+                        assertEquals(expectedUserResult.roles.first().id, ROLE_USER)
                         assertEquals(1, expectedUserResult.roles.size)
                         assertEquals(expectedUserResult.id, userResult.id)
                         assertEquals(expectedUserResult.email, userResult.email)
@@ -748,12 +761,12 @@ class Tests {
                         assertTrue {
                             expectedUserResult.roles.isNotEmpty()
                             context.getBean<PasswordEncoder>()
-                                .matches(TestUtils.Data.user.password, expectedUserResult.password)
+                                .matches(user.password, expectedUserResult.password)
                             context.getBean<PasswordEncoder>()
-                                .matches(TestUtils.Data.user.password, userResult.password)
+                                .matches(user.password, userResult.password)
                         }
-                        assertEquals(expectedUserResult.roles.first().id, Constants.ROLE_USER)
-                        assertEquals(userResult.roles.first().id, Constants.ROLE_USER)
+                        assertEquals(expectedUserResult.roles.first().id, ROLE_USER)
+                        assertEquals(userResult.roles.first().id, ROLE_USER)
                         assertEquals(userResult.roles.size, 1)
                     }
             }
@@ -761,26 +774,29 @@ class Tests {
 
             @Test
             fun `test findOneWithAuths`(): Unit = runBlocking {
-                assertEquals(0, context.countUsers())
-                assertEquals(0, context.countUserAuthority())
-                val userId: UUID = (TestUtils.Data.user to context).signup().getOrNull()!!.first
-                userId.apply { run(::assertNotNull) }
-                    .run { "(user to context).signup() : $this" }
-                    .run(::println)
-                assertEquals(1, context.countUsers())
-                assertEquals(1, context.countUserAuthority())
-                context.findOne<User>(TestUtils.Data.user.email).getOrNull()?.apply {
+                assertThat(0)
+                    .isEqualTo(context.countUsers())
+                    .isEqualTo(context.countUserAuthority())
+                val userId: UUID = (user to context).signup().getOrNull()!!.first
+                userId.apply {
+                    i("(user to context).signup() : $this")
+                    run(::assertNotNull)
+                }
+                assertThat(1)
+                    .isEqualTo(context.countUsers())
+                    .isEqualTo(context.countUserAuthority())
+
+                context.findOne<User>(user.email).getOrNull()?.apply {
                     run(::assertNotNull)
                     assertEquals(1, roles.size)
-                    assertEquals(Constants.ROLE_USER, roles.first().id)
+                    assertEquals(ROLE_USER, roles.first().id)
                     assertEquals(userId, id)
-                }
-                    .run { i("context.findOneWithAuths<User>(${TestUtils.Data.user.email}).getOrNull() : $this") }
+                }.run { i("context.findOneWithAuths<User>(${user.email}).getOrNull() : $this") }
 
                 context.findOne<User>(userId).getOrNull()
                     .run { i("context.findOneDraft<User>(user.email).getOrNull() : $this") }
-                context.findAuthsByEmail(TestUtils.Data.user.email).getOrNull()
-                    .run { i("context.findAuthsByEmail(${TestUtils.Data.user.email}).getOrNull() : $this") }
+                context.findAuthsByEmail(user.email).getOrNull()
+                    .run { i("context.findAuthsByEmail(${user.email}).getOrNull() : $this") }
             }
 
 
@@ -791,12 +807,12 @@ class Tests {
                 val countUserAuthBefore = context.countUserAuthority()
                 assertEquals(0, countUserAuthBefore)
                 lateinit var userWithAuths: User
-                (TestUtils.Data.user to context).signup().apply {
+                (user to context).signup().apply {
                     isRight().run(::assertTrue)
                     isLeft().run(::assertFalse)
                 }.map {
                     userWithAuths =
-                        TestUtils.Data.user.withId(it.first).copy(password = Constants.EMPTY_STRING)
+                        user.withId(it.first).copy(password = EMPTY_STRING)
                     userWithAuths.roles.isEmpty().run(::assertTrue)
                 }
                 userWithAuths.id.run(::assertNotNull)
@@ -812,7 +828,7 @@ class Tests {
                     assertEquals(first?.roles?.first(), second.roles.first())
                 }
                 userWithAuths.roles.isNotEmpty().run(::assertTrue)
-                assertEquals(Constants.ROLE_USER, userWithAuths.roles.first().id)
+                assertEquals(ROLE_USER, userWithAuths.roles.first().id)
                 "userWithAuths : $userWithAuths".run(::i)
                 "userResult : $userResult".run(::i)
             }
@@ -824,22 +840,22 @@ class Tests {
                 val countUserAuthBefore = context.countUserAuthority()
                 assertEquals(0, countUserAuthBefore)
                 lateinit var userWithAuths: User
-                (TestUtils.Data.user to context).signup().apply {
+                (user to context).signup().apply {
                     isRight().run(::assertTrue)
                     isLeft().run(::assertFalse)
                 }.map {
                     userWithAuths =
-                        TestUtils.Data.user.withId(it.first).copy(password = Constants.EMPTY_STRING)
+                        user.withId(it.first).copy(password = EMPTY_STRING)
                     userWithAuths.roles.isEmpty().run(::assertTrue)
                 }
                 assertEquals(1, context.countUsers())
                 assertEquals(1, context.countUserAuthority())
-                context.findAuthsByLogin(TestUtils.Data.user.login)
+                context.findAuthsByLogin(user.login)
                     .getOrNull()
                     .apply { run(::assertNotNull) }
                     .run { userWithAuths = userWithAuths.copy(roles = this!!) }
                 userWithAuths.roles.isNotEmpty().run(::assertTrue)
-                assertEquals(Constants.ROLE_USER, userWithAuths.roles.first().id)
+                assertEquals(ROLE_USER, userWithAuths.roles.first().id)
                 "userWithAuths : $userWithAuths".run(::i)
             }
 
@@ -850,22 +866,22 @@ class Tests {
                 val countUserAuthBefore = context.countUserAuthority()
                 assertEquals(0, countUserAuthBefore)
                 lateinit var userWithAuths: User
-                (TestUtils.Data.user to context).signup().apply {
+                (user to context).signup().apply {
                     isRight().run(::assertTrue)
                     isLeft().run(::assertFalse)
                 }.map {
                     userWithAuths =
-                        TestUtils.Data.user.withId(it.first).copy(password = Constants.EMPTY_STRING)
+                        user.withId(it.first).copy(password = EMPTY_STRING)
                     userWithAuths.roles.isEmpty().run(::assertTrue)
                 }
                 assertEquals(1, context.countUsers())
                 assertEquals(1, context.countUserAuthority())
-                context.findAuthsByEmail(TestUtils.Data.user.email)
+                context.findAuthsByEmail(user.email)
                     .getOrNull()
                     .apply { run(::assertNotNull) }
                     .run { userWithAuths = userWithAuths.copy(roles = this!!) }
                 userWithAuths.roles.isNotEmpty().run(::assertTrue)
-                assertEquals(Constants.ROLE_USER, userWithAuths.roles.first().id)
+                assertEquals(ROLE_USER, userWithAuths.roles.first().id)
                 "userWithAuths : $userWithAuths".run(::i)
             }
 
@@ -875,13 +891,13 @@ class Tests {
                 assertEquals(0, countUserBefore)
                 val countUserAuthBefore = context.countUserAuthority()
                 assertEquals(0, countUserAuthBefore)
-                (TestUtils.Data.user to context).signup()
+                (user to context).signup()
                 val resultRoles = mutableSetOf<Role>()
-                context.findAuthsByEmail(TestUtils.Data.user.email).run {
+                context.findAuthsByEmail(user.email).run {
                     resultRoles.addAll(map { it }.getOrElse { emptySet() })
                 }
-                assertEquals(Constants.ROLE_USER, resultRoles.first().id)
-                assertEquals(Constants.ROLE_USER, resultRoles.first().id)
+                assertEquals(ROLE_USER, resultRoles.first().id)
+                assertEquals(ROLE_USER, resultRoles.first().id)
                 assertEquals(1, context.countUsers())
                 assertEquals(1, context.countUserAuthority())
             }
@@ -894,7 +910,7 @@ class Tests {
                     val countUserAuthBefore = context.countUserAuthority()
                     assertEquals(0, countUserAuthBefore)
                     val resultRoles = mutableSetOf<String>()
-                    (TestUtils.Data.user to context).signup()
+                    (user to context).signup()
                     """
                 SELECT ua."role" 
                 FROM "user" u 
@@ -903,15 +919,15 @@ class Tests {
                 WHERE u."email" = :email;
                 """.trimIndent()
                         .run(context.getBean<DatabaseClient>()::sql)
-                        .bind("email", TestUtils.Data.user.email)
+                        .bind("email", user.email)
                         .fetch()
                         .all()
                         .collect { rows ->
-                            assertEquals(rows[Role.Relations.Fields.ID_FIELD], Constants.ROLE_USER)
+                            assertEquals(rows[Role.Relations.Fields.ID_FIELD], ROLE_USER)
                             resultRoles.add(rows[Role.Relations.Fields.ID_FIELD].toString())
                         }
-                    assertEquals(Constants.ROLE_USER, resultRoles.first())
-                    assertEquals(Constants.ROLE_USER, resultRoles.first())
+                    assertEquals(ROLE_USER, resultRoles.first())
+                    assertEquals(ROLE_USER, resultRoles.first())
                     assertEquals(1, context.countUsers())
                     assertEquals(1, context.countUserAuthority())
                 }
@@ -925,7 +941,7 @@ class Tests {
                     assertEquals(0, countUserAuthBefore)
                     val resultRoles = mutableSetOf<Role>()
                     lateinit var resultUserId: UUID
-                    (TestUtils.Data.user to context).signup().apply {
+                    (user to context).signup().apply {
                         assertTrue(isRight())
                         assertFalse(isLeft())
                     }.onRight {
@@ -941,13 +957,13 @@ class Tests {
                             .collect { rows ->
                                 assertEquals(
                                     rows[Role.Relations.Fields.ID_FIELD],
-                                    Constants.ROLE_USER
+                                    ROLE_USER
                                 )
                                 resultRoles.add(Role(id = rows[Role.Relations.Fields.ID_FIELD].toString()))
                             }
                         assertEquals(
-                            Constants.ROLE_USER,
-                            TestUtils.Data.user.withId(it.first).copy(
+                            ROLE_USER,
+                            user.withId(it.first).copy(
                                 roles =
                                 resultRoles
                                     .map { role -> role.id.run(::Role) }
@@ -959,7 +975,7 @@ class Tests {
                     assertThat(resultUserId.toString().length)
                         .isEqualTo(UUID.randomUUID().toString().length)
                     assertDoesNotThrow { UUID.fromString(resultUserId.toString()) }
-                    assertThat(Constants.ROLE_USER).isEqualTo(resultRoles.first().id)
+                    assertThat(ROLE_USER).isEqualTo(resultRoles.first().id)
                     assertThat(context.countUsers()).isEqualTo(1)
                     assertThat(context.countUserAuthority()).isEqualTo(1)
                 }
@@ -984,14 +1000,14 @@ class Tests {
                     context.countUsers(),
                     "context should not have a user recorded in database"
                 )
-                (TestUtils.Data.user to context).save()
+                (user to context).save()
                 assertEquals(
                     1,
                     context.countUsers(),
                     "context should have only one user recorded in database"
                 )
 
-                context.findOne<User>(TestUtils.Data.user.email).apply {
+                context.findOne<User>(user.email).apply {
                     assertTrue(isRight())
                     assertFalse(isLeft())
                 }.map { assertDoesNotThrow { UUID.fromString(it.id.toString()) } }
@@ -1000,11 +1016,11 @@ class Tests {
             @Test
             fun `test findOne with not existing email or login`(): Unit = runBlocking {
                 assertEquals(0, context.countUsers())
-                context.findOne<User>(TestUtils.Data.user.email).apply {
+                context.findOne<User>(user.email).apply {
                     assertFalse(isRight())
                     assertTrue(isLeft())
                 }
-                context.findOne<User>(TestUtils.Data.user.login).apply {
+                context.findOne<User>(user.login).apply {
                     assertFalse(isRight())
                     assertTrue(isLeft())
                 }
@@ -1013,7 +1029,7 @@ class Tests {
             @Test
             fun `save default user should work in this context `(): Unit = runBlocking {
                 val count = context.countUsers()
-                (TestUtils.Data.user to context).save()
+                (user to context).save()
                 assertEquals(expected = count + 1, context.countUsers())
             }
 
@@ -1023,12 +1039,12 @@ class Tests {
                 assertEquals(0, countUserBefore)
                 val countUserAuthBefore = context.countUserAuthority()
                 assertEquals(0, countUserAuthBefore)
-                (TestUtils.Data.user to context).save()
+                (user to context).save()
                 assertEquals(countUserBefore + 1, context.countUsers())
                 assertDoesNotThrow {
                     TestUtils.FIND_USER_BY_LOGIN
                         .run(context.getBean<DatabaseClient>()::sql)
-                        .bind(User.Attributes.LOGIN_ATTR, TestUtils.Data.user.login.lowercase())
+                        .bind(User.Attributes.LOGIN_ATTR, user.login.lowercase())
                         .fetch()
                         .one()
                         .awaitSingle()[User.Attributes.ID_ATTR]
@@ -1062,7 +1078,7 @@ class Tests {
             fun test_deleteAllUsersOnly(): Unit = runBlocking {
                 val countUserBefore = context.countUsers()
                 val countUserAuthBefore = context.countUserAuthority()
-                TestUtils.Data.users.forEach { (it to context).signup() }
+                users.forEach { (it to context).signup() }
                 assertEquals(countUserBefore + 2, context.countUsers())
                 assertEquals(countUserAuthBefore + 2, context.countUserAuthority())
                 context.deleteAllUsersOnly()
@@ -1074,7 +1090,7 @@ class Tests {
             fun test_delete(): Unit = runBlocking {
                 val countUserBefore = context.countUsers()
                 val countUserAuthBefore = context.countUserAuthority()
-                val ids = TestUtils.Data.users.map { (it to context).signup().getOrNull()!! }
+                val ids = users.map { (it to context).signup().getOrNull()!! }
                 assertEquals(countUserBefore + 2, context.countUsers())
                 assertEquals(countUserAuthBefore + 2, context.countUserAuthority())
                 ids.forEach { context.delete(it.first) }
@@ -1204,7 +1220,7 @@ class Tests {
 
             @Test
             fun `test SendEmailFromTemplate`(): Unit {
-                TestUtils.Data.user.copy(
+                user.copy(
                     login = "john",
                     email = "john.doe@acme.com",
                     langKey = "en"
@@ -1249,7 +1265,7 @@ class Tests {
 
             @Test
             fun testSendLocalizedEmailForAllSupportedLanguages(): Unit {
-                TestUtils.Data.user.copy(login = "john", email = "john.doe@acme.com").run {
+                user.copy(login = "john", email = "john.doe@acme.com").run {
                     for (langKey in Constants.languages) {
                         mailService.sendEmailFromTemplate(
                             mapOf(User.objectName to copy(langKey = langKey)),
@@ -1301,7 +1317,7 @@ class Tests {
 
             @Test
             fun testSendActivationEmail(): Unit {
-                (TestUtils.Data.user.copy(
+                (user.copy(
                     langKey = Constants.DEFAULT_LANGUAGE,
                     login = "john",
                     email = "john.doe@acme.com"
@@ -1322,7 +1338,7 @@ class Tests {
 
             @Test
             fun testCreationEmail(): Unit {
-                (TestUtils.Data.user.copy(
+                (user.copy(
                     langKey = Constants.DEFAULT_LANGUAGE,
                     login = "john",
                     email = "john.doe@acme.com",
@@ -1346,7 +1362,7 @@ class Tests {
 
             @Test
             fun testSendPasswordResetMail(): Unit {
-                (TestUtils.Data.user.copy(
+                (user.copy(
                     langKey = Constants.DEFAULT_LANGUAGE,
                     login = "john",
                     email = "john.doe@acme.com"
@@ -1438,7 +1454,7 @@ class Tests {
             }
 
             @Test
-            @WithMockUser(username = Constants.USER, roles = [Constants.ROLE_USER])
+            @WithMockUser(username = Constants.USER, roles = [ROLE_USER])
             fun `test service update user password`(): Unit = runBlocking {
                 val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
@@ -1452,7 +1468,7 @@ class Tests {
                     login = signupTest.login,
                     email = signupTest.email,
                     password = signupTest.password,
-                    langKey = Locale.FRENCH.language
+                    langKey = FRENCH.language
                 )
                 assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
@@ -1523,7 +1539,7 @@ class Tests {
                         login = signupTest.login,
                         email = signupTest.email,
                         password = signupTest.password,
-                        langKey = Locale.FRENCH.language
+                        langKey = FRENCH.language
                     )
                     assertThat(userTest.id).isNull()
                     context.tripleCounts().run {
@@ -1681,7 +1697,7 @@ class Tests {
             }
 
             @Test
-            @WithMockUser("change-password", roles = [Constants.ROLE_USER])
+            @WithMockUser("change-password", roles = [ROLE_USER])
             fun `test change password with valid password`(): Unit = runBlocking {
                 val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(
@@ -1888,7 +1904,7 @@ class Tests {
                                     .post()
                                     .uri(UserReset.EndPoint.API_CHANGE_PASSWORD_PATH)
                                     .contentType(APPLICATION_PROBLEM_JSON)
-                                    .header(HttpHeaders.ACCEPT_LANGUAGE, Locale.ENGLISH.language)
+                                    .header(HttpHeaders.ACCEPT_LANGUAGE, ENGLISH.language)
                                     .bodyValue(PasswordChange(testPassword, this))
                                     .exchange()
                                     .expectStatus()
@@ -2012,7 +2028,7 @@ class Tests {
                                     .post()
                                     .uri(UserReset.EndPoint.API_CHANGE_PASSWORD_PATH)
                                     .contentType(APPLICATION_PROBLEM_JSON)
-                                    .header(HttpHeaders.ACCEPT_LANGUAGE, Locale.ENGLISH.language)
+                                    .header(HttpHeaders.ACCEPT_LANGUAGE, ENGLISH.language)
                                     .bodyValue(PasswordChange(testPassword, this))
                                     .exchange()
                                     .expectStatus()
@@ -2059,7 +2075,7 @@ class Tests {
 
                 val testLogin = "change-password-empty"
                 val testPassword = "changePasswordEmpty!"
-                val emptyPassword = Constants.EMPTY_STRING
+                val emptyPassword = EMPTY_STRING
 
                 assertThat(userTest.id).isNull()
 
@@ -2141,7 +2157,7 @@ class Tests {
                                     .post()
                                     .uri(UserReset.EndPoint.API_CHANGE_PASSWORD_PATH)
                                     .contentType(APPLICATION_PROBLEM_JSON)
-                                    .header(HttpHeaders.ACCEPT_LANGUAGE, Locale.ENGLISH.language)
+                                    .header(HttpHeaders.ACCEPT_LANGUAGE, ENGLISH.language)
                                     .bodyValue(PasswordChange(testPassword, this))
                                     .exchange()
                                     .expectStatus()
@@ -2369,7 +2385,7 @@ class Tests {
                     login = signupTest.login,
                     password = signupTest.password,
                     email = signupTest.email,
-                    langKey = Locale.FRENCH.language
+                    langKey = FRENCH.language
                 )
                 assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
@@ -2452,7 +2468,7 @@ class Tests {
                         login = signupTest.login,
                         password = signupTest.password,
                         email = signupTest.email,
-                        langKey = Locale.FRENCH.language
+                        langKey = FRENCH.language
                     )
 
                     assertThat(userTest.id).isNull()
@@ -2611,7 +2627,7 @@ class Tests {
                     login = signupTest.login,
                     password = signupTest.password,
                     email = signupTest.email,
-                    langKey = Locale.FRENCH.language
+                    langKey = FRENCH.language
                 )
 
                 assertThat(userTest.id).isNull()
@@ -2764,7 +2780,7 @@ class Tests {
                     login = signupTest.login,
                     password = signupTest.password,
                     email = signupTest.email,
-                    langKey = Locale.FRENCH.language
+                    langKey = FRENCH.language
                 )
                 assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
@@ -2925,7 +2941,7 @@ class Tests {
                     login = signupTest.login,
                     password = signupTest.password,
                     email = signupTest.email,
-                    langKey = Locale.FRENCH.language
+                    langKey = FRENCH.language
                 )
                 assertThat(userTest.id).isNull()
                 context.tripleCounts().run {
@@ -3154,7 +3170,7 @@ class Tests {
                     context.getBean<DatabaseClient>()
                         .sql(UserRole.Relations.INSERT)
                         .bind(UserRole.Attributes.USER_ID_ATTR, userId)
-                        .bind(UserRole.Attributes.ROLE_ATTR, Constants.ROLE_USER)
+                        .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
                         .fetch()
                         .one()
                         .awaitSingleOrNull()
@@ -3166,7 +3182,7 @@ class Tests {
                         .trimIndent()
                         .run(context.getBean<DatabaseClient>()::sql)
                         .bind(UserRole.Attributes.USER_ID_ATTR, userId)
-                        .bind(UserRole.Attributes.ROLE_ATTR, Constants.ROLE_USER)
+                        .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
                         .fetch()
                         .one()
                         .awaitSingle()[UserRole.Relations.Fields.ID_FIELD]
@@ -3332,7 +3348,7 @@ class Tests {
                 mock<ServerWebExchange>()
                     .validator
                     .validateProperty(
-                        TestUtils.Data.signup.copy(login = "funky-log(n"),
+                        signup.copy(login = "funky-log(n"),
                         User.Attributes.LOGIN_ATTR
                     )
                     .run {
@@ -3350,7 +3366,7 @@ class Tests {
                 val wrongPassword = "123"
                 context.getBean<Validator>()
                     .validateProperty(
-                        TestUtils.Data.signup.copy(password = wrongPassword),
+                        signup.copy(password = wrongPassword),
                         User.Attributes.PASSWORD_ATTR
                     )
                     .run {
@@ -3392,7 +3408,7 @@ class Tests {
                     .isEqualTo(context.countUsers() to context.countUserAuthority())
                 context.findOne<User>(signupTest.email).mapLeft {
                     assertThat(it::class.java).isEqualTo(Exception::class.java)
-                }.map { assertThat(it.id).isEqualTo(TestUtils.Data.user.id) }
+                }.map { assertThat(it.id).isEqualTo(user.id) }
                     .isRight().run(::assertThat).isFalse
             }
 
@@ -3413,7 +3429,7 @@ class Tests {
                             .post()
                             .uri(Signup.EndPoint.API_SIGNUP_PATH)
                             .contentType(APPLICATION_PROBLEM_JSON)
-                            .header(HttpHeaders.ACCEPT_LANGUAGE, Locale.FRENCH.language)
+                            .header(HttpHeaders.ACCEPT_LANGUAGE, FRENCH.language)
                             .bodyValue(signupTest.copy(login = "funky-log(n"))
                             .exchange()
                             .expectStatus()
@@ -3602,7 +3618,7 @@ class Tests {
                         .post()
                         .uri(Signup.EndPoint.API_SIGNUP_PATH)
                         .contentType(APPLICATION_PROBLEM_JSON)
-                        .header(HttpHeaders.ACCEPT_LANGUAGE, Locale.FRENCH.language)
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, FRENCH.language)
                         .bodyValue(signupTest.copy(password = "123"))
                         .exchange()
                         .expectStatus()
