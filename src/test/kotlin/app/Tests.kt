@@ -9,7 +9,6 @@ import app.TestUtils.Data.user
 import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USER_RESETS
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
-import app.TestUtils.activateScenario
 import app.TestUtils.countRoles
 import app.TestUtils.countUserActivation
 import app.TestUtils.countUserAuthority
@@ -25,7 +24,7 @@ import app.TestUtils.findUserActivationByKey
 import app.TestUtils.findUserById
 import app.TestUtils.logBody
 import app.TestUtils.responseToString
-import app.TestUtils.signupScenario
+import app.TestUtils.signupActivationScenario
 import app.TestUtils.tripleCounts
 import app.ai.AIAssistantManager
 import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.ollamaList
@@ -3964,10 +3963,7 @@ class Tests {
                 val signupTest = context.getBean<Properties>().mailbox.noReply.run {
                     Signup(login = name, email = from, password = password, repassword = password)
                 }
-                val signedUp = (context to client).signupScenario(signupTest)
-                val activationDate = (context to client).activateScenario(signedUp)
-                assertThat(activationDate.atZone(systemDefault()).dayOfYear)
-                    .isEqualTo(LocalDateTime.now().atZone(systemDefault()).dayOfYear)
+                (context to client).signupActivationScenario(signupTest)
                 // Given a well signed up user
                 assertThat(context.countUserResets()).isEqualTo(0)
                 client.post()
