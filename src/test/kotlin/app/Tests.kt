@@ -124,7 +124,6 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStreamReader
-import java.lang.Boolean
 import java.net.URI
 import java.nio.charset.Charset
 import java.nio.file.Path
@@ -151,6 +150,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import java.lang.Boolean as JBoolean
 
 class Tests {
     //@org.junit.jupiter.api.extension.ExtendWith
@@ -2235,7 +2235,7 @@ class Tests {
                                     UserReset.Relations.Fields.IS_ACTIVE_FIELD
                                         .run(::get)
                                         .toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat)
                                         .asBoolean()
                                         .isTrue
@@ -2328,7 +2328,7 @@ class Tests {
                                 .fetch()
                                 .awaitSingle().run {
                                     UserReset.Relations.Fields.IS_ACTIVE_FIELD.run(::get).toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat).asBoolean().isTrue
                                     UserReset.Relations.Fields.RESET_KEY_FIELD.run(::get).toString()
                                         .run(Assertions::assertThat).isNotBlank()
@@ -2511,7 +2511,7 @@ class Tests {
                                         toString().apply(::i)
                                         UserReset.Relations.Fields.IS_ACTIVE_FIELD.run(::get)
                                             .toString()
-                                            .apply(Boolean::parseBoolean)
+                                            .apply(JBoolean::parseBoolean)
                                             .run(Assertions::assertThat).asBoolean().isTrue
                                         UserReset.Relations.Fields.RESET_KEY_FIELD.run(::get)
                                             .toString()
@@ -2540,7 +2540,7 @@ class Tests {
                                     .awaitSingleOrNull()!!.run {
                                         UserReset.Relations.Fields.IS_ACTIVE_FIELD.run(::get)
                                             .toString()
-                                            .apply(Boolean::parseBoolean)
+                                            .apply(JBoolean::parseBoolean)
                                             .run(Assertions::assertThat).asBoolean().isFalse
 
                                         UserReset.Relations.Fields.CHANGE_DATE_FIELD.run(::get)
@@ -2657,7 +2657,7 @@ class Tests {
                                 .fetch()
                                 .awaitSingle().run {
                                     get(UserReset.Relations.Fields.IS_ACTIVE_FIELD).toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat).asBoolean().isTrue
                                     get(UserReset.Relations.Fields.RESET_KEY_FIELD).toString()
                                         .run(Assertions::assertThat).asString()
@@ -2693,7 +2693,7 @@ class Tests {
                                 .fetch()
                                 .awaitSingleOrNull()!!.run {
                                     UserReset.Relations.Fields.IS_ACTIVE_FIELD.run(::get).toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat).asBoolean().isFalse
 
                                     UserReset.Relations.Fields.CHANGE_DATE_FIELD.run(::get)
@@ -2809,7 +2809,7 @@ class Tests {
                                 .fetch()
                                 .awaitSingle().run {
                                     get(UserReset.Relations.Fields.IS_ACTIVE_FIELD).toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat).asBoolean().isTrue
                                     get(UserReset.Relations.Fields.RESET_KEY_FIELD).toString()
                                         .run(Assertions::assertThat).asString()
@@ -2851,7 +2851,7 @@ class Tests {
                                 .fetch()
                                 .awaitSingleOrNull()!!.run {
                                     UserReset.Relations.Fields.IS_ACTIVE_FIELD.run(::get).toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat).asBoolean().isTrue
 
                                     UserReset.Relations.Fields.CHANGE_DATE_FIELD.run(::get)
@@ -2970,7 +2970,7 @@ class Tests {
                                 .fetch()
                                 .awaitSingle().run {
                                     get(UserReset.Relations.Fields.IS_ACTIVE_FIELD).toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat).asBoolean().isTrue
                                     get(UserReset.Relations.Fields.RESET_KEY_FIELD).toString()
                                         .run(Assertions::assertThat).asString()
@@ -3008,7 +3008,7 @@ class Tests {
                                 .fetch()
                                 .awaitSingleOrNull()!!.run {
                                     UserReset.Relations.Fields.IS_ACTIVE_FIELD.run(::get).toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat).asBoolean().isTrue
 
                                     UserReset.Relations.Fields.CHANGE_DATE_FIELD.run(::get)
@@ -4032,7 +4032,7 @@ class Tests {
                                     UserReset.Relations.Fields.IS_ACTIVE_FIELD
                                         .run(::get)
                                         .toString()
-                                        .apply(Boolean::parseBoolean)
+                                        .apply(JBoolean::parseBoolean)
                                         .run(Assertions::assertThat)
                                         .asBoolean()
                                         .isTrue
