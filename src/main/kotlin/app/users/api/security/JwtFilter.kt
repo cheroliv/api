@@ -36,7 +36,7 @@ class JwtFilter(private val context: ApplicationContext) : WebFilter {
             }
         }
 
-    private fun resolveToken(request: ServerHttpRequest): String? = request
+    fun resolveToken(request: ServerHttpRequest): String? = request
         .headers
         .getFirst(AUTHORIZATION_HEADER)
         .apply {

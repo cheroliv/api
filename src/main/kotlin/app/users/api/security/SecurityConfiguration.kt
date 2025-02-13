@@ -4,6 +4,11 @@ import app.users.api.Constants.ROLE_ADMIN
 import app.users.api.Loggers.d
 import app.users.api.Properties
 import app.users.api.web.Web.SpaWebFilter
+import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
+import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
+import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
+import app.users.signup.Signup.EndPoint.API_ACTIVATE_PATH
+import app.users.signup.Signup.EndPoint.API_SIGNUP_PATH
 import org.springframework.beans.factory.getBean
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
@@ -38,12 +43,11 @@ class SecurityConfiguration(private val context: ApplicationContext) {
         val permitAll = arrayOf(
             "/",
             "/*.*",
-            "/api/user/signup",
-            "/api/user/activate",
             "/api/user/authenticate",
-            "/api/user/reset-password/init",
-            "/api/user/reset-password/finish",
-            "/api/ai/trivial",
+            API_SIGNUP_PATH,
+            API_ACTIVATE_PATH,
+            API_RESET_PASSWORD_INIT_PATH,
+            API_RESET_PASSWORD_FINISH_PATH,
             "/api/ai/simple",
         )
         val authenticated = arrayOf(
@@ -52,6 +56,7 @@ class SecurityConfiguration(private val context: ApplicationContext) {
             "/swagger-resources/**",
             "/v2/api-docs",
             "/api/auth-info",
+            API_CHANGE_PASSWORD_PATH,
             "/api/users/**",
         )
         val adminAuthority = arrayOf(
