@@ -34,6 +34,7 @@ import app.users.api.models.User.Attributes.EMAIL_ATTR
 import app.users.api.models.User.Attributes.ID_ATTR
 import app.users.api.models.User.Attributes.LOGIN_ATTR
 import app.users.api.models.User.Members.ROLES_MEMBER
+import app.users.api.models.User.Relations.FIND_ALL_USERS
 import app.users.api.models.User.Relations.Fields.EMAIL_FIELD
 import app.users.api.models.User.Relations.Fields.LANG_KEY_FIELD
 import app.users.api.models.User.Relations.Fields.LOGIN_FIELD
@@ -96,6 +97,7 @@ import org.springframework.http.ProblemDetail
 import org.springframework.r2dbc.core.*
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithSecurityContext
 import org.springframework.security.test.context.support.WithSecurityContextFactory
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -147,7 +149,6 @@ import kotlin.reflect.full.createInstance
 import kotlin.repeat
 import kotlin.run
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlin.to
 import kotlin.toString
 
@@ -167,7 +168,7 @@ object TestUtils {
         )
     }
 
-    suspend fun Pair<ApplicationContext, WebTestClient>.signupScenario(signup: Signup): List<Any> {
+    suspend fun Pair<ApplicationContext, WebTestClient>.signupScenario(signup: Signup): Triple<UUID, String, Instant?> {
         first.tripleCounts().let {
             second.post()
                 .uri(Signup.EndPoint.API_SIGNUP_PATH)
@@ -177,9 +178,11 @@ object TestUtils {
                 .expectStatus().isCreated
                 .expectBody().isEmpty
 
-            assertThat(first.countUsers()).isEqualTo(it.first + 1)
-            assertThat(first.countUserAuthority()).isEqualTo(it.second + 1)
-            assertThat(first.countUserActivation()).isEqualTo(it.third + 1)
+            assertThat(1)
+                .isEqualTo(first.countUsers())
+                .isEqualTo(first.countUserAuthority())
+                .isEqualTo(first.countUserActivation())
+
             // Let's continue with activation key retrieved from database,
             // in order to activate userTest
             // here begin change password
@@ -191,27 +194,30 @@ object TestUtils {
                     // get(1) is the encoded password
                     // get(2) is the activation key
                     // last is the ACTIVATION_DATE_FIELD
-                    return listOf(
+                    assertThrows<DateTimeParseException> {
+                        Instant.parse(get(ACTIVATION_DATE_FIELD).toString())
+                    }
+                    return Triple<UUID, String, Instant?>(
                         get(User.Relations.Fields.ID_FIELD)
                             .toString()
                             .run(UUID::fromString),
-                        get(PASSWORD_FIELD).toString(),
                         get(ACTIVATION_KEY_FIELD).toString(),
-                        get(ACTIVATION_DATE_FIELD).toString(),
+                        null,
                     )
                 }
         }
     }
 
-    suspend fun Pair<ApplicationContext, WebTestClient>.activateScenario(signedUp: List<Any>): Instant {
+    suspend fun Pair<ApplicationContext, WebTestClient>.activateScenario(signedUp: Triple<UUID, String, Instant?>): Instant {
         signedUp.run {
-            val uuid = first() as UUID
-            val encodedPassword = get(1) as String
-            val activationKey = get(2) as String
-            val strActivationDateBeforeActivation = last().toString()
-            assertThrows<DateTimeParseException> {
-                Instant.parse(strActivationDateBeforeActivation)
-            }
+            assertThat(1)
+                .isEqualTo(this@activateScenario.first.countUsers())
+                .isEqualTo(this@activateScenario.first.countUserAuthority())
+                .isEqualTo(this@activateScenario.first.countUserActivation())
+
+            val uuid = first
+            val activationKey = second
+            val activationDateBeforeActivation = third
             "user.id retrieved: $uuid".apply(::i)
             activationKey
                 .apply { "userActivation.activationKey retrieved: $this".run(::i) }
@@ -219,11 +225,10 @@ object TestUtils {
                 .asString()
                 .hasSameSizeAs(generateActivationKey)
 
-            strActivationDateBeforeActivation
+            activationDateBeforeActivation
                 .apply { i("userActivation.activationDate before activation: $this") }
                 .run(::assertThat)
-                .asString()
-                .isEqualTo("null")
+                .isNull()
 
             (API_ACTIVATE_PATH + API_ACTIVATE_PARAM to activationKey).run UrlKeyPair@{
                 this@activateScenario.second.get()
@@ -358,24 +363,52 @@ object TestUtils {
     }
 
     suspend fun Pair<ApplicationContext, WebTestClient>.changePasswordScenario(passwordChange: PasswordChange) {
+        first.getBean<Validator>().validate(passwordChange)
+            .run(::assertThat)
+            .isEmpty()
+        API_CHANGE_PASSWORD_PATH.apply path@{ "uri : ${this@path}".run(::i) }
         // Given a well signed up user, let's change current user password
-        passwordChange.newPassword.run newPassword@{
-            second.post()
-                .uri(API_CHANGE_PASSWORD_PATH.apply path@{
-                    "uri : ${this@path}".run(::i)
-                }).contentType(APPLICATION_PROBLEM_JSON)
-                .bodyValue(passwordChange)
-                .exchange()
-                .expectStatus()
-                .isOk
-                .returnResult<ProblemDetail>()
-                .responseBodyContent!!
-                .isEmpty()
-                .run(::assertTrue)
-            first.countUserResets()
-                .run(::assertThat)
-                .isEqualTo(1)
-        }
+        first.getBean<DatabaseClient>()
+            .sql(FIND_ALL_USERACTIVATION)
+            .fetch()
+            .awaitSingleOrNull()!![ACTIVATION_DATE_FIELD]
+            .toString()
+            .apply(::i)
+            .run(::assertThat)
+            .asString()
+            .isNotEqualTo("null")
+        FIND_ALL_USERS.run(first.getBean<DatabaseClient>()::sql)
+            .fetch()
+            .awaitSingleOrNull()!![PASSWORD_FIELD]
+            .toString().run {
+                first.getBean<PasswordEncoder>().matches(
+                    passwordChange.currentPassword,
+                    this
+                )
+            }
+
+        second.post()
+            .uri(API_CHANGE_PASSWORD_PATH)
+            .contentType(APPLICATION_PROBLEM_JSON)
+            .bodyValue(passwordChange)
+            .exchange()
+            .expectStatus().isOk
+            .returnResult<ProblemDetail>()
+            .responseBodyContent!!
+            .apply { logBody() }
+            .run(::assertThat)
+            .isEmpty()
+
+        FIND_ALL_USERS
+            .run(first.getBean<DatabaseClient>()::sql)
+            .fetch()
+            .awaitSingleOrNull()!![PASSWORD_FIELD]
+            .toString().run {
+                first.getBean<PasswordEncoder>().matches(
+                    passwordChange.newPassword,
+                    this
+                )
+            }
     }
 
 
