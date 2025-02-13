@@ -1,13 +1,13 @@
-import Build_gradle.RestAPI.CLI
-import Build_gradle.RestAPI.GROUP_KEY
-import Build_gradle.RestAPI.KOTLIN_COMPILER_OPTION_JSR305
-import Build_gradle.RestAPI.MAIN_FUNCTION
-import Build_gradle.RestAPI.MOCKITO_AGENT
-import Build_gradle.RestAPI.NODE_MODULES
-import Build_gradle.RestAPI.SERVER
-import Build_gradle.RestAPI.SPRING_PROFILE_KEY
-import Build_gradle.RestAPI.SQL_SCHEMA
-import Build_gradle.RestAPI.VERSION_KEY
+import Build_gradle.Application.CLI
+import Build_gradle.Application.GROUP_KEY
+import Build_gradle.Application.KOTLIN_COMPILER_OPTION_JSR305
+import Build_gradle.Application.MAIN_FUNCTION
+import Build_gradle.Application.MOCKITO_AGENT
+import Build_gradle.Application.NODE_MODULES
+import Build_gradle.Application.SERVER
+import Build_gradle.Application.SPRING_PROFILE_KEY
+import Build_gradle.Application.SQL_SCHEMA
+import Build_gradle.Application.VERSION_KEY
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.springframework.boot.gradle.tasks.run.BootRun
@@ -43,7 +43,7 @@ plugins {
     ).forEach { id(it.first.get().pluginId).version(it.second) }
 }
 
-object RestAPI {
+object Application {
     const val GROUP_KEY = "artifact.group"
     const val VERSION_KEY = "artifact.version"
     const val SERVER = "app.Server"
@@ -54,6 +54,7 @@ object RestAPI {
     const val KOTLIN_COMPILER_OPTION_JSR305 = "-Xjsr305=strict"
     const val MAIN_FUNCTION = "main"
     const val NODE_MODULES = "node_modules"
+    const val LOCAL_PROFILE = "local"
 }
 
 allprojects {
@@ -260,7 +261,7 @@ tasks {
         MAIN_FUNCTION.run(sourceSets::get)
             .runtimeClasspath
             .run(::setClasspath)
-        systemProperty(SPRING_PROFILE_KEY, "local")
+        systemProperty(SPRING_PROFILE_KEY, Application.LOCAL_PROFILE)
     }
 
     register<BootRun>("cli") {
