@@ -3,13 +3,13 @@ package app.users.password
 import app.users.api.Loggers.d
 import app.users.api.dao.UserDao.change
 import app.users.api.dao.UserDao.findOne
+import app.users.api.mail.MailService
 import app.users.api.models.User
 import app.users.api.models.User.Attributes.EMAIL_ATTR
 import app.users.api.models.User.Relations.UPDATE_PASSWORD_RESET
 import app.users.api.security.SecurityUtils.generateResetKey
 import app.users.api.security.SecurityUtils.getCurrentUserLogin
 import app.users.api.web.HttpUtils.validator
-import app.users.api.mail.MailService
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
 import app.users.password.UserReset.Attributes.RESET_KEY_ATTR
 import app.users.password.UserReset.Relations.FIND_BY_KEY
@@ -45,7 +45,10 @@ import java.util.UUID
 
 @Service
 @Validated
-class PasswordService(val context: ApplicationContext) {
+class PasswordService(
+    private val context: ApplicationContext,
+    private val mailService: MailService
+) {
     suspend fun reset(
         @Email mail: String, exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = try {
@@ -72,12 +75,11 @@ class PasswordService(val context: ApplicationContext) {
         generateResetKey.let { resetKey ->
             ((mail to resetKey) to context).reset().map { updatedRows ->
                 when (updatedRows) {
-                    ONE_ROW_UPDATED -> return resetKey
-                        .apply {
-                            context.findOne<User>(mail)
-                                .map { user -> (user to resetKey).run(context.getBean<MailService>()::sendPasswordResetMail) }
+                    ONE_ROW_UPDATED -> return resetKey.apply {
+                        context.findOne<User>(mail).map { user ->
+                            (user to resetKey).run(mailService::sendPasswordResetMail)
                         }
-                        .right()
+                    }.right()
 
                     ZERO_ROW_UPDATED -> throw IllegalStateException("user_reset not saved")
                     else -> throw IllegalStateException("not expected to save more than one user_reset")
@@ -213,9 +215,7 @@ class PasswordService(val context: ApplicationContext) {
         NEW_PASSWORD_ATTR
     ).run {
         when {
-            isNotEmpty() -> of(
-                forStatusAndDetail(BAD_REQUEST, iterator().next().message)
-            )
+            isNotEmpty() -> of(forStatusAndDetail(BAD_REQUEST, iterator().next().message))
 
             else -> try {
                 change(passwordChange)
