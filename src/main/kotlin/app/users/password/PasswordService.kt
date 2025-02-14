@@ -134,19 +134,10 @@ class PasswordService(
                 }
             } catch (t: Throwable) {
                 when {
-                    t.message?.contains("No user was found for this reset key") == true -> of(
-                        forStatusAndDetail(
-                            INTERNAL_SERVER_ERROR,
-                            t.message
-                        )
-                    )
+                    t.message?.contains("No user was found for this reset key") == true ->
+                        of(forStatusAndDetail(INTERNAL_SERVER_ERROR, t.message))
 
-                    else -> of(
-                        forStatusAndDetail(
-                            BAD_REQUEST,
-                            t.message
-                        )
-                    )
+                    else -> of(forStatusAndDetail(BAD_REQUEST, t.message))
                 }
             }
         }

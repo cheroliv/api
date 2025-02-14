@@ -32,8 +32,11 @@ import app.TestUtils.tripleCounts
 import app.ai.AIAssistantManager
 import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.ollamaList
 import app.users.api.Constants
+import app.users.api.Constants.DEFAULT_LANGUAGE
 import app.users.api.Constants.DEVELOPMENT
 import app.users.api.Constants.EMPTY_STRING
+import app.users.api.Constants.PATTERN_LOCALE_2
+import app.users.api.Constants.PATTERN_LOCALE_3
 import app.users.api.Constants.PRODUCTION
 import app.users.api.Constants.ROLE_USER
 import app.users.api.Constants.STARTUP_LOG_MSG_KEY
@@ -1336,13 +1339,13 @@ class Tests {
 
             fun getJavaLocale(langKey: String): String {
                 var javaLangKey = langKey
-                val matcher2 = Constants.PATTERN_LOCALE_2.matcher(langKey)
+                val matcher2 = PATTERN_LOCALE_2.matcher(langKey)
                 if (matcher2.matches()) javaLangKey = "${
                     matcher2.group(1)
                 }_${
                     matcher2.group(2).uppercase()
                 }"
-                val matcher3 = Constants.PATTERN_LOCALE_3.matcher(langKey)
+                val matcher3 = PATTERN_LOCALE_3.matcher(langKey)
                 if (matcher3.matches()) javaLangKey = "${
                     matcher3.group(1)
                 }_${
@@ -1356,7 +1359,7 @@ class Tests {
             @Test
             fun testSendActivationEmail(): Unit {
                 (user.copy(
-                    langKey = Constants.DEFAULT_LANGUAGE,
+                    langKey = DEFAULT_LANGUAGE,
                     login = "john",
                     email = "john.doe@acme.com"
                 ) to generateActivationKey).run {
@@ -1377,7 +1380,7 @@ class Tests {
             @Test
             fun testCreationEmail(): Unit {
                 (user.copy(
-                    langKey = Constants.DEFAULT_LANGUAGE,
+                    langKey = DEFAULT_LANGUAGE,
                     login = "john",
                     email = "john.doe@acme.com",
                 ) to SecurityUtils.generateResetKey).run {
@@ -1401,7 +1404,7 @@ class Tests {
             @Test
             fun testSendPasswordResetMail(): Unit {
                 (user.copy(
-                    langKey = Constants.DEFAULT_LANGUAGE,
+                    langKey = DEFAULT_LANGUAGE,
                     login = "john",
                     email = "john.doe@acme.com"
                 ) to SecurityUtils.generateResetKey).run {
@@ -1425,14 +1428,8 @@ class Tests {
 
             @Test
             fun `test dao update user password`(): Unit = runBlocking {
-                val signupTest = properties.mailbox.noReply.run {
-                    Signup(
-                        login = name,
-                        email = from,
-                        password = password,
-                        repassword = password
-                    )
-                }
+                val signupTest = properties.mailbox.noReply
+                    .run { Signup(name, password, password, from) }
                 val userTest = context.user(signupTest)
 
                 assertThat(userTest.id).isNull()

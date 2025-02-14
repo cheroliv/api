@@ -75,7 +75,6 @@ SERVER.run(springBoot.mainClass::set)
 
 val mockitoAgent = configurations.create(MOCKITO_AGENT)
 
-
 dependencyManagement.imports {
     libs.versions.springboot.get()
         .run { "org.springframework.boot:spring-boot-dependencies:$this" }
@@ -273,7 +272,7 @@ tasks {
             .run(::setClasspath)
     }
 
-    register<Exec>("apiCheckFirefox") {
+    register<Exec>("reportTests") {
         group = "verification"
         description = "Check spring boot project then show report in firefox"
         dependsOn("check")
