@@ -28,7 +28,6 @@ import app.users.password.UserReset.Relations.Fields.ID_DATE_IDX_FIELD
 import app.users.password.UserReset.Relations.Fields.USER_ID_IDX_FIELD
 import app.users.password.UserReset.Relations.Fields.USER_RESET_SEQ_FIELD
 import app.users.signup.UserActivation
-import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotNull
