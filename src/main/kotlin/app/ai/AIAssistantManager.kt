@@ -174,27 +174,18 @@ class AIAssistantManager {
 
         object LocalLLMModel {
             val ollamaList = listOf(
-                "CognitiveComputations/dolphin-2.9.3-qwen2-0.5b:f16",
                 "llama3.2:3b-instruct-q8_0",
-                "dolphin3:8b-llama3.1-q8_0",
-                "dolphin3:8b",
-                "aya:8b",
-                "llama3.2:3b",
-                "deepseek-r1:1.5b",
                 "smollm:135m"
             )
 
-            val localModels
+            val localModels: Set<Pair<String, String>>
                 get() = setOf(
-                    "llama3.2:3b" to "LlamaTiny",
-                    "dolphin-llama3:8b" to "DolphinSmall",
-                    "aya:8b" to "AyaSmall",
-                    "smollm:135m" to "Smoll",
-                    "deepseek-r1:1.5b" to "DSR1Tiny"
+                    ollamaList.first() to "LlamaTinyInstruct",
+                    ollamaList.last() to "SmollmPico",
                 )
         }
-        // Creating tasks for each model
 
+        // Creating tasks for each model
         fun ApplicationContext.createChatTasks() = localModels.forEach {
             createChatTask(it.first, "helloOllama${it.second}")
             createStreamingChatTask(it.first, "helloOllamaStream${it.second}")
