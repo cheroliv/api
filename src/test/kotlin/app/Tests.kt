@@ -10,6 +10,7 @@ import app.TestUtils.Data.users
 import app.TestUtils.FIND_ALL_USERACTIVATION
 import app.TestUtils.FIND_ALL_USER_RESETS
 import app.TestUtils.FIND_BY_ACTIVATION_KEY
+import app.TestUtils.FIND_USER_BY_LOGIN
 import app.TestUtils.changePasswordScenario
 import app.TestUtils.countRoles
 import app.TestUtils.countUserActivation
@@ -29,8 +30,9 @@ import app.TestUtils.resetPasswordScenario
 import app.TestUtils.responseToString
 import app.TestUtils.signupActivationScenario
 import app.TestUtils.tripleCounts
-import app.ai.AIAssistantManager
-import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.ollamaList
+import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse
+import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse.Success
+import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.ollamaModels
 import app.users.api.Constants
 import app.users.api.Constants.DEFAULT_LANGUAGE
 import app.users.api.Constants.DEVELOPMENT
@@ -67,17 +69,14 @@ import app.users.api.models.User.Relations.Fields.LOGIN_FIELD
 import app.users.api.models.User.Relations.Fields.PASSWORD_FIELD
 import app.users.api.models.User.Relations.Fields.VERSION_FIELD
 import app.users.api.models.UserRole
+import app.users.api.models.UserRole.Attributes.USER_ID_ATTR
 import app.users.api.security.SecurityUtils
 import app.users.api.security.SecurityUtils.generateActivationKey
 import app.users.api.security.SecurityUtils.getCurrentUserLogin
 import app.users.api.web.HttpUtils.validator
-import app.users.password.InvalidPasswordException
-import app.users.password.PasswordChange
+import app.users.password.*
 import app.users.password.PasswordChange.Attributes.CURRENT_PASSWORD_ATTR
 import app.users.password.PasswordChange.Attributes.NEW_PASSWORD_ATTR
-import app.users.password.PasswordService
-import app.users.password.ResetPassword
-import app.users.password.UserReset
 import app.users.password.UserReset.EndPoint.API_CHANGE_PASSWORD_PATH
 import app.users.password.UserReset.EndPoint.API_RESET_PASSWORD_INIT_PATH
 import app.users.password.UserReset.Relations.Fields.IS_ACTIVE_FIELD
@@ -98,12 +97,31 @@ import app.users.signup.UserActivation.Relations.Fields.ACTIVATION_KEY_FIELD
 import app.users.signup.UserActivation.Relations.Fields.CREATED_DATE_FIELD
 import app.workspace.Installer
 import app.workspace.Workspace
+import app.workspace.Workspace.WorkspaceEntry
+import app.workspace.Workspace.WorkspaceEntry.CollaborationEntry.Collaboration
+import app.workspace.Workspace.WorkspaceEntry.CommunicationEntry.Communication
+import app.workspace.Workspace.WorkspaceEntry.ConfigurationEntry.Configuration
+import app.workspace.Workspace.WorkspaceEntry.CoreEntry.Education
+import app.workspace.Workspace.WorkspaceEntry.CoreEntry.Education.EducationEntry.*
+import app.workspace.Workspace.WorkspaceEntry.DashboardEntry.Dashboard
+import app.workspace.Workspace.WorkspaceEntry.JobEntry.Job
+import app.workspace.Workspace.WorkspaceEntry.JobEntry.Job.HumanResourcesEntry.Position
+import app.workspace.Workspace.WorkspaceEntry.JobEntry.Job.HumanResourcesEntry.Resume
+import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office
+import app.workspace.Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.*
+import app.workspace.Workspace.WorkspaceEntry.OrganisationEntry.Organisation
+import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio
+import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject
+import app.workspace.Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject.ProjectBuild
 import app.workspace.WorkspaceManager
 import app.workspace.WorkspaceManager.displayWorkspaceStructure
 import app.workspace.WorkspaceManager.workspace
 import arrow.core.Either
 import arrow.core.getOrElse
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT
+import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator
+import com.fasterxml.jackson.module.kotlin.kotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import jakarta.mail.Multipart
 import jakarta.mail.internet.MimeBodyPart
@@ -120,7 +138,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import org.apache.commons.lang3.RandomStringUtils
-import org.apache.commons.lang3.SystemUtils
+import org.apache.commons.lang3.SystemUtils.USER_HOME_KEY
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.swing.edt.GuiActionRunner
@@ -131,12 +149,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers
-import org.mockito.Captor
-import org.mockito.Mockito
-import org.mockito.MockitoAnnotations
-import org.mockito.Spy
+import org.mockito.*
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.mock
@@ -177,34 +190,20 @@ import java.nio.charset.Charset
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.SecureRandom
-import java.time.Duration
+import java.time.Duration.ofSeconds
 import java.time.Instant.now
 import java.time.LocalDateTime
 import java.time.ZoneId.systemDefault
 import java.time.ZoneOffset.UTC
 import java.time.ZonedDateTime.ofInstant
-import java.util.Locale
-import java.util.Locale.ENGLISH
-import java.util.Locale.FRANCE
-import java.util.Locale.FRENCH
-import java.util.Locale.ITALY
-import java.util.Locale.LanguageRange
-import java.util.Locale.US
-import java.util.Locale.filter
-import java.util.UUID
+import java.util.*
+import java.util.Locale.*
+import java.util.UUID.fromString
+import java.util.UUID.randomUUID
 import javax.inject.Inject
 import kotlin.io.path.pathString
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Ignore
-import kotlin.test.Test
-import kotlin.test.assertContains
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
+import app.users.api.models.Role.Relations.Fields.ID_FIELD as ROLE_ID_FIELD
 
 class Tests {
     //@org.junit.jupiter.api.extension.ExtendWith
@@ -263,70 +262,50 @@ class Tests {
          * 3 - Créer les dossiers complémentaires du workspace
          * 4 - lancer les tests gradle
          */
-        private val workspace = Workspace(
-            entries = Workspace.WorkspaceEntry(
+        val workspace = Workspace(
+            entries = WorkspaceEntry(
                 name = "fonderie",
-                path = System.getProperty(SystemUtils.USER_HOME_KEY)
+                path = System.getProperty(USER_HOME_KEY)
                     .run { "$this/workspace/school" },
-                office = Workspace.WorkspaceEntry.OfficeEntry.Office(
-                    books = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Books(name = "books-collection"),
-                    datas = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Datas(name = "datas"),
-                    formations = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.TrainingCatalogue(
-                        catalogue = "formations"
-                    ),
-                    bizness = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Profession("bizness"),
-                    notebooks = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Notebooks(
-                        notebooks = "notebooks"
-                    ),
-                    pilotage = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Pilotage(
-                        name = "pilotage"
-                    ),
-                    schemas = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Schemas(name = "schemas"),
-                    slides = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Slides(
-                        path = System.getProperty(SystemUtils.USER_HOME_KEY)
+                office = Office(
+                    books = Books(name = "books-collection"),
+                    datas = Datas(name = "datas"),
+                    formations = TrainingCatalogue(catalogue = "formations"),
+                    bizness = Profession("bizness"),
+                    notebooks = Notebooks(notebooks = "notebooks"),
+                    pilotage = Pilotage(name = "pilotage"),
+                    schemas = Schemas(name = "schemas"),
+                    slides = Slides(
+                        path = System.getProperty(USER_HOME_KEY)
                             .run { "$this/workspace/office/slides" }),
-                    sites = Workspace.WorkspaceEntry.OfficeEntry.Office.LibraryEntry.Sites(name = "sites"),
+                    sites = Sites(name = "sites"),
                     path = "office"
                 ),
                 cores = mapOf(
-                    "education" to Workspace.WorkspaceEntry.CoreEntry.Education(
-                        school = Workspace.WorkspaceEntry.CoreEntry.Education.EducationEntry.School(
-                            name = "talaria"
-                        ),
-                        student = Workspace.WorkspaceEntry.CoreEntry.Education.EducationEntry.Student(
-                            name = "olivier"
-                        ),
-                        teacher = Workspace.WorkspaceEntry.CoreEntry.Education.EducationEntry.Teacher(
-                            name = "cheroliv"
-                        ),
-                        educationTools = Workspace.WorkspaceEntry.CoreEntry.Education.EducationEntry.EducationTools(
-                            name = "edTools"
-                        )
+                    "education" to Education(
+                        school = School(name = "talaria"),
+                        student = Student(name = "olivier"),
+                        teacher = Teacher(name = "cheroliv"),
+                        educationTools = EducationTools(name = "edTools")
                     ),
                 ),
-                job = Workspace.WorkspaceEntry.JobEntry.Job(
-                    position = Workspace.WorkspaceEntry.JobEntry.Job.HumanResourcesEntry.Position("Teacher"),
-                    resume = Workspace.WorkspaceEntry.JobEntry.Job.HumanResourcesEntry.Resume(name = "CV")
+                job = Job(
+                    position = Position("Teacher"),
+                    resume = Resume(name = "CV")
                 ),
-                configuration = Workspace.WorkspaceEntry.ConfigurationEntry.Configuration(
-                    configuration = "school-configuration"
-                ),
-                communication = Workspace.WorkspaceEntry.CommunicationEntry.Communication(site = "static-website"),
-                organisation = Workspace.WorkspaceEntry.OrganisationEntry.Organisation(organisation = "organisation"),
-                collaboration = Workspace.WorkspaceEntry.CollaborationEntry.Collaboration(
+                configuration = Configuration(configuration = "school-configuration"),
+                communication = Communication(site = "static-website"),
+                organisation = Organisation(organisation = "organisation"),
+                collaboration = Collaboration(
                     collaboration = "collaboration"
                 ),
-                dashboard = Workspace.WorkspaceEntry.DashboardEntry.Dashboard(dashboard = "dashboard"),
-                portfolio = Workspace.WorkspaceEntry.PortfolioEntry.Portfolio(
+                dashboard = Dashboard(dashboard = "dashboard"),
+                portfolio = Portfolio(
                     mutableMapOf(
-                        "school" to Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject(
+                        "school" to PortfolioProject(
                             name = "name",
                             cred = "credential",
-                            builds = mutableMapOf(
-                                "training" to Workspace.WorkspaceEntry.PortfolioEntry.Portfolio.PortfolioProject.ProjectBuild(
-                                    name = "training"
-                                )
-                            )
+                            builds = mutableMapOf("training" to ProjectBuild(name = "training"))
                         )
                     )
                 ),
@@ -339,10 +318,23 @@ class Tests {
             workspace.displayWorkspaceStructure()
         }
 
+
+        @Test
+        fun checkDisplayWorkspaceDataSchemaStructure(): Unit {
+            ObjectMapper()
+                .registerModules(kotlinModule())
+                .enable(INDENT_OUTPUT).run {
+                    Workspace::class.java
+                        .run(JsonSchemaGenerator(this)::generateSchema)
+                        .run(::writeValueAsString)
+                        .run(::println)
+                }
+        }
+
         @Test
         fun `install workspace`(): Unit {
             Workspace.install(
-                System.getProperty(SystemUtils.USER_HOME_KEY)
+                System.getProperty(USER_HOME_KEY)
                     .run { "$this/workspace/school" })
             // default type : AllInOneWorkspace
             // ExplodedWorkspace
@@ -416,19 +408,19 @@ class Tests {
                     )
                     assertEquals(
                         expected = config.subPaths["education"]!!.pathString,
-                        actual = (config.workspace.entries.cores["education"] as Workspace.WorkspaceEntry.CoreEntry.Education).path
+                        actual = (config.workspace.entries.cores["education"] as Education).path
                     )
                     assertEquals(
                         expected = config.subPaths["communication"]!!.pathString,
-                        actual = (config.workspace.entries.communication as Workspace.WorkspaceEntry.CommunicationEntry.Communication).path
+                        actual = (config.workspace.entries.communication as Communication).path
                     )
                     assertEquals(
                         expected = config.subPaths["configuration"]!!.pathString,
-                        actual = (config.workspace.entries.configuration as Workspace.WorkspaceEntry.ConfigurationEntry.Configuration).path
+                        actual = (config.workspace.entries.configuration as Configuration).path
                     )
                     assertEquals(
                         expected = config.subPaths["job"]!!.pathString,
-                        actual = (config.workspace.entries.job as Workspace.WorkspaceEntry.JobEntry.Job).path
+                        actual = (config.workspace.entries.job as Job).path
                     )
 
 //                        "$this$separator$configFileName".run(::File).exists().run(::assertTrue)
@@ -515,34 +507,32 @@ class Tests {
 
             @Test
             fun `test ollama configuration`(): Unit {
-                environment["langchain4j.ollama.chat-model.base-url"]
+                environment.run {
+                    get("langchain4j.ollama.chat-model.base-url")
+                        .run(::assertThat).isEqualTo("http://localhost:11434")
+                    get("langchain4j.ollama.chat-model.model-name")
+                        .run(::assertThat).isIn(*ollamaModels.toTypedArray())
+                }
+                ollamaModels
+                    .map(String::lowercase)
                     .run(::assertThat)
-                    .isEqualTo("http://localhost:11434")
-                environment["langchain4j.ollama.chat-model.model-name"]
-                    .run(::assertThat)
-                    .isIn(*ollamaList.toTypedArray())
-                ollamaList.run(::assertThat)
-                    .contains("smollm:135m")
+                    .asString()
+                    .containsSequence("smollm")
             }
 
             @Test
             fun `test simple ai api, json format response`(): Unit = runBlocking {
                 client.mutate()
-                    .responseTimeout(Duration.ofSeconds(60))
+                    .responseTimeout(ofSeconds(60))
                     .build()
                     .get().uri("/api/ai/simple")
                     .exchange().expectStatus().isOk
-                    .returnResult<ResponseEntity<AIAssistantManager.SimpleAiController.AssistantResponse>>()
+                    .returnResult<ResponseEntity<AssistantResponse>>()
                     .responseBodyContent!!.responseToString().apply {
-                        mapper
-                            .readValue<AIAssistantManager.SimpleAiController.AssistantResponse.Success>(
-                                this
-                            )
-                            .answer!!
-                            .run(::i)
+                        mapper.readValue<Success>(this)
+                            .answer!!.run(::i)
                     }.run(::assertThat)
-                    .isNotBlank()
-                    .asString()
+                    .isNotBlank().asString()
                     .containsAnyOf(*EXPECTED_KEYWORDS.toTypedArray())
             }
         }
@@ -730,10 +720,10 @@ class Tests {
                 assertThat(context.countUsers()).isEqualTo(1)
                 val findOneEmailResult: Either<Throwable, User> =
                     context.findOne<User>(user.email)
-                findOneEmailResult.map { assertDoesNotThrow { UUID.fromString(it.id.toString()) } }
+                findOneEmailResult.map { assertDoesNotThrow { fromString(it.id.toString()) } }
                 i("findOneEmailResult : ${findOneEmailResult.getOrNull()}")
                 context.findOne<User>(user.login).map {
-                    assertDoesNotThrow { UUID.fromString(it.id.toString()) }
+                    assertDoesNotThrow { fromString(it.id.toString()) }
                 }
             }
 
@@ -775,7 +765,7 @@ class Tests {
                     .awaitSingleOrNull()?.run {
                         toString().run(::i)
                         val expectedUserResult = User(
-                            id = UUID.fromString(get(User.Relations.Fields.ID_FIELD).toString()),
+                            id = fromString(get(User.Relations.Fields.ID_FIELD).toString()),
                             email = get(EMAIL_FIELD).toString(),
                             login = get(LOGIN_FIELD).toString(),
                             roles = get(User.Members.ROLES_MEMBER)
@@ -964,8 +954,8 @@ class Tests {
                         .fetch()
                         .all()
                         .collect { rows ->
-                            assertEquals(rows[Role.Relations.Fields.ID_FIELD], ROLE_USER)
-                            resultRoles.add(rows[Role.Relations.Fields.ID_FIELD].toString())
+                            assertEquals(rows[ROLE_ID_FIELD], ROLE_USER)
+                            resultRoles.add(rows[ROLE_ID_FIELD].toString())
                         }
                     assertEquals(ROLE_USER, resultRoles.first())
                     assertEquals(ROLE_USER, resultRoles.first())
@@ -987,35 +977,30 @@ class Tests {
                         assertFalse(isLeft())
                     }.onRight {
                         """
-        SELECT ur."role" 
-        FROM user_authority AS ur 
-        WHERE ur.user_id = :userId"""
+                        SELECT ur."role" 
+                        FROM user_authority AS ur 
+                        WHERE ur.user_id = :userId"""
                             .trimIndent()
                             .run(db::sql)
-                            .bind(UserRole.Attributes.USER_ID_ATTR, it.first)
-                            .fetch()
-                            .all()
-                            .collect { rows ->
-                                assertEquals(
-                                    rows[Role.Relations.Fields.ID_FIELD],
-                                    ROLE_USER
-                                )
-                                resultRoles.add(Role(id = rows[Role.Relations.Fields.ID_FIELD].toString()))
+                            .bind(USER_ID_ATTR, it.first)
+                            .fetch().all().collect { rows ->
+                                assertEquals(rows[ROLE_ID_FIELD], ROLE_USER)
+                                resultRoles.add(Role(id = rows[ROLE_ID_FIELD].toString()))
                             }
                         assertEquals(
                             ROLE_USER,
                             user.withId(it.first).copy(
                                 roles =
-                                resultRoles
-                                    .map { role -> role.id.run(::Role) }
-                                    .toMutableSet())
+                                    resultRoles
+                                        .map { role -> role.id.run(::Role) }
+                                        .toMutableSet())
                                 .roles.first().id
                         )
                         resultUserId = it.first
                     }
                     assertThat(resultUserId.toString().length)
-                        .isEqualTo(UUID.randomUUID().toString().length)
-                    assertDoesNotThrow { UUID.fromString(resultUserId.toString()) }
+                        .isEqualTo(randomUUID().toString().length)
+                    assertDoesNotThrow { fromString(resultUserId.toString()) }
                     assertThat(ROLE_USER).isEqualTo(resultRoles.first().id)
                     assertThat(context.countUsers()).isEqualTo(1)
                     assertThat(context.countUserAuthority()).isEqualTo(1)
@@ -1051,7 +1036,7 @@ class Tests {
                 context.findOne<User>(user.email).apply {
                     assertTrue(isRight())
                     assertFalse(isLeft())
-                }.map { assertDoesNotThrow { UUID.fromString(it.id.toString()) } }
+                }.map { assertDoesNotThrow { fromString(it.id.toString()) } }
             }
 
             @Test
@@ -1083,7 +1068,7 @@ class Tests {
                 (user to context).save()
                 assertEquals(countUserBefore + 1, context.countUsers())
                 assertDoesNotThrow {
-                    TestUtils.FIND_USER_BY_LOGIN
+                    FIND_USER_BY_LOGIN
                         .run(db::sql)
                         .bind(LOGIN_ATTR, user.login.lowercase())
                         .fetch()
@@ -2402,9 +2387,7 @@ class Tests {
                                             .toString()
                                             .also { i("password retrieved after user signup: $it") }
                                     ).apply {
-                                        "passwords matches : ${toString()}".run(
-                                            ::i
-                                        )
+                                        "passwords matches : ${toString()}".run(::i)
                                     },
                                     message = "password should be encoded"
                                 )
@@ -2919,7 +2902,6 @@ class Tests {
                         .trimIndent()
                         .run(db::sql)
                         .fetch().awaitSingle().run {
-                            @Suppress("RemoveRedundantQualifierName")
                             (this[User.Relations.Fields.ID_FIELD].toString()
                                 .run(UUID::fromString)
                                     to this[PASSWORD_FIELD].toString())
@@ -2992,8 +2974,9 @@ class Tests {
                             // finish reset password
 
                             client.post()
-                                .uri(UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
-                                    .apply { i("uri : $this") })
+                                .uri(
+                                    UserReset.EndPoint.API_RESET_PASSWORD_FINISH_PATH
+                                        .apply { i("uri : $this") })
                                 .contentType(APPLICATION_PROBLEM_JSON)
                                 .bodyValue(ResetPassword(key = resetKey.apply {
                                     "resetKey on select: $this".run(::i)
@@ -3328,7 +3311,7 @@ class Tests {
                     lateinit var result: Either<Throwable, UUID>
                     (userTest to context).save()
                     assertThat(context.countUsers()).isEqualTo(countUserBefore + 1)
-                    val userId = db.sql(TestUtils.FIND_USER_BY_LOGIN)
+                    val userId = db.sql(FIND_USER_BY_LOGIN)
                         .bind(LOGIN_ATTR, userTest.login.lowercase())
                         .fetch()
                         .one()
@@ -3338,7 +3321,7 @@ class Tests {
 
                     db
                         .sql(UserRole.Relations.INSERT)
-                        .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+                        .bind(USER_ID_ATTR, userId)
                         .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
                         .fetch()
                         .one()
@@ -3350,7 +3333,7 @@ class Tests {
     where ua.user_id= :userId and ua."role" = :role"""
                         .trimIndent()
                         .run(db::sql)
-                        .bind(UserRole.Attributes.USER_ID_ATTR, userId)
+                        .bind(USER_ID_ATTR, userId)
                         .bind(UserRole.Attributes.ROLE_ATTR, ROLE_USER)
                         .fetch()
                         .one()
@@ -3979,7 +3962,7 @@ class Tests {
             @Test
             fun `test activate with key out of bound`(): Unit = runBlocking {
                 UserActivation(
-                    id = UUID.randomUUID(),
+                    id = randomUUID(),
                     activationKey = RandomStringUtils.random(
                         UserActivation.ACTIVATION_KEY_SIZE * 2,
                         0,

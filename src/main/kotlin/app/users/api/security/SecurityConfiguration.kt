@@ -48,7 +48,7 @@ class SecurityConfiguration(private val context: ApplicationContext) {
             API_ACTIVATE_PATH,
             API_RESET_PASSWORD_INIT_PATH,
             API_RESET_PASSWORD_FINISH_PATH,
-            "/api/ai/simple",
+            "/api/ai/*",
         )
         val authenticated = arrayOf(
             "/api/**",

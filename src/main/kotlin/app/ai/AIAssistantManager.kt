@@ -5,7 +5,9 @@ import app.ai.AIAssistantManager.AiConfiguration.OllamaAssistant
 import app.ai.AIAssistantManager.AiConfiguration.PromptManager.FRENCH
 import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse.Error
 import app.ai.AIAssistantManager.SimpleAiController.AssistantResponse.Success
+import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.OLLAMA_LOCAL_URL
 import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.localModels
+import app.ai.AIAssistantManager.SimpleAiController.LocalLLMModel.ollamaModels
 import app.ai.translator.AiTranslatorController.AssistantManager.createChatTask
 import app.ai.translator.AiTranslatorController.AssistantManager.createStreamingChatTask
 import app.users.api.Properties
@@ -40,6 +42,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.ok
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -96,7 +99,7 @@ class AIAssistantManager {
         | 3. Soutenir l'application des principes agiles et de l'artisanat logiciel
         | 4. Fournir des conseils sur la conception pédagogique pour l’éducation des adultes
         | Communique de manière claire et concise, en te concentrant sur des solutions pratiques.
-        | Répond-moi au format markdown."""
+        | Répond-moi au format AsciiDoc."""
             }
 
             object ENGLISH {
@@ -110,7 +113,7 @@ class AIAssistantManager {
         | 3. Support application of agile and software craftsmanship principles
         | 4. Provide guidance on instructional design for adult education
         | Please communicate clearly and concisely, focusing on practical solutions.
-        | Answer me in markdown format."""
+        | Answer me in AsciiDoc format."""
             }
         }
     }
@@ -173,15 +176,17 @@ class AIAssistantManager {
         }
 
         object LocalLLMModel {
-            val ollamaList = listOf(
+            const val OLLAMA_LOCAL_URL = "http://localhost:11434"
+            val ollamaModels = setOf(
                 "llama3.2:3b-instruct-q8_0",
-                "smollm:135m"
+                "smollm:135m",
+                "smollm:135m-instruct-v0.2-q8_0"
             )
 
             val localModels: Set<Pair<String, String>>
                 get() = setOf(
-                    ollamaList.first() to "LlamaTinyInstruct",
-                    ollamaList.last() to "SmollmPico",
+                    ollamaModels.first() to "LlamaTinyInstruct",
+                    ollamaModels.last() to "SmollmPico",
                 )
         }
 
@@ -194,7 +199,7 @@ class AIAssistantManager {
         fun ApplicationContext.createOllamaChatModel(model: String = "smollm:135m"): OllamaChatModel =
             OllamaChatModel.builder().apply {
                 baseUrl(
-                    environment.getProperty("ollama.baseUrl") as? String ?: "http://localhost:11434"
+                    environment.getProperty("ollama.baseUrl") as? String ?: OLLAMA_LOCAL_URL
                 )
 //                modelName(findProperty("ollama.modelName") as? String ?: model)
 //                temperature(findProperty("ollama.temperature") as? Double ?: 0.8)
@@ -205,7 +210,7 @@ class AIAssistantManager {
 
         fun ApplicationContext.createOllamaStreamingChatModel(model: String = "smollm:135m"): OllamaStreamingChatModel =
             OllamaStreamingChatModel.builder().apply {
-//                baseUrl(findProperty("ollama.baseUrl") as? String ?: "http://localhost:11434")
+//                baseUrl(findProperty("ollama.baseUrl") as? String ?: OLLAMA_LOCAL_URL)
 //                modelName(findProperty("ollama.modelName") as? String ?: model)
 //                temperature(findProperty("ollama.temperature") as? Double ?: 0.8)
 //                timeout(ofSeconds(findProperty("ollama.timeout") as? Long ?: 6_000))
@@ -256,7 +261,7 @@ class AIAssistantManager {
         // Configuration du modèle Ollama pour le streaming
         private fun createStreamingModel(modelName: String = "smollm:135m"): OllamaStreamingChatModel {
             return OllamaStreamingChatModel.builder().apply {
-                baseUrl("http://localhost:11434")
+                baseUrl(OLLAMA_LOCAL_URL)
                 modelName(modelName)
                 temperature(0.7)
                 logRequests(true)
@@ -298,14 +303,7 @@ class AIAssistantManager {
 
         // Endpoint pour lister les modèles disponibles
         @GetMapping("/api/ai/models")
-        fun availableModels() = mapOf(
-            "models" to listOf(
-                "llama3.2:3b",
-                "dolphin-llama3:8b",
-                "aya:8b",
-                "smollm:135m",
-                "deepseek-r1:1.5b"
-            )
-        )
+        fun availableModels(): ResponseEntity<Map<String, Set<String>>> = ok()
+            .body(mapOf("models" to ollamaModels))
     }
 }

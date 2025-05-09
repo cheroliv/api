@@ -5,7 +5,8 @@ kotlin = "2.1.10"
 langchain4j = "1.0.0-alpha1"
 #langchain4j = "1.0.0-beta1"
 commons-io = "2.13.0"
-jackson = "2.17.2"
+jackson = "2.18.3"
+#jackson = "2.17.2"
 jgit = "6.10.0.202406032230-r"
 arrow-kt = "1.2.4"
 arrow-kt_jackson = "0.14.1"
@@ -40,9 +41,10 @@ grolifant = { group = "org.ysb33r.gradle", name = "grolifant", version = "0.12.1
 langchain4j-core = { group = "dev.langchain4j", name = "langchain4j", version.ref = "langchain4j" }
 commons-io = { group = "commons-io", name = "commons-io", version.ref = "commons-io" }
 jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin" }
+jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jackson" }
 jackson-module-jsonSchema = { group = "com.fasterxml.jackson.module", name = "jackson-module-jsonSchema", version.ref = "jackson" }
 jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jackson" }
-jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jackson" }
+jackson-databind-yaml = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson" }
 jgit-core = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "jgit" }
 jgit-archive = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.archive", version.ref = "jgit" }
 jgit-ssh = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.ssh.jsch", version.ref = "jgit" }
