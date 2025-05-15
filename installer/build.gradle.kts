@@ -34,7 +34,7 @@ dependencyManagement.imports {
 
 parent?.let { dependencies.implementation(it) }
 
-INSTALLER.run(application.mainClass::set)
+Installer.INSTALLER.run(application.mainClass::set)
 
 configurations.compileOnly { extendsFrom(configurations.annotationProcessor.get()) }
 
