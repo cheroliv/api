@@ -1,7 +1,7 @@
 output.txt
-e3p0.yaml
-e-3po.yaml
-managed-jbake-context.yml
+../../office/settings/e3p0.yaml
+../../office/settings/e-3po.yaml
+../../office/settings/managed-jbake-context.yml
 gradle
 *.iml
 .idea
@@ -9,7 +9,7 @@ gradle
 .kotlin
 build
 dataSources
-client_secret_test_googleusercontent.json
+../../office/settings/client_secret_test_googleusercontent.json
 gradlew
 gradlew.bat
 logback*
