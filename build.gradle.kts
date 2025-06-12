@@ -1,13 +1,8 @@
-import Build_gradle.Application.CLI
-import Build_gradle.Application.GROUP_KEY
-import Build_gradle.Application.KOTLIN_COMPILER_OPTION_JSR305
-import Build_gradle.Application.MAIN_FUNCTION
-import Build_gradle.Application.MOCKITO_AGENT
-import Build_gradle.Application.NODE_MODULES
-import Build_gradle.Application.SERVER
-import Build_gradle.Application.SPRING_PROFILE_KEY
-import Build_gradle.Application.SQL_SCHEMA
-import Build_gradle.Application.VERSION_KEY
+//import Application.GROUP_KEY
+//import Application.MAIN_FUNCTION
+//import Application.SERVER
+//import Application.SPRING_PROFILE_KEY
+//import Application.VERSION_KEY
 import org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED
 import org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
 import org.springframework.boot.gradle.tasks.run.BootRun
@@ -40,7 +35,7 @@ plugins {
         libs.plugins.spring.boot to libs.versions.springboot,
         libs.plugins.spring.dependency.management to libs.versions.spring.dependency.management,
         libs.plugins.versions to libs.versions.deps.versions,
-    ).forEach { id(it.first.get().pluginId).version(it.second) }
+    ).forEach { this.id(it.first.get().pluginId).version(it.second) }
 }
 
 object Application {
@@ -58,8 +53,8 @@ object Application {
 }
 
 allprojects {
-    group = properties[GROUP_KEY].toString()
-    version = properties[VERSION_KEY].toString()
+    group = properties[Application.GROUP_KEY].toString()
+    version = properties[Application.VERSION_KEY].toString()
     repositories {
         mavenCentral()
         setOf(
@@ -71,9 +66,9 @@ allprojects {
     }
 }
 
-SERVER.run(springBoot.mainClass::set)
+Application.SERVER.run(springBoot.mainClass::set)
 
-val mockitoAgent = configurations.create(MOCKITO_AGENT)
+val mockitoAgent = configurations.create(Application.MOCKITO_AGENT)
 
 dependencyManagement.imports {
     libs.versions.springboot.get()
@@ -169,7 +164,6 @@ dependencies {
         exclude(module = libs.mockito.core.get().module.name)
     }
     testImplementation(libs.mockito.core.apply {
-        @Suppress("UnstableApiUsage")
         mockitoAgent(this) { isTransitive = false }
     })
     testImplementation(libs.mockito.kotlin)
@@ -217,15 +211,20 @@ java {
 
 kotlin.compilerOptions
     .freeCompilerArgs
-    .addAll(KOTLIN_COMPILER_OPTION_JSR305)
+    .addAll(Application.KOTLIN_COMPILER_OPTION_JSR305)
 
-NODE_MODULES
+Application.NODE_MODULES
     .run(::listOf)
     .toTypedArray()
     .run(::files)
     .run(idea.module.excludeDirs::plusAssign)
 
-tasks {
+project.tasks.wrapper {
+    gradleVersion = "8.14.2"
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+project.tasks {
     test {
         useJUnitPlatform()
         testLogging { events(FAILED, SKIPPED) }
@@ -256,18 +255,18 @@ tasks {
     register<BootRun>("localBootRun") {
         group = "application"
         description = "Run Server application with dev, ai, local active profiles"
-        SERVER.run(mainClass::set)
-        MAIN_FUNCTION.run(sourceSets::get)
+        Application.SERVER.run(mainClass::set)
+        Application.MAIN_FUNCTION.run(sourceSets::get)
             .runtimeClasspath
             .run(::setClasspath)
-        systemProperty(SPRING_PROFILE_KEY, Application.LOCAL_PROFILE)
+        systemProperty(Application.SPRING_PROFILE_KEY, Application.LOCAL_PROFILE)
     }
 
     register<BootRun>("cli") {
         group = "application"
         description = "Run CLI application with cli,ai,local active profiles"
-        CLI.run(mainClass::set)
-        MAIN_FUNCTION.run(sourceSets::get)
+        Application.CLI.run(mainClass::set)
+        Application.MAIN_FUNCTION.run(sourceSets::get)
             .runtimeClasspath
             .run(::setClasspath)
     }
@@ -288,8 +287,8 @@ tasks {
     register<JavaExec>("displayCreateTestDbSchema") {
         group = "application"
         description = "Display SQL script who creates database tables into test schema."
-        SQL_SCHEMA.run(mainClass::set)
-        MAIN_FUNCTION.run(sourceSets::get)
+        Application.SQL_SCHEMA.run(mainClass::set)
+        Application.MAIN_FUNCTION.run(sourceSets::get)
             .runtimeClasspath
             .run(::setClasspath)
     }
