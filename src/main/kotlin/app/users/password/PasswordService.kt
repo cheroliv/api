@@ -28,10 +28,7 @@ import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.ProblemDetail
-import org.springframework.http.ProblemDetail.forStatusAndDetail
 import org.springframework.http.ResponseEntity
-import org.springframework.http.ResponseEntity.of
-import org.springframework.http.ResponseEntity.ok
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.awaitRowsUpdated
 import org.springframework.r2dbc.core.awaitSingleOrNull
@@ -41,7 +38,7 @@ import org.springframework.transaction.reactive.TransactionalOperator
 import org.springframework.transaction.reactive.executeAndAwait
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.server.ServerWebExchange
-import java.util.UUID
+import java.util.*
 
 @Service
 @Validated
@@ -54,10 +51,10 @@ class PasswordService(
     ): ResponseEntity<ProblemDetail> = try {
         reset(mail).run {
             when (isRight()) {
-                true -> ok()
+                true -> ResponseEntity.ok()
 
-                else -> of(
-                    forStatusAndDetail(
+                else -> ResponseEntity.of(
+                    ProblemDetail.forStatusAndDetail(
                         INTERNAL_SERVER_ERROR,
                         swap().getOrNull()?.message
                     )
@@ -65,7 +62,7 @@ class PasswordService(
             }
         }
     } catch (t: Throwable) {
-        of(forStatusAndDetail(BAD_REQUEST, t.message))
+        ResponseEntity.of(ProblemDetail.forStatusAndDetail(BAD_REQUEST, t.message))
     }.build()
 
     /**
@@ -117,16 +114,16 @@ class PasswordService(
         reset: ResetPassword, exchange: ServerWebExchange
     ): ResponseEntity<ProblemDetail> = exchange.validator.validate(reset).run {
         when {
-            isNotEmpty() -> of(
-                forStatusAndDetail(BAD_REQUEST, iterator().next().message)
+            isNotEmpty() -> ResponseEntity.of(
+                ProblemDetail.forStatusAndDetail(BAD_REQUEST, iterator().next().message)
             )
 
             else -> try {
                 when (finish(reset.newPassword, reset.key)) {
-                    TWO_ROWS_UPDATED -> ok()
+                    TWO_ROWS_UPDATED -> ResponseEntity.ok()
 
-                    else -> of(
-                        forStatusAndDetail(
+                    else -> ResponseEntity.of(
+                        ProblemDetail.forStatusAndDetail(
                             INTERNAL_SERVER_ERROR,
                             "No user was found for this reset key"
                         )
@@ -135,9 +132,9 @@ class PasswordService(
             } catch (t: Throwable) {
                 when {
                     t.message?.contains("No user was found for this reset key") == true ->
-                        of(forStatusAndDetail(INTERNAL_SERVER_ERROR, t.message))
+                        ResponseEntity.of(ProblemDetail.forStatusAndDetail(INTERNAL_SERVER_ERROR, t.message))
 
-                    else -> of(forStatusAndDetail(BAD_REQUEST, t.message))
+                    else -> ResponseEntity.of(ProblemDetail.forStatusAndDetail(BAD_REQUEST, t.message))
                 }
             }
         }
@@ -206,13 +203,13 @@ class PasswordService(
         NEW_PASSWORD_ATTR
     ).run {
         when {
-            isNotEmpty() -> of(forStatusAndDetail(BAD_REQUEST, iterator().next().message))
+            isNotEmpty() -> ResponseEntity.of(ProblemDetail.forStatusAndDetail(BAD_REQUEST, iterator().next().message))
 
             else -> try {
                 change(passwordChange)
-                ok()
+                ResponseEntity.ok()
             } catch (t: Throwable) {
-                of(forStatusAndDetail(BAD_REQUEST, t.message))
+                ResponseEntity.of(ProblemDetail.forStatusAndDetail(BAD_REQUEST, t.message))
             }
         }
     }.build()
