@@ -1,7 +1,3 @@
-import Build_gradle.Installer.CLASSPATH_KEY
-import Build_gradle.Installer.INSTALLER
-import Build_gradle.Installer.KOTLIN_COMPILER_OPTION_JSR305
-import Build_gradle.Installer.MAIN_CLASS_KEY
 import org.gradle.api.file.DuplicatesStrategy.EXCLUDE
 import kotlin.text.Charsets.UTF_8
 
@@ -14,7 +10,7 @@ plugins {
         libs.plugins.kotlin.serialization to libs.versions.kotlin,
         libs.plugins.versions to libs.versions.deps.versions,
         libs.plugins.spring.dependency.management to libs.versions.spring.dependency.management,
-    ).forEach { id(it.first.get().pluginId).version(it.second) }
+    ).forEach { this.id(it.first.get().pluginId).version(it.second) }
 }
 
 object Installer {
@@ -40,14 +36,14 @@ configurations.compileOnly { extendsFrom(configurations.annotationProcessor.get(
 
 kotlin.compilerOptions
     .freeCompilerArgs
-    .addAll(KOTLIN_COMPILER_OPTION_JSR305)
+    .addAll(Installer.KOTLIN_COMPILER_OPTION_JSR305)
 
 tasks {
     withType<Jar> {
         dependsOn(parent?.tasks?.jar)
         manifest {
-            attributes[MAIN_CLASS_KEY] = INSTALLER
-            attributes[CLASSPATH_KEY] = configurations
+            attributes[Installer.MAIN_CLASS_KEY] = Installer.INSTALLER
+            attributes[Installer.CLASSPATH_KEY] = configurations
                 .runtimeClasspath.get()
                 .joinToString(" ") { it.name }
         }
